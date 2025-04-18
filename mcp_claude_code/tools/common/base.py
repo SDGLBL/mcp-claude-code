@@ -76,8 +76,13 @@ class BaseTool(ABC):
                 required = param_name in self.required
                 required_text = "" if required else " (optional)"
                 
+                # Get the parameter description if available
+                param_description = ""
+                if "description" in param_info:
+                    param_description = f" - {param_info['description']}"
+                
                 # Add the parameter description line
-                desc += f"\n    {param_name}: {title}{required_text}"
+                desc += f"\n    {param_name}: {title}{required_text}{param_description}"
         
         # Add Returns section
         desc += "\n\nReturns:\n    "

@@ -68,6 +68,9 @@ class TestMCPDescription:
         assert "Args:" in mcp_desc
         assert "paths: Paths" in mcp_desc
         
+        # Verify it includes parameter description from the description field
+        assert "absolute paths to the file or files to read" in mcp_desc
+        
         # Verify it includes return description
         assert "Returns:" in mcp_desc
         assert "Read files results" in mcp_desc
