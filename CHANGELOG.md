@@ -5,6 +5,29 @@ All notable changes to the MCP Claude Code project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.21] - 2025-04-19
+
+### Enhanced
+- Enhanced tool descriptions with parameter details in mcp_description method
+  - Added support for displaying parameter descriptions from schema definitions
+  - Improved formatting with hyphen separator for better readability
+  - Updated tests to verify parameter descriptions are properly included
+  - Makes tool descriptions more informative for Claude
+
+### Fixed
+- Fixed pytest configuration by adding asyncio_default_fixture_loop_scope setting
+  - Added explicit configuration in pyproject.toml to address deprecation warnings
+  - Set asyncio mode to "strict" for more reliable async tests
+
+### Documentation
+- Added project_info section to system prompt template
+  - Includes repository name and owner details for better context
+  - Improves system's ability to generate accurate project-specific responses
+
+### Changed
+- Removed outdated TODO comment in agent tool registration
+- Updated .gitignore to exclude aider files and CLAUDE.md
+
 ## [0.1.20] - 2025-04-03
 
 ### Added
