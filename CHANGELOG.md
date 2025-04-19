@@ -5,6 +5,21 @@ All notable changes to the MCP Claude Code project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.23] - 2025-04-19
+
+### Removed
+- Removed project tools package to streamline architecture
+  - Removed `mcp_claude_code/tools/project` directory and related test files
+  - Removed project analysis functionality which was redundant with filesystem tools
+  - Updated import statements and tool registrations across codebase
+  - Updated tests to maintain test coverage without project tools
+
+### Changed
+- Simplified system prompt for improved usability
+  - Removed redundant sections to improve Claude execution efficiency
+  - Updated documentation to reflect current toolset
+  - Replaced project analysis examples with code search examples
+
 ## [0.1.22] - 2025-04-19
 
 ### Changed
