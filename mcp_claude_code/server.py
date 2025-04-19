@@ -7,7 +7,6 @@ from mcp.server.fastmcp import FastMCP
 from mcp_claude_code.tools import register_all_tools
 from mcp_claude_code.tools.common.context import DocumentContext
 from mcp_claude_code.tools.common.permissions import PermissionManager
-from mcp_claude_code.tools.project.analysis import ProjectAnalyzer, ProjectManager
 from mcp_claude_code.tools.shell.command_executor import CommandExecutor
 
 
@@ -50,14 +49,6 @@ class ClaudeCodeServer:
         self.command_executor = CommandExecutor(
             permission_manager=self.permission_manager,
             verbose=False,  # Set to True for debugging
-        )
-
-        # Initialize project analyzer
-        self.project_analyzer = ProjectAnalyzer(self.command_executor)
-
-        # Initialize project manager
-        self.project_manager = ProjectManager(
-            self.document_context, self.permission_manager, self.project_analyzer
         )
 
         # Add allowed paths

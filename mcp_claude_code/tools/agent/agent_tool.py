@@ -28,7 +28,6 @@ from mcp_claude_code.tools.common.context import DocumentContext, ToolContext, c
 from mcp_claude_code.tools.common.permissions import PermissionManager
 from mcp_claude_code.tools.filesystem import get_read_only_filesystem_tools
 from mcp_claude_code.tools.jupyter import get_read_only_jupyter_tools
-from mcp_claude_code.tools.project import get_project_tools
 from mcp_claude_code.tools.shell.command_executor import CommandExecutor
 
 
@@ -143,7 +142,6 @@ Returns:
         self.available_tools :list[BaseTool] = []
         self.available_tools.extend(get_read_only_filesystem_tools(self.document_context, self.permission_manager))
         self.available_tools.extend(get_read_only_jupyter_tools(self.document_context, self.permission_manager))
-        self.available_tools.extend(get_project_tools(self.document_context, self.permission_manager,self.command_executor))
         
 
     @override

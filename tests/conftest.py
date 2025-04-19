@@ -8,7 +8,6 @@ import pytest
 
 from mcp_claude_code.tools.common.context import DocumentContext, ToolContext
 from mcp_claude_code.tools.common.permissions import PermissionManager
-from mcp_claude_code.tools.project.analysis import ProjectAnalyzer
 from mcp_claude_code.tools.shell.command_executor import CommandExecutor
 
 
@@ -96,17 +95,3 @@ def tool_context(mcp_context):
 def command_executor(permission_manager):
     """Create a command executor for testing."""
     return CommandExecutor(permission_manager)
-
-
-@pytest.fixture
-def project_analyzer(command_executor):
-    """Create a project analyzer for testing."""
-    return ProjectAnalyzer(command_executor)
-
-
-@pytest.fixture
-def project_manager(document_context, permission_manager, project_analyzer):
-    """Create a project manager for testing."""
-    from mcp_claude_code.tools.project.analysis import ProjectManager
-
-    return ProjectManager(document_context, permission_manager, project_analyzer)

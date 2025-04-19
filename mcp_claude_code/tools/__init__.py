@@ -17,7 +17,6 @@ from mcp_claude_code.tools.common.context import DocumentContext
 from mcp_claude_code.tools.common.permissions import PermissionManager
 from mcp_claude_code.tools.filesystem import register_filesystem_tools
 from mcp_claude_code.tools.jupyter import register_jupyter_tools
-from mcp_claude_code.tools.project import register_project_tools
 from mcp_claude_code.tools.shell import register_shell_tools
 from mcp_claude_code.tools.shell.command_executor import CommandExecutor
 
@@ -54,14 +53,6 @@ def register_all_tools(
 
     # Register shell tools
     register_shell_tools(mcp_server, permission_manager)
-
-    # Register project analysis tools
-    register_project_tools(
-        mcp_server, 
-        permission_manager, 
-        document_context, 
-        CommandExecutor(permission_manager)
-    )
 
     # Register agent tools only if enabled
     if enable_agent_tool:
