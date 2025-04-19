@@ -95,7 +95,7 @@ The model name uses the LiteLLM format with provider prefixes. Examples:
 
 - OpenAI models: `openai/gpt-4o`, `openai/gpt-4o-mini`
 - Anthropic models: `anthropic/claude-3.7-sonnet`
-- Google models: `openrouter/google/gemini-2.0-flash-001` (Recommended)
+- Google models: `openrouter/google/gemini-2.5-flash-preview` (Recommended)
 
 If you don't specify these options, the agent will use the following environment variables:
 

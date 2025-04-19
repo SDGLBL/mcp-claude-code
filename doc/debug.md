@@ -12,7 +12,7 @@ npx @modelcontextprotocol/inspector \
   --allow-path \
   {allow path} \
   "--agent-model" \
-  "openrouter/google/gemini-2.0-flash-001" \
+  "openrouter/google/gemini-2.5-flash-preview" \
   "--agent-max-tokens" \
   "100000" \
   "--agent-api-key" \
