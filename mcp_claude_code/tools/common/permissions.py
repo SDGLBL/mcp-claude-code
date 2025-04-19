@@ -33,17 +33,14 @@ class PermissionManager:
         """Add default exclusions for sensitive files and directories."""
         # Sensitive directories
         sensitive_dirs: list[str] = [
-            # ".git" is now allowed by default
             ".ssh",
             ".gnupg",
-            ".config",
             "node_modules",
             "__pycache__",
             ".venv",
             "venv",
             "env",
             ".idea",
-            ".vscode",
             ".DS_Store",
         ]
         self.excluded_patterns.extend(sensitive_dirs)
