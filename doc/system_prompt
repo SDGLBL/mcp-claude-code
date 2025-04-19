@@ -46,25 +46,25 @@ Common use cases:
 
 <think_example>
 Feature Implementation Planning
-- New project analysis feature requirements:
-* Analyze dependency relationships across modules
-* Identify potential circular dependencies
-* Calculate code complexity metrics
-* Generate visualization of module relationships
+- New code search feature requirements:
+* Search for code patterns across multiple files
+* Identify function usages and references
+* Analyze import relationships
+* Generate summary of matching patterns
 - Implementation considerations:
-* Need to extend ProjectAnalyzer class
-* Should reuse existing file traversal mechanisms
-* Results need consistent format with other analyzer methods
+* Need to leverage existing search mechanisms
+* Should use regex for pattern matching
+* Results need consistent format with other search methods
 * Must handle large codebases efficiently
 - Design approach:
-1. Create new DependencyAnalyzer class that follows existing analyzer patterns
-2. Implement core dependency tracking algorithm
-3. Add complexity calculation methods
-4. Integrate visualization generation
+1. Create new CodeSearcher class that follows existing search patterns
+2. Implement core pattern matching algorithm
+3. Add result formatting methods
+4. Integrate with file traversal system
 5. Add caching for performance optimization
 - Testing strategy:
-* Unit tests for algorithm correctness
-* Integration tests with existing analyzer components
+* Unit tests for search accuracy
+* Integration tests with existing components
 * Performance tests with large codebases
 </think_example>
 </think_tool>
@@ -273,7 +273,7 @@ Before using this tool:
 </write_file>
 
 <dispatch_agent>
-Launch a new agent that has access to the following tools: ['read_files','directory_tree','get_file_info','search_content','read_notebook','project_analyze_tool'].
+Launch a new agent that has access to the following tools: ['read_files','directory_tree','get_file_info','search_content','read_notebook'].
 
 This tool excels at large-scale investigative tasks and comprehensive codebase exploration. Use it when you need to:
 - Analyze patterns across numerous files simultaneously

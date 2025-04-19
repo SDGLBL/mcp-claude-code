@@ -15,7 +15,6 @@ This project provides an MCP server that implements Claude Code-like functionali
 - **Enhanced Command Execution**: Run commands and scripts in various languages with improved error handling and shell support
 - **File Operations**: Manage files with proper security controls through shell commands
 - **Code Discovery**: Find relevant files and code patterns across your project
-- **Project Analysis**: Understand project structure, dependencies, and frameworks
 - **Agent Delegation**: Delegate complex tasks to specialized sub-agents that can work concurrently
 - **Multiple LLM Provider Support**: Configure any LiteLLM-compatible model for agent operations
 - **Jupyter Notebook Support**: Read and edit Jupyter notebooks with full cell and output handling
@@ -34,7 +33,6 @@ This project provides an MCP server that implements Claude Code-like functionali
 | `run_command`          | Execute shell commands (also used for directory creation, file moving, and directory listing) |
 | `run_script`           | Execute scripts with specified interpreters                                                   |
 | `script_tool`          | Execute scripts in specific programming languages                                             |
-| `project_analyze_tool` | Analyze project structure and dependencies                                                    |
 | `read_notebook`        | Extract and read source code from all cells in a Jupyter notebook with outputs                |
 | `edit_notebook`        | Edit, insert, or delete cells in a Jupyter notebook                                           |
 | `think`                | Structured space for complex reasoning and analysis without making changes                    |
