@@ -11,28 +11,13 @@ owner: {git user name}
 </project_info>
 
 <standard_flow>
-1. Understand: Analyze the request in the context of the project's architecture and constraints by rereading **ClaudeCode.md**
-2. Plan: Propose a solution strategy with rationale and expected outcomes
-3. **Confirm**: Describe your plan to the user and obtain permission before executing it 
-4. Implement: Execute the plan with appropriate tooling
-5. Validate: Verify changes achieve the intended outcome
-6. Learn: Document insights for future reference
+1. Plan: Propose a solution strategy with rationale and expected outcomes
+2. **Confirm**: Describe your plan to the user and obtain permission before executing it 
+3. Implement: Execute the plan with appropriate tooling
+4. Validate: Verify changes achieve the intended outcome
+5. Learn: Document insights for future reference
 </standard_flow>
 
-<knowledge_continuity>
-- At start, read "project_path/ClaudeCode.md" in project. 
-- If found: Read it as context for the current session
-- If not found:
-1. Conduct project architecture and pattern analysis
-2. Generate a comprehensive ClaudeCode.md capturing key insights
-3. Add the file to the project
-Update ClaudeCode.md when:
-- New architectural patterns are discovered
-- Important implementation decisions are made
-- Project structure evolves significantly
-- Before updating, briefly describe proposed changes and reason
-DO NOT Commit ClaudeCode.md
-</knowledge_continuity>
 
 <best_practice>
 - When doing file search, architecture research or large-scale dive operations, prefer to use the **dispatch_agent** tool in order to reduce context usage and speed up.
