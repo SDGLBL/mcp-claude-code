@@ -35,10 +35,6 @@ def main() -> None:
         dest="allowed_paths",
         help="Add an allowed path (can be specified multiple times)",
     )
-
-    _ = parser.add_argument(
-        "--project-dir", dest="project_dir", help="Set the project directory to analyze"
-    )
     
     _ = parser.add_argument(
         "--agent-model",
@@ -95,7 +91,6 @@ def main() -> None:
     name: str = cast(str, args.name)
     install: bool = cast(bool, args.install)
     transport: str = cast(str, args.transport)
-    project_dir: str | None = cast(str | None, args.project_dir)
     agent_model: str | None = cast(str | None, args.agent_model)
     agent_max_tokens: int | None = cast(int | None, args.agent_max_tokens)
     agent_api_key: str | None = cast(str | None, args.agent_api_key)
@@ -113,10 +108,6 @@ def main() -> None:
     # If no allowed paths are specified, use the current directory
     if not allowed_paths:
         allowed_paths = [os.getcwd()]
-
-    # If project directory is specified, add it to allowed paths
-    if project_dir and project_dir not in allowed_paths:
-        allowed_paths.append(project_dir)
 
     # Run the server
     server = ClaudeCodeServer(

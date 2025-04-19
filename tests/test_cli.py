@@ -25,7 +25,7 @@ class TestCLI:
             mock_args.name = "test-server"
             mock_args.transport = "stdio"
             mock_args.allowed_paths = ["/test/path"]
-            mock_args.project_dir = "/test/project"
+            # project_dir argument removed
             mock_args.install = False
             mock_args.agent_model = "anthropic/claude-3-sonnet"
             mock_args.agent_max_tokens = 2000
@@ -43,8 +43,7 @@ class TestCLI:
             main()
 
             # Verify server was created with correct arguments
-            # Project dir should be added to allowed paths
-            expected_paths = ["/test/path", "/test/project"]
+            expected_paths = ["/test/path"]
             mock_server_class.assert_called_once_with(
                 name="test-server",
                 allowed_paths=expected_paths,
@@ -88,7 +87,6 @@ class TestCLI:
             mock_args.name = "test-server"
             mock_args.transport = "stdio"
             mock_args.allowed_paths = None
-            mock_args.project_dir = None
             mock_args.install = False
             mock_args.agent_model = None
             mock_args.agent_max_tokens = None
