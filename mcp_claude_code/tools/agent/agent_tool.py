@@ -331,11 +331,13 @@ Returns:
                         except Exception as e:
                             tool_result = f"Error executing {function_name}: {str(e)}"
                             
+                    await tool_ctx.info(f"tool {function_name} run with args {function_args} and return {tool_result[:min(100,len(tool_result))]}")
                     # Add the tool result to messages
                     messages.append(
                         {
                             "role": "tool",
                             "tool_call_id": tool_call.id,
+                            "name": function_name,
                             "content": tool_result,
                         }
                     )
