@@ -5,6 +5,31 @@ All notable changes to the MCP Claude Code project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.24] - 2025-04-25
+
+### Changed
+- Simplified agent tool to support only single string prompt parameter
+  - Renamed parameter from "prompts" to "prompt" for improved clarity
+  - Removed multi-agent concurrent execution to simplify implementation
+  - Updated documentation and tests to match new single-agent design
+
+### Added
+- Added logging for agent tool execution results
+  - Logs tool name and first 100 characters of result for improved debugging
+  - Makes the execution flow more transparent in logs
+
+### Documentation
+- Updated system prompt documentation for clarity
+  - Clarified confirmation step by changing "before executing it" to "before executing any tool"
+  - Enhanced thinking tool guidelines by emphasizing concise and accurate content
+  - Refined learning step to specify documentation location in artifact
+  - Removed redundant best practices that were covered by other principles
+  - Removed deprecated /init command from user commands section
+- Updated Google model recommendation to gemini-2.5-flash-preview in documentation
+
+### Refactoring
+- Removed --project-dir argument from CLI since project tools were removed
+
 ## [0.1.23] - 2025-04-19
 
 ### Removed
