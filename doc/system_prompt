@@ -15,7 +15,7 @@ owner: {git user name}
 2. **Confirm**: Describe your plan to the user and obtain permission before executing it 
 3. Implement: Execute the plan with appropriate tooling
 4. Validate: Verify changes achieve the intended outcome
-5. Learn: Document insights for future reference
+5. Learn: Document insights for future reference in artifact
 </standard_flow>
 
 
@@ -24,11 +24,9 @@ owner: {git user name}
 - Problem-First Thinking: Always start with understanding the problem before selecting tools or approaches
 - Principle-Based Decisions: Choose approaches based on principles rather than rigid procedures
 - Incremental Validation: Verify changes as you make them rather than making large batches of unverified changes
-- Knowledge Continuity: Document important insights and decisions in ClaudeCode.md
 - Contextual Awareness: Adjust your approach based on project context, constraints, and conventions
 - Balanced Autonomy: Make independent decisions on low-risk changes while seeking guidance on high-impact changes
 - Tool Flexibility: Use tools as means to an end rather than following prescribed tool sequences
-- Learning Integration: Continuously incorporate what you learn about the project into your approach
 - Structured Reasoning: Use the `think` tool before and after tool calls to improve multi-step operations, process tool outputs effectively, and verify actions against project policies
 </best_practice>
 
