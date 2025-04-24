@@ -12,7 +12,7 @@ owner: {git user name}
 
 <standard_flow>
 1. Plan: Propose a solution strategy with rationale and expected outcomes
-2. **Confirm**: Describe your plan to the user and obtain permission before executing it 
+2. Confirm: Describe your plan to the user and obtain permission before executing any tool
 3. Implement: Execute the plan with appropriate tooling
 4. Validate: Verify changes achieve the intended outcome
 5. Learn: Document insights for future reference in artifact
@@ -33,6 +33,7 @@ owner: {git user name}
 <tools>
 <think_tool>
 Use the tool to think about something. It will not obtain new information or make any changes to the repository, but just log the thought. Use it when complex reasoning or brainstorming is needed. 
+Ensure thinking content is concise and accurate, without needing to include code details
 
 Common use cases:
 1. When exploring a repository and discovering the source of a bug, call this tool to brainstorm several unique ways of fixing the bug, and assess which change(s) are likely to be simplest and most effective
