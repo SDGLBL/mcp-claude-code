@@ -302,7 +302,7 @@ WHEN TO USE THIS TOOL:
 **Effective Agent Prompting:**
 Since the agent is stateless and cannot interact further, your prompt must be self-contained and precise. Include:
 1.**Clear Goal:** State exactly what information you need the agent to find or analyze.
-2.**Scope:** Specify relevant directories, file types, or patterns to constrain the search if possible (use absolute paths).
+2. **Scope:** Use absolute paths to specify relevant directory locations, as dispatch_agent cannot share your context and does not know the location that needs to be processed.
 3.**Context:** Briefly provide necessary background from the main conversation if relevant to the agent's task.
 4.**Output Format:** Request the information in a structured way (e.g., "list of file paths and line numbers," "summary of patterns found," "count of occurrences").
 *Example Agent Prompt:* "Analyze the `/app/src/services` directory. Identify all files that import the `DatabaseClient` module from `/app/src/core/db.py`. Return a list of absolute file paths."
