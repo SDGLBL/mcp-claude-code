@@ -5,6 +5,14 @@ All notable changes to the MCP Claude Code project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.26] - 2025-04-27
+
+### Fixed
+- Fix issue with not starting application due to litellm==1.67.2 (#11)
+
+### Documentation
+- Correct formatting and clarify scope requirement in agent prompting guide (3532d4d)
+
 ## [0.1.24] - 2025-04-25
 
 ### Changed

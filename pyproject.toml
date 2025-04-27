@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mcp-claude-code"
-version = "0.1.24"
+version = "0.1.26"
 description = "MCP implementation of Claude Code capabilities"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -15,7 +15,14 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
 ]
-dependencies = ["mcp>=1.3.0", "httpx>=0.27.0", "uvicorn>=0.23.1", "openai>=1.50.0", "python-dotenv>=1.0.0", "litellm<=1.67.1"]
+dependencies = [
+  "mcp>=1.3.0",
+  "httpx>=0.27.0",
+  "uvicorn>=0.23.1",
+  "openai>=1.50.0",
+  "python-dotenv>=1.0.0",
+  "litellm<=1.67.1",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0.0", "pytest-cov>=4.1.0", "ruff>=0.1.0", "black>=23.3.0"]
