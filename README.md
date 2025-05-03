@@ -30,6 +30,7 @@ This project provides an MCP server that implements Claude Code-like functionali
 | `get_file_info`        | Get metadata about a file or directory                                                        |
 | `search_content`       | Search for patterns in file contents                                                          |
 | `content_replace`      | Replace patterns in file contents                                                             |
+| `grep_ast`             | Search code with AST context showing matches within functions, classes, and other structures  |
 | `run_command`          | Execute shell commands (also used for directory creation, file moving, and directory listing) |
 | `run_script`           | Execute scripts with specified interpreters                                                   |
 | `script_tool`          | Execute scripts in specific programming languages                                             |

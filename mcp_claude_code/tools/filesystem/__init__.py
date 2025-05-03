@@ -13,6 +13,7 @@ from mcp_claude_code.tools.filesystem.content_replace import ContentReplaceTool
 from mcp_claude_code.tools.filesystem.directory_tree import DirectoryTreeTool
 from mcp_claude_code.tools.filesystem.edit_file import EditFileTool
 from mcp_claude_code.tools.filesystem.get_file_info import GetFileInfoTool
+from mcp_claude_code.tools.filesystem.grep_ast_tool import GrepAstTool
 from mcp_claude_code.tools.filesystem.read_files import ReadFilesTool
 from mcp_claude_code.tools.filesystem.search_content import SearchContentTool
 from mcp_claude_code.tools.filesystem.write_file import WriteFileTool
@@ -26,15 +27,17 @@ __all__ = [
     "GetFileInfoTool",
     "SearchContentTool",
     "ContentReplaceTool",
+    "GrepAstTool",
     "get_filesystem_tools",
     "register_filesystem_tools",
 ]
 
+
 def get_read_only_filesystem_tools(
-            document_context: DocumentContext, permission_manager: PermissionManager
+    document_context: DocumentContext, permission_manager: PermissionManager
 ) -> list[BaseTool]:
     """Create instances of read-only filesystem tools.
-    
+
     Args:
         document_context: Document context for tracking file contents
         permission_manager: Permission manager for access control
@@ -47,6 +50,7 @@ def get_read_only_filesystem_tools(
         DirectoryTreeTool(document_context, permission_manager),
         GetFileInfoTool(document_context, permission_manager),
         SearchContentTool(document_context, permission_manager),
+        GrepAstTool(document_context, permission_manager),
     ]
 
 
@@ -54,11 +58,11 @@ def get_filesystem_tools(
     document_context: DocumentContext, permission_manager: PermissionManager
 ) -> list[BaseTool]:
     """Create instances of all filesystem tools.
-    
+
     Args:
         document_context: Document context for tracking file contents
         permission_manager: Permission manager for access control
-        
+
     Returns:
         List of filesystem tool instances
     """
@@ -70,6 +74,7 @@ def get_filesystem_tools(
         GetFileInfoTool(document_context, permission_manager),
         SearchContentTool(document_context, permission_manager),
         ContentReplaceTool(document_context, permission_manager),
+        GrepAstTool(document_context, permission_manager),
     ]
 
 
@@ -79,7 +84,7 @@ def register_filesystem_tools(
     permission_manager: PermissionManager,
 ) -> None:
     """Register all filesystem tools with the MCP server.
-    
+
     Args:
         mcp_server: The FastMCP server instance
         document_context: Document context for tracking file contents

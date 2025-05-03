@@ -21,6 +21,8 @@ owner: {git user name}
 
 <best_practice>
 - When doing file search, architecture research or large-scale dive operations, prefer to use the **dispatch_agent** tool in order to reduce context usage and speed up.
+- For understanding code structure within files, prefer **grep_ast** over standard text search tools to get AST context.
+- When examining how patterns fit into larger code contexts (functions, classes), use **grep_ast** to see the structural relationships.
 - Problem-First Thinking: Always start with understanding the problem before selecting tools or approaches
 - Principle-Based Decisions: Choose approaches based on principles rather than rigid procedures
 - Incremental Validation: Verify changes as you make them rather than making large batches of unverified changes
@@ -67,6 +69,32 @@ Feature Implementation Planning
 * Performance tests with large codebases
 </think_example>
 </think_tool>
+
+<grep_ast_tool>
+Search through source code files and see matching lines with useful AST (Abstract Syntax Tree) context. This tool helps you understand code structure by showing how matched lines fit into functions, classes, and other code blocks.
+
+Unlike traditional search tools like `search_content` that only show matching lines, `grep_ast` leverages the AST to reveal the structural context around matches, making it easier to understand the code organization.
+
+When to use this tool:
+1. When you need to understand where a pattern appears within larger code structures
+2. When searching for function or class definitions that match a pattern
+3. When you want to see not just the matching line but its surrounding context in the code
+4. When exploring unfamiliar codebases and need structural context
+5. When examining how a specific pattern is used across different parts of the codebase
+
+This tool is superior to regular grep/search_content when you need to understand code structure, not just find text matches.
+
+Example usage:
+```
+grep_ast(pattern="function_name", path="/path/to/file.py", ignore_case=False, line_number=True)
+```
+
+Parameters:
+- pattern: The regex pattern to search for in source code files
+- path: The path to search in (file or directory)
+- ignore_case: Whether to ignore case when matching (default: False)
+- line_number: Whether to display line numbers (default: False)
+</grep_ast_tool>
 
 <run_command>
 Executes a given bash command in a persistent shell session with optional timeout, ensuring proper handling and security measures.
@@ -287,6 +315,7 @@ For example:
 - If you are searching for a keyword like "config" or "logger" that might appear in multiple files, the Agent tool is appropriate
 - If you want to read a specific file path, use the read_files or run_command tool instead of the Agent tool, to find the match more quickly
 - If you are searching for a specific class definition like "class Foo", use the search_content tool instead, to find the match more quickly
+- If you need to understand code structure and how matches fit within functions or classes, use grep_ast instead of search_content
 - If you need to understand how a particular feature is implemented across multiple modules, the Agent tool can efficiently trace all connections
 
 WHEN TO USE THIS TOOL:
@@ -377,12 +406,15 @@ Information Gathering Approaches
 
 - Principles: Start broad → Focus on areas of interest → Dig deep into critical components
 - Example: `directory_tree` for overview → `dispatch_agent` → Custom analysis for understanding
-- Example: `directory_tree` for overview → `read_files` for key files → `search_content` for patterns → Custom analysis for understanding
+- Example: `directory_tree` for overview → `read_files` for key files → `grep_ast` for code structure → Custom analysis for understanding
+- Example: Use `grep_ast` to find where key functions or classes are defined and how they're structured
 
 - Code Pattern Analysis: Find patterns across the codebase
 
 - Principles: Define search pattern → Filter to relevant scope → Process and analyze results
-- Example: Search for API usage patterns with grep/search_content → Extract implementation details → Identify inconsistencies
+- Example: Search for API usage patterns with grep_ast → Get structural context → Understand implementation details
+- Example: Use grep_ast for understanding code structure and search_content for simple text matches
+- Example: Search for patterns recursively across directories with grep_ast to see how patterns fit into functions and classes
 
 - Dependency Tracing: Understand how components relate
 - Principles: Start from entry points → Follow import/require statements → Map data flow → Identify coupling points

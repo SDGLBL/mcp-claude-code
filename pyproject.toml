@@ -22,6 +22,7 @@ dependencies = [
   "openai>=1.50.0",
   "python-dotenv>=1.0.0",
   "litellm<=1.67.1",
+  "grep-ast>=0.8.1",
 ]
 
 [project.optional-dependencies]
@@ -49,12 +50,16 @@ include = ["mcp_claude_code"]
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
+
+[tool.basedpyright.ignores]
 exclude = [
   "**/node_modules",
   "**/__pycache__",
   "src/experimental",
   "src/typestubs",
 ]
+
+[tool.basedpyright.flags]
 pythonVersion = "3.13"
 reportUnknownVariableType = false
 reportUnknownMemberType = false
