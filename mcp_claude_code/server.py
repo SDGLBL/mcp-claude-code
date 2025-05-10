@@ -22,6 +22,7 @@ class ClaudeCodeServer:
         agent_model: str | None = None,
         agent_max_tokens: int | None = None,
         agent_api_key: str | None = None,
+        agent_base_url: str | None = None,
         agent_max_iterations: int = 10,
         agent_max_tool_uses: int = 30,
         enable_agent_tool: bool = False,
@@ -35,6 +36,7 @@ class ClaudeCodeServer:
             agent_model: Optional model name for agent tool in LiteLLM format
             agent_max_tokens: Optional maximum tokens for agent responses
             agent_api_key: Optional API key for the LLM provider
+            agent_base_url: Optional base URL for the LLM provider API endpoint
             agent_max_iterations: Maximum number of iterations for agent (default: 10)
             agent_max_tool_uses: Maximum number of total tool uses for agent (default: 30)
             enable_agent_tool: Whether to enable the agent tool (default: False)
@@ -61,6 +63,7 @@ class ClaudeCodeServer:
         self.agent_model = agent_model
         self.agent_max_tokens = agent_max_tokens
         self.agent_api_key = agent_api_key
+        self.agent_base_url = agent_base_url
         self.agent_max_iterations = agent_max_iterations
         self.agent_max_tool_uses = agent_max_tool_uses
         self.enable_agent_tool = enable_agent_tool
@@ -73,6 +76,7 @@ class ClaudeCodeServer:
             agent_model=self.agent_model,
             agent_max_tokens=self.agent_max_tokens,
             agent_api_key=self.agent_api_key,
+            agent_base_url=self.agent_base_url,
             agent_max_iterations=self.agent_max_iterations,
             agent_max_tool_uses=self.agent_max_tool_uses,
             enable_agent_tool=self.enable_agent_tool,

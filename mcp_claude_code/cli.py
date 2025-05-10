@@ -56,6 +56,12 @@ def main() -> None:
     )
     
     _ = parser.add_argument(
+        "--agent-base-url",
+        dest="agent_base_url",
+        help="Specify the base URL for the LLM provider API endpoint (e.g., 'http://localhost:1234/v1')"
+    )
+    
+    _ = parser.add_argument(
         "--agent-max-iterations",
         dest="agent_max_iterations",
         type=int,
@@ -94,6 +100,7 @@ def main() -> None:
     agent_model: str | None = cast(str | None, args.agent_model)
     agent_max_tokens: int | None = cast(int | None, args.agent_max_tokens)
     agent_api_key: str | None = cast(str | None, args.agent_api_key)
+    agent_base_url: str | None = cast(str | None, args.agent_base_url)
     agent_max_iterations: int = cast(int, args.agent_max_iterations)
     agent_max_tool_uses: int = cast(int, args.agent_max_tool_uses)
     enable_agent_tool: bool = cast(bool, args.enable_agent_tool)
@@ -116,6 +123,7 @@ def main() -> None:
         agent_model=agent_model,
         agent_max_tokens=agent_max_tokens,
         agent_api_key=agent_api_key,
+        agent_base_url=agent_base_url,
         agent_max_iterations=agent_max_iterations,
         agent_max_tool_uses=agent_max_tool_uses,
         enable_agent_tool=enable_agent_tool

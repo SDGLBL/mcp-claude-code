@@ -30,6 +30,7 @@ class TestCLI:
             mock_args.agent_model = "anthropic/claude-3-sonnet"
             mock_args.agent_max_tokens = 2000
             mock_args.agent_api_key = "test_api_key"
+            mock_args.agent_base_url = None
             mock_args.agent_max_iterations = 10
             mock_args.agent_max_tool_uses = 30
             mock_args.enable_agent_tool = False
@@ -50,6 +51,7 @@ class TestCLI:
                 agent_model="anthropic/claude-3-sonnet",
                 agent_max_tokens=2000,
                 agent_api_key="test_api_key",
+                agent_base_url=None,
                 agent_max_iterations=10,
                 agent_max_tool_uses=30,
                 enable_agent_tool=False
@@ -91,6 +93,7 @@ class TestCLI:
             mock_args.agent_model = None
             mock_args.agent_max_tokens = None
             mock_args.agent_api_key = None
+            mock_args.agent_base_url = None
             mock_args.agent_max_iterations = 10
             mock_args.agent_max_tool_uses = 30
             mock_args.enable_agent_tool = False
@@ -110,6 +113,7 @@ class TestCLI:
                 agent_model=None,
                 agent_max_tokens=None,
                 agent_api_key=None,
+                agent_base_url=None,
                 agent_max_iterations=10,
                 agent_max_tool_uses=30,
                 enable_agent_tool=False
