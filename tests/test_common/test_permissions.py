@@ -87,8 +87,16 @@ class TestPermissionManager:
         json_str = manager.to_json()
 
         assert isinstance(json_str, str)
-        assert temp_dir in json_str
-        assert "secret_" in json_str
+
+        # Parse the JSON and create a new manager from it
+        new_manager = PermissionManager.from_json(json_str)
+        temp_path = Path(temp_dir).resolve()
+        excluded_path = Path(temp_dir + "/excluded").resolve()
+
+        # Check if the new manager has the correct paths
+        assert temp_path in new_manager.allowed_paths
+        assert excluded_path in new_manager.excluded_paths
+        assert "secret_" in new_manager.excluded_patterns
 
     def test_from_json(self, temp_dir: str):
         """Test creating a manager from JSON."""

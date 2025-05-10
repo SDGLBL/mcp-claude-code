@@ -172,7 +172,7 @@ def install_claude_desktop_config(
 
     # Create config object
     config: dict[str, Any] = {
-        "mcpServers": {name: {"command": str(script_path), "args": args}}
+        "mcpServers": {name: {"command": script_path.as_posix(), "args": args}}
     }
 
     # Check if the file already exists
