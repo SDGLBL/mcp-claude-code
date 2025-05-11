@@ -51,6 +51,7 @@ class RunScriptTool(ShellBaseTool):
 Args:
     script: The script content to execute
     cwd: Working directory for script execution. MUST be a subdirectory of one of the allowed paths, not a parent directory. Specify the most specific path possible.
+    shell_type: Optional shell to use (e.g., "cmd", "powershell", "wsl", "bash")
 
     interpreter: The interpreter to use (bash, python, etc.)
     use_login_shell: Whether to use login shell (loads ~/.zshrc, ~/.bashrc, etc.)
@@ -76,6 +77,14 @@ Returns:
                 "cwd": {
                     "title": "Cwd",
                     "type": "string"
+                },
+                "shell_type": {
+                    "anyOf": [
+                        {"type": "string"},
+                        {"type": "null"}
+                    ],
+                    "default": None,
+                    "title": "Shell Type"
                 },
                 "interpreter": {
                     "default": "bash",
@@ -133,6 +142,7 @@ Returns:
         # Extract parameters
         script = params.get("script")
         cwd = params.get("cwd")
+        shell_type = params.get("shell_type")
         interpreter = params.get("interpreter", "bash")
         use_login_shell = params.get("use_login_shell", True)
         
@@ -178,6 +188,7 @@ Returns:
             script=script,
             interpreter=interpreter,
             cwd=cwd,
+            shell_type=shell_type,
             timeout=30.0,
             use_login_shell=use_login_shell
         )
@@ -211,5 +222,5 @@ Returns:
         tool_self = self  # Create a reference to self for use in the closure
         
         @mcp_server.tool(name=self.name, description=self.mcp_description)
-        async def run_script(ctx: MCPContext, script: str, cwd: str, interpreter: str = "bash", use_login_shell: bool = True) -> str:
-            return await tool_self.call(ctx, script=script, cwd=cwd, interpreter=interpreter, use_login_shell=use_login_shell)
+        async def run_script(ctx: MCPContext, script: str, cwd: str, shell_type: str | None = None, interpreter: str = "bash", use_login_shell: bool = True) -> str:
+            return await tool_self.call(ctx, script=script, cwd=cwd, shell_type=shell_type, interpreter=interpreter, use_login_shell=use_login_shell)

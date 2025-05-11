@@ -1,6 +1,7 @@
 """Tests for the command executor module."""
 
 import os
+import sys
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -118,9 +119,15 @@ class TestCommandExecutor:
         with open(test_file, "w") as f:
             f.write("test content")
 
+        # Use platform-specific command
+        if sys.platform == "win32":
+            command = f'type "{test_file}"'
+        else:
+            command = f"cat {test_file}"
+
         # Execute a command
         result: CommandResult = await executor.execute_command(
-            f"cat {test_file}", cwd=temp_dir
+            command, cwd=temp_dir
         )
 
         # Verify result
@@ -156,7 +163,14 @@ class TestCommandExecutor:
     ) -> None:
         """Test command execution with timeout."""
         # Execute a command that sleeps
-        result = await executor.execute_command("sleep 5", timeout=0.1)
+        if sys.platform == "win32":
+            # Use timeout command on Windows
+            command = "ping -n 10 127.0.0.1"
+        else:
+            command = "sleep 5"
+        
+        result = await executor.execute_command(command, timeout=0.1)
+        print(f"Result attributes: {vars(result)}")
 
         # Verify result
         assert not result.is_success
@@ -253,8 +267,12 @@ class TestCommandExecutor:
         with open(test_file, "w") as f:
             f.write("test content")
 
-        # The command string that combines cd and cat
-        combined_command = f"cd {temp_dir} && cat test_exec.txt"
+        if sys.platform == "win32":
+            # Windows-specific command
+            combined_command = f'cd /d "{temp_dir}" && type test_exec.txt'
+        else:
+            # Unix command
+            combined_command = f"cd {temp_dir} && cat test_exec.txt"
 
         # Execute the command
         result: CommandResult = await executor.execute_command(combined_command)
@@ -265,7 +283,11 @@ class TestCommandExecutor:
         assert result.stderr == ""
 
         # Test with a non-existent directory
-        bad_command = "cd /nonexistent/dir && ls"
+        if sys.platform == "win32":
+            bad_command = "cd C:\\nonexistent\\dir && dir"
+        else:
+            bad_command = "cd /nonexistent/dir && ls"
+
         result = await executor.execute_command(bad_command)
 
         # Command should fail because of the cd to non-existent directory
@@ -277,15 +299,30 @@ class TestCommandExecutor:
         self, executor: CommandExecutor
     ) -> None:
         """Test executing a command with environment variables."""
-        # Execute a command that echoes an environment variable
-        result: CommandResult = await executor.execute_command("echo $PATH")
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Use platform-specific commands and expectations
+        if sys.platform == "win32":
+            # On Windows, use %PATH% syntax and expect semicolons
+            cmd = "echo %PATH%"
+            path_separator = ";"
+            literal_var = "%PATH%"
+        else:
+            # On Unix, use $PATH syntax and expect colons
+            cmd = "echo $PATH"
+            path_separator = ":"
+            literal_var = "$PATH"
 
-        # Verify result - $PATH should be expanded
+        # Execute a command that echoes an environment variable
+        result: CommandResult = await executor.execute_command(cmd)
+
+        # Verify result - PATH should be expanded
         assert result.is_success
-        # PATH should contain directories separated by colons
-        assert ":" in result.stdout
-        # The output should not just be the literal string "$PATH"
-        assert result.stdout.strip() != "$PATH"
+        # PATH should contain directories separated by the platform-specific separator
+        assert path_separator in result.stdout, f"Expected '{path_separator}' in PATH, got: {result.stdout}"
+        # The output should not just be the literal string "$PATH" or "%PATH%"
+        assert result.stdout.strip() != literal_var
 
     @pytest.mark.asyncio
     async def test_register_tools(self, executor: CommandExecutor) -> None:
