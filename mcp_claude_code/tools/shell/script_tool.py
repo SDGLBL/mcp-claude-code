@@ -52,6 +52,7 @@ Args:
     language: The programming language (python, javascript, etc.)
     script: The script code to execute
     cwd: Working directory for script execution. MUST be a subdirectory of one of the allowed paths, not a parent directory. Specify the most specific path possible.
+    shell_type: Optional shell to use (e.g., "cmd", "powershell", "wsl", "bash")
 
     args: Optional command-line arguments
     use_login_shell: Whether to use login shell (loads ~/.zshrc, ~/.bashrc, etc.)
@@ -81,6 +82,14 @@ Returns:
                 "cwd": {
                     "title": "Cwd",
                     "type": "string"
+                },
+                "shell_type": {
+                    "anyOf": [
+                        {"type": "string"},
+                        {"type": "null"}
+                    ],
+                    "default": None,
+                    "title": "Shell Type"
                 },
                 "args": {
                     "anyOf": [
@@ -142,6 +151,7 @@ Returns:
         language = params.get("language")
         script = params.get("script")
         cwd = params.get("cwd")
+        shell_type = params.get("shell_type")
         args = params.get("args")
         use_login_shell = params.get("use_login_shell", True)
         
@@ -199,6 +209,7 @@ Returns:
             script=script,
             language=language,
             cwd=cwd,
+            shell_type=shell_type,
             timeout=30.0,
             args=args,
             use_login_shell=use_login_shell
@@ -238,7 +249,7 @@ Returns:
         tool_self = self  # Create a reference to self for use in the closure
         
         @mcp_server.tool(name=self.name, description=self.mcp_description)
-        async def script_tool(ctx: MCPContext, language: str, script: str, cwd: str, args: list[str] | None = None, 
-                              use_login_shell: bool = True) -> str:
-            return await tool_self.call(ctx, language=language, script=script, cwd=cwd, 
+        async def script_tool(ctx: MCPContext, language: str, script: str, cwd: str, shell_type: str | None = None,
+                                args: list[str] | None = None, use_login_shell: bool = True) -> str:
+            return await tool_self.call(ctx, language=language, script=script, cwd=cwd, shell_type=shell_type,
                                         args=args, use_login_shell=use_login_shell)

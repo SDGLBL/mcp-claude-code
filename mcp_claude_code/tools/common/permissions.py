@@ -2,6 +2,8 @@
 
 import json
 import os
+import sys
+import tempfile
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any, TypeVar, final
@@ -18,9 +20,14 @@ class PermissionManager:
     def __init__(self) -> None:
         """Initialize the permission manager."""
         # Allowed paths
-        self.allowed_paths: set[Path] = set(
-            [Path("/tmp").resolve(), Path("/var").resolve()]
-        )
+        self.allowed_paths: set[Path] = set()
+
+        # Allowed paths based on platform
+        if sys.platform == "win32":  # Windows
+            self.allowed_paths.add(Path(tempfile.gettempdir()).resolve())
+        else:  # Unix/Linux/Mac
+            self.allowed_paths.add(Path("/tmp").resolve())
+            self.allowed_paths.add(Path("/var").resolve())
 
         # Excluded paths
         self.excluded_paths: set[Path] = set()
