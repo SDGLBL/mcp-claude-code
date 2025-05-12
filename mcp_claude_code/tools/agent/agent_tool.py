@@ -102,7 +102,7 @@ Returns:
 
     def __init__(
             self, document_context: DocumentContext, permission_manager: PermissionManager, command_executor: CommandExecutor,
-            model: str | None = None, api_key: str | None = None, max_tokens: int | None = None,
+            model: str | None = None, api_key: str | None = None, base_url: str | None = None, max_tokens: int | None = None,
             max_iterations: int = 10, max_tool_uses: int = 30
     ) -> None:
         """Initialize the agent tool.
@@ -113,6 +113,7 @@ Returns:
             command_executor: Command executor for running shell commands
             model: Optional model name override in LiteLLM format (e.g., "openai/gpt-4o")
             api_key: Optional API key for the model provider
+            base_url: Optional base URL for the model provider API endpoint
             max_tokens: Optional maximum tokens for model responses
             max_iterations: Maximum number of iterations for agent (default: 10)
             max_tool_uses: Maximum number of total tool uses for agent (default: 30)
@@ -122,6 +123,7 @@ Returns:
         self.command_executor = command_executor
         self.model_override = model
         self.api_key_override = api_key
+        self.base_url_override = base_url
         self.max_tokens_override = max_tokens
         self.max_iterations = max_iterations
         self.max_tool_uses = max_tool_uses
@@ -283,6 +285,10 @@ Returns:
                 # Add max_tokens if provided
                 if params.get("max_tokens"):
                     completion_params["max_tokens"] = params.get("max_tokens")
+                    
+                # Add base_url if provided
+                if self.base_url_override:
+                    completion_params["base_url"] = self.base_url_override
                 
                 # Make the model call
                 response = litellm.completion(
