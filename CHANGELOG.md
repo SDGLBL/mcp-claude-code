@@ -5,6 +5,33 @@ All notable changes to the MCP Claude Code project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.28] - 2025-05-14
+
+### Added
+- Added liteLLM agent_base_url parameter for local LLM support (0f93398)
+  - Enables integration with locally hosted models
+  - Requires fake API key even when unnecessary
+  - Enhanced CLI arguments for configuration
+
+### Changed
+- Renamed SearchContentTool to Grep and integrated ripgrep for improved performance (132a603)
+  - Added ripgrep integration for significantly faster file content searches
+  - Enhanced pattern matching with regex support
+  - Maintained backward compatibility through SearchContentTool shim
+  - Renamed write_file tool to write and edit_file to edit for consistency
+  - Added comprehensive documentation in migration_SearchContentTool_to_Grep.md
+
+### Added
+- Added Windows shell execution and script support (d2a8441)
+  - Support for CMD, PowerShell, and WSL shells
+  - Enhanced command execution for cross-platform compatibility
+  - Improved script handling for Windows environments
+
+### Fixed
+- Added platform-specific support for temp folders (d1f60cf)
+  - Improved cross-platform compatibility
+  - Enhanced permissions system for Windows environments
+
 ## [0.1.27] - 2025-05-03
 
 ### Added
