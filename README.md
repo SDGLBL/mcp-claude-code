@@ -14,7 +14,7 @@ This project provides an MCP server that implements Claude Code-like functionali
 - **Code Modification**: Make targeted edits to files with proper permission handling
 - **Enhanced Command Execution**: Run commands and scripts in various languages with improved error handling and shell support
 - **File Operations**: Manage files with proper security controls through shell commands
-- **Code Discovery**: Find relevant files and code patterns across your project
+- **Code Discovery**: Find relevant files and code patterns across your project with high-performance searching
 - **Agent Delegation**: Delegate complex tasks to specialized sub-agents that can work concurrently
 - **Multiple LLM Provider Support**: Configure any LiteLLM-compatible model for agent operations
 - **Jupyter Notebook Support**: Read and edit Jupyter notebooks with full cell and output handling
@@ -24,11 +24,11 @@ This project provides an MCP server that implements Claude Code-like functionali
 | Tool                   | Description                                                                                   |
 | ---------------------- | --------------------------------------------------------------------------------------------- |
 | `read_files`           | Read one or multiple files with encoding detection                                            |
-| `write_file`           | Create or overwrite files                                                                     |
+| `write`           | Create or overwrite files                                                                     |
 | `edit_file`            | Make line-based edits to text files                                                           |
 | `directory_tree`       | Get a recursive tree view of directories                                                      |
 | `get_file_info`        | Get metadata about a file or directory                                                        |
-| `search_content`       | Search for patterns in file contents                                                          |
+| `grep`                | Fast pattern search in files with ripgrep integration for best performance ([docs](./doc/migration_SearchContentTool_to_Grep.md)) |
 | `content_replace`      | Replace patterns in file contents                                                             |
 | `grep_ast`             | Search code with AST context showing matches within functions, classes, and other structures  |
 | `run_command`          | Execute shell commands (also used for directory creation, file moving, and directory listing) |
@@ -42,6 +42,8 @@ This project provides an MCP server that implements Claude Code-like functionali
 ## Getting Started
 
 For detailed installation and configuration instructions, please refer to [INSTALL.md](./doc/INSTALL.md).
+
+For optimal performance, we recommend installing [ripgrep](https://github.com/BurntSushi/ripgrep) to accelerate file content searches. See [Grep migration docs](./doc/migration_SearchContentTool_to_Grep.md) for details.
 
 Of course, you can also read [USEFUL_PROMPTS](./doc/USEFUL_PROMPTS.md) for some inspiration on how to use mcp-claude-code.
 

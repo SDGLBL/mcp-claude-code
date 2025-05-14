@@ -11,10 +11,10 @@ if TYPE_CHECKING:
     from mcp_claude_code.tools.common.permissions import PermissionManager
 
 from mcp_claude_code.tools.filesystem import (
+    Edit,
     ReadFilesTool,
-    WriteFileTool,
-    EditFileTool,
-    get_filesystem_tools
+    Write,
+    get_filesystem_tools,
 )
 
 
@@ -40,13 +40,13 @@ class TestRefactoredFileTools:
         return ReadFilesTool(document_context, permission_manager)
 
     @pytest.fixture
-    def write_file_tool(
+    def write_tool(
         self,
         document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
-        """Create a WriteFileTool instance for testing."""
-        return WriteFileTool(document_context, permission_manager)
+        """Create a Write instance for testing."""
+        return Write(document_context, permission_manager)
 
     @pytest.fixture
     def edit_file_tool(
@@ -54,8 +54,8 @@ class TestRefactoredFileTools:
         document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
-        """Create an EditFileTool instance for testing."""
-        return EditFileTool(document_context, permission_manager)
+        """Create an Edit instance for testing."""
+        return Edit(document_context, permission_manager)
 
     @pytest.fixture
     def setup_allowed_path(
@@ -92,9 +92,9 @@ class TestRefactoredFileTools:
             tool_ctx.info.assert_called()
 
     @pytest.mark.asyncio
-    async def test_write_file(
+    async def test_write(
         self,
-        write_file_tool: WriteFileTool,
+        write_tool: Write,
         setup_allowed_path: str,
         mcp_context: MagicMock,
     ):
@@ -110,8 +110,8 @@ class TestRefactoredFileTools:
             return_value=tool_ctx,
         ):
             # Call the tool directly
-            result = await write_file_tool.call(
-                ctx=mcp_context, path=test_path, content=test_content
+            result = await write_tool.call(
+                ctx=mcp_context, file_path=test_path, content=test_content
             )
 
             # Verify result
@@ -126,19 +126,15 @@ class TestRefactoredFileTools:
     @pytest.mark.asyncio
     async def test_edit_file(
         self,
-        edit_file_tool: EditFileTool,
+        edit_file_tool: Edit,
         setup_allowed_path: str,
         test_file: str,
         mcp_context: MagicMock,
     ):
         """Test editing a file with the refactored tool."""
-        # Set up edits
-        edits = [
-            {
-                "oldText": "This is a test file content.",
-                "newText": "This is modified content.",
-            }
-        ]
+        # Set up edit parameters
+        old_string = "This is a test file content."
+        new_string = "This is modified content."
 
         # Mock context calls
         tool_ctx = AsyncMock()
@@ -148,7 +144,7 @@ class TestRefactoredFileTools:
         ):
             # Call the tool directly
             result = await edit_file_tool.call(
-                ctx=mcp_context, path=test_file, edits=edits, dry_run=False
+                ctx=mcp_context, file_path=test_file, old_string=old_string, new_string=new_string, expected_replacements=1
             )
 
             # Verify result

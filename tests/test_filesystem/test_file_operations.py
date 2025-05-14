@@ -1,24 +1,24 @@
 """Tests for the file operations module."""
 
-import os
 import json
+import os
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
-
 import pytest
+
+from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
 
 if TYPE_CHECKING:
     from mcp_claude_code.tools.common.context import DocumentContext
     from mcp_claude_code.tools.common.permissions import PermissionManager
 
-from mcp_claude_code.tools.filesystem.read_files import ReadFilesTool
-from mcp_claude_code.tools.filesystem.write_file import WriteFileTool
-from mcp_claude_code.tools.filesystem.edit_file import EditFileTool
-from mcp_claude_code.tools.filesystem.directory_tree import DirectoryTreeTool
-from mcp_claude_code.tools.filesystem.search_content import SearchContentTool
 from mcp_claude_code.tools.filesystem.content_replace import ContentReplaceTool
+from mcp_claude_code.tools.filesystem.directory_tree import DirectoryTreeTool
+from mcp_claude_code.tools.filesystem.edit import Edit
+from mcp_claude_code.tools.filesystem.read_files import ReadFilesTool
+from mcp_claude_code.tools.filesystem.grep import Grep
+from mcp_claude_code.tools.filesystem.write import Write
 
 
 class TestReadFilesTool:
@@ -57,13 +57,10 @@ class TestReadFilesTool:
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
-        
+
         # Mock the base class method
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
                 result = await read_files_tool.call(mcp_context, paths=test_file)
 
         # Verify result
@@ -80,13 +77,10 @@ class TestReadFilesTool:
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
-        
+
         # Mock the base class method
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
                 result = await read_files_tool.call(mcp_context, paths=path)
 
         # Verify result
@@ -109,14 +103,13 @@ class TestReadFilesTool:
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
-        
+
         # Mock the base class method
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
-                result = await read_files_tool.call(mcp_context, paths=[test_file, second_file])
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+                result = await read_files_tool.call(
+                    mcp_context, paths=[test_file, second_file]
+                )
 
         # Verify result contains both file contents
         assert "This is a test file content" in result
@@ -133,30 +126,27 @@ class TestReadFilesTool:
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
-        
+
         # Mock the base class method
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
                 result = await read_files_tool.call(mcp_context, paths=[])
 
         # Verify result
         assert "Error: Parameter 'paths' is required" in result
 
 
-class TestWriteFileTool:
-    """Test the WriteFileTool class."""
+class TestWrite:
+    """Test the Write class."""
 
     @pytest.fixture
-    def write_file_tool(
+    def write_tool(
         self,
         document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
-        """Create a WriteFileTool instance for testing."""
-        return WriteFileTool(document_context, permission_manager)
+        """Create a Write instance for testing."""
+        return Write(document_context, permission_manager)
 
     @pytest.fixture
     def setup_allowed_path(
@@ -171,9 +161,9 @@ class TestWriteFileTool:
         return temp_dir
 
     @pytest.mark.asyncio
-    async def test_write_file(
+    async def test_write(
         self,
-        write_file_tool: WriteFileTool,
+        write_tool: Write,
         setup_allowed_path: str,
         mcp_context: MagicMock,
     ):
@@ -185,14 +175,13 @@ class TestWriteFileTool:
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
-        
+
         # Mock the base class method
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
-                result = await write_file_tool.call(mcp_context, path=test_path, content=test_content)
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+                result = await write_tool.call(
+                    mcp_context, file_path=test_path, content=test_content
+                )
 
         # Verify result
         assert "Successfully wrote file" in result
@@ -203,8 +192,8 @@ class TestWriteFileTool:
             assert f.read() == test_content
 
 
-class TestEditFileTool:
-    """Test the EditFileTool class."""
+class TestEdit:
+    """Test the Edit class."""
 
     @pytest.fixture
     def edit_file_tool(
@@ -212,8 +201,8 @@ class TestEditFileTool:
         document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
-        """Create an EditFileTool instance for testing."""
-        return EditFileTool(document_context, permission_manager)
+        """Create an Edit instance for testing."""
+        return Edit(document_context, permission_manager)
 
     @pytest.fixture
     def setup_allowed_path(
@@ -230,7 +219,7 @@ class TestEditFileTool:
     @pytest.mark.asyncio
     async def test_edit_file(
         self,
-        edit_file_tool: EditFileTool,
+        edit_file_tool: Edit,
         setup_allowed_path: str,
         test_file: str,
         mcp_context: MagicMock,
@@ -247,14 +236,13 @@ class TestEditFileTool:
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
-        
+
         # Mock the base class method
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
-                result = await edit_file_tool.call(mcp_context, path=test_file, edits=edits, dry_run=False)
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+                result = await edit_file_tool.call(
+                    mcp_context, file_path=test_file, old_string=edits[0]["oldText"], new_string=edits[0]["newText"]
+                )
 
         # Verify result
         assert "Successfully edited file" in result
@@ -267,7 +255,7 @@ class TestEditFileTool:
     @pytest.mark.asyncio
     async def test_edit_file_with_empty_oldtext(
         self,
-        edit_file_tool: EditFileTool,
+        edit_file_tool: Edit,
         setup_allowed_path: str,
         test_file: str,
         mcp_context: MagicMock,
@@ -284,25 +272,21 @@ class TestEditFileTool:
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
-        
-        # Mock the base class method
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
-                result = await edit_file_tool.call(mcp_context, path=test_file, edits=edits, dry_run=False)
 
-        # Verify result indicates error about empty oldText
-        assert (
-            "Error: Parameter 'oldText' in edit at index 0 cannot be empty"
-            in result
-        )
+        # Mock the base class method
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+                result = await edit_file_tool.call(
+                    mcp_context, file_path=test_file, old_string=edits[0]["oldText"], new_string=edits[0]["newText"]
+                )
+
+        # Verify result indicates error about empty old_string
+        assert "Error: Parameter 'old_string' cannot be empty for existing files" in result
 
     @pytest.mark.asyncio
     async def test_edit_file_with_whitespace_oldtext(
         self,
-        edit_file_tool: EditFileTool,
+        edit_file_tool: Edit,
         setup_allowed_path: str,
         test_file: str,
         mcp_context: MagicMock,
@@ -319,25 +303,21 @@ class TestEditFileTool:
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
-        
-        # Mock the base class method
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
-                result = await edit_file_tool.call(mcp_context, path=test_file, edits=edits, dry_run=False)
 
-        # Verify result indicates error about whitespace oldText
-        assert (
-            "Error: Parameter 'oldText' in edit at index 0 cannot be empty"
-            in result
-        )
+        # Mock the base class method
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+                result = await edit_file_tool.call(
+                    mcp_context, file_path=test_file, old_string=edits[0]["oldText"], new_string=edits[0]["newText"]
+                )
+
+        # Verify result indicates error about whitespace old_string
+        assert "Error: Parameter 'old_string' cannot be empty for existing files" in result
 
     @pytest.mark.asyncio
     async def test_edit_file_with_missing_oldtext(
         self,
-        edit_file_tool: EditFileTool,
+        edit_file_tool: Edit,
         setup_allowed_path: str,
         test_file: str,
         mcp_context: MagicMock,
@@ -354,20 +334,22 @@ class TestEditFileTool:
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
-        
-        # Mock the base class method
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
-                result = await edit_file_tool.call(mcp_context, path=test_file, edits=edits, dry_run=False)
 
-        # Verify result indicates error about missing oldText
-        assert (
-            "Error: Parameter 'oldText' in edit at index 0 cannot be empty"
-            in result
-        )
+        # Mock the base class method
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+                # Special handling for missing oldText field
+                if "oldText" in edits[0]:
+                    result = await edit_file_tool.call(
+                        mcp_context, file_path=test_file, old_string=edits[0]["oldText"], new_string=edits[0]["newText"]
+                    )
+                else:
+                    result = await edit_file_tool.call(
+                        mcp_context, file_path=test_file, old_string="", new_string=edits[0]["newText"]
+                    )
+
+        # Verify result indicates error about missing old_string
+        assert "Error: Parameter 'old_string' cannot be empty for existing files" in result
 
 
 class TestDirectoryTreeTool:
@@ -405,31 +387,28 @@ class TestDirectoryTreeTool:
         # Create a test directory structure
         test_dir = os.path.join(setup_allowed_path, "test_dir")
         os.makedirs(test_dir, exist_ok=True)
-        
+
         # Create some files
         with open(os.path.join(test_dir, "file1.txt"), "w") as f:
             f.write("File 1 content")
-            
+
         with open(os.path.join(test_dir, "file2.txt"), "w") as f:
             f.write("File 2 content")
-            
+
         # Create a subdirectory
         subdir = os.path.join(test_dir, "subdir")
         os.makedirs(subdir, exist_ok=True)
-        
+
         with open(os.path.join(subdir, "subfile.txt"), "w") as f:
             f.write("Subfile content")
-            
+
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
-        
+
         # Mock the base class method
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
                 result = await directory_tree_tool.call(mcp_context, path=test_dir)
 
         # Verify result format
@@ -438,11 +417,11 @@ class TestDirectoryTreeTool:
         assert "subdir/" in result
         assert "subfile.txt" in result
         assert "Directory Stats:" in result
-        
+
         # Verify the output is not JSON
         with pytest.raises(json.JSONDecodeError):
             json.loads(result)
-            
+
     @pytest.mark.asyncio
     async def test_directory_tree_depth_limited(
         self,
@@ -454,64 +433,61 @@ class TestDirectoryTreeTool:
         # Create a test directory structure with multiple levels
         test_dir = os.path.join(setup_allowed_path, "test_deep_dir")
         os.makedirs(test_dir, exist_ok=True)
-        
+
         # Create level 1
         level1 = os.path.join(test_dir, "level1")
         os.makedirs(level1, exist_ok=True)
         with open(os.path.join(level1, "file1.txt"), "w") as f:
             f.write("Level 1 file")
-        
+
         # Create level 2
         level2 = os.path.join(level1, "level2")
         os.makedirs(level2, exist_ok=True)
         with open(os.path.join(level2, "file2.txt"), "w") as f:
             f.write("Level 2 file")
-            
+
         # Create level 3
         level3 = os.path.join(level2, "level3")
         os.makedirs(level3, exist_ok=True)
         with open(os.path.join(level3, "file3.txt"), "w") as f:
             f.write("Level 3 file")
-        
+
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
-        
+
         # Test with depth=1
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
-                result = await directory_tree_tool.call(mcp_context, path=test_dir, depth=1, include_filtered=False)
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+                result = await directory_tree_tool.call(
+                    mcp_context, path=test_dir, depth=1, include_filtered=False
+                )
 
         # Verify result shows only level 1 and skips deeper levels
         assert "level1/" in result
         assert "file1.txt" not in result  # This is at level 2
         assert "level2/ [skipped - depth-limit]" in result
         assert "skipped due to depth limit" in result
-        
+
         # Test with deeper depth
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
-                result2 = await directory_tree_tool.call(mcp_context, path=test_dir, depth=2, include_filtered=False)
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+                result2 = await directory_tree_tool.call(
+                    mcp_context, path=test_dir, depth=2, include_filtered=False
+                )
         assert "level1/" in result2
         assert "file1.txt" in result2  # This should be visible
         assert "level2/" in result2
         assert "level3/ [skipped - depth-limit]" in result2
         # We don't care about file2.txt for this test, as it depends on directory implementation
         assert "file3.txt" not in result2  # This is at level 4
-        
+
         # Test with unlimited depth
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
-                result3 = await directory_tree_tool.call(mcp_context, path=test_dir, depth=0, include_filtered=False)
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+                result3 = await directory_tree_tool.call(
+                    mcp_context, path=test_dir, depth=0, include_filtered=False
+                )
         assert "level1/" in result3
         assert "level2/" in result3
         assert "level3/" in result3
@@ -519,7 +495,7 @@ class TestDirectoryTreeTool:
         assert "file2.txt" in result3
         assert "file3.txt" in result3
         assert "[skipped - depth-limit]" not in result3
-    
+
     @pytest.mark.asyncio
     async def test_directory_tree_filtered_dirs(
         self,
@@ -531,97 +507,99 @@ class TestDirectoryTreeTool:
         # Create a test directory structure with filtered directories
         test_dir = os.path.join(setup_allowed_path, "test_filtered_dir")
         os.makedirs(test_dir, exist_ok=True)
-        
+
         # Create a normal directory
         normal_dir = os.path.join(test_dir, "normal_dir")
         os.makedirs(normal_dir, exist_ok=True)
-        
+
         # Create filtered directories
         git_dir = os.path.join(test_dir, ".git")
         node_modules = os.path.join(test_dir, "node_modules")
         venv_dir = os.path.join(test_dir, "venv")
-        
+
         os.makedirs(git_dir, exist_ok=True)
         os.makedirs(node_modules, exist_ok=True)
         os.makedirs(venv_dir, exist_ok=True)
-        
+
         # Add some files to each
         with open(os.path.join(normal_dir, "normal.txt"), "w") as f:
             f.write("Normal file")
-            
+
         with open(os.path.join(git_dir, "HEAD"), "w") as f:
             f.write("Git HEAD file")
-            
+
         with open(os.path.join(node_modules, "package.json"), "w") as f:
             f.write("Package JSON")
-            
+
         with open(os.path.join(venv_dir, "pyvenv.cfg"), "w") as f:
             f.write("Python venv config")
-        
+
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
-        
+
         # Test with default filtering (filtered dirs should be marked but not traversed)
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
                 result = await directory_tree_tool.call(mcp_context, path=test_dir)
-        
+
         assert "normal_dir/" in result
         assert "normal.txt" in result
         # Check that filtered directories are marked as skipped
-        assert "[skipped - filtered-directory]" in result, "At least one filtered directory should be marked as skipped"
-        
+        assert "[skipped - filtered-directory]" in result, (
+            "At least one filtered directory should be marked as skipped"
+        )
+
         # HEAD file should not be visible because .git is filtered
         assert "HEAD" not in result
         assert "package.json" not in result
         assert "pyvenv.cfg" not in result
-        
+
         # Test with include_filtered=True
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
-                result2 = await directory_tree_tool.call(mcp_context, path=test_dir, include_filtered=True)
-        
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+                result2 = await directory_tree_tool.call(
+                    mcp_context, path=test_dir, include_filtered=True
+                )
+
         assert "normal_dir/" in result2
         assert "normal.txt" in result2
-        
+
         # Filtered directories should now be included - at least one of them
         # should be visible and not marked as skipped
         has_filtered_dir = False
         if ".git/" in result2 and "[skipped - filtered-directory]" not in result2:
             has_filtered_dir = True
-        elif "node_modules/" in result2 and "[skipped - filtered-directory]" not in result2:
+        elif (
+            "node_modules/" in result2
+            and "[skipped - filtered-directory]" not in result2
+        ):
             has_filtered_dir = True
         elif "venv/" in result2 and "[skipped - filtered-directory]" not in result2:
             has_filtered_dir = True
-            
-        assert has_filtered_dir, "At least one filtered directory should be included when include_filtered=True"
-        
+
+        assert has_filtered_dir, (
+            "At least one filtered directory should be included when include_filtered=True"
+        )
+
         # At least one file in a previously filtered directory should now be visible
         has_filtered_file = False
         if "HEAD" in result2 or "package.json" in result2 or "pyvenv.cfg" in result2:
             has_filtered_file = True
-            
-        assert has_filtered_file, "At least one file from a filtered directory should be visible"
-        
+
+        assert has_filtered_file, (
+            "At least one file from a filtered directory should be visible"
+        )
+
         # Test direct access to filtered directory
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
                 result3 = await directory_tree_tool.call(mcp_context, path=git_dir)
-        
+
         # When directly accessing a filtered directory, it should be traversed
         assert "HEAD" in result3
         assert "[skipped - filtered-directory]" not in result3
-    
+
     @pytest.mark.asyncio
     async def test_directory_tree_not_allowed(
         self,
@@ -631,33 +609,30 @@ class TestDirectoryTreeTool:
         """Test directory tree with a path that is not allowed."""
         # Path outside of allowed paths
         path = "/not/allowed/directory"
-        
+
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
-        
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
+
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
                 result = await directory_tree_tool.call(mcp_context, path=path)
 
         # Verify result
         assert "Error: Access denied" in result
 
 
-class TestSearchContentTool:
-    """Test the SearchContentTool class."""
+class TestGrep:
+    """Test the Grep class."""
 
     @pytest.fixture
-    def search_content_tool(
+    def grep_tool(
         self,
         document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
-        """Create a SearchContentTool instance for testing."""
-        return SearchContentTool(document_context, permission_manager)
+        """Create a Grep instance for testing."""
+        return Grep(document_context, permission_manager)
 
     @pytest.fixture
     def setup_allowed_path(
@@ -674,7 +649,7 @@ class TestSearchContentTool:
     @pytest.mark.asyncio
     async def test_search_content_file_path(
         self,
-        search_content_tool: SearchContentTool,
+        grep_tool: Grep,
         setup_allowed_path: str,
         mcp_context: MagicMock,
     ):
@@ -689,24 +664,26 @@ class TestSearchContentTool:
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
-        
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
-                result = await search_content_tool.call(mcp_context, pattern="searchable", path=test_file_path, file_pattern="*")
+
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+                result = await grep_tool.call(
+                    mcp_context,
+                    pattern="searchable",
+                    path=test_file_path,
+                    file_pattern="*",
+                )
 
         # Verify result
         assert "line one with searchable content" in result
         assert "line three with searchable pattern" in result
         assert "line two with other content" not in result
         assert test_file_path in result
-    
+
     @pytest.mark.asyncio
     async def test_search_content_file_pattern_mismatch(
         self,
-        search_content_tool: SearchContentTool,
+        grep_tool: Grep,
         setup_allowed_path: str,
         mcp_context: MagicMock,
     ):
@@ -719,21 +696,23 @@ class TestSearchContentTool:
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
-        
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
-                result = await search_content_tool.call(mcp_context, pattern="pattern", path=test_file_path, file_pattern="*.py")
+
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+                result = await grep_tool.call(
+                    mcp_context,
+                    pattern="pattern",
+                    path=test_file_path,
+                    file_pattern="*.py",
+                )
 
         # Verify result
         assert "File does not match pattern '*.py'" in result
-    
+
     @pytest.mark.asyncio
     async def test_search_content_directory_path(
         self,
-        search_content_tool: SearchContentTool,
+        grep_tool: Grep,
         setup_allowed_path: str,
         mcp_context: MagicMock,
     ):
@@ -741,48 +720,46 @@ class TestSearchContentTool:
         # Create a test directory with multiple files
         test_dir = os.path.join(setup_allowed_path, "search_dir")
         os.makedirs(test_dir, exist_ok=True)
-        
+
         # Create files with searchable content
         with open(os.path.join(test_dir, "file1.txt"), "w") as f:
             f.write("This is file1 with findable content.\n")
-            
+
         with open(os.path.join(test_dir, "file2.py"), "w") as f:
             f.write("# This is file2 with findable content\n")
             f.write("def test_function():\n")
             f.write("    return 'Not findable'\n")
-            
+
         # Create a subdirectory with more files
         subdir = os.path.join(test_dir, "subdir")
         os.makedirs(subdir, exist_ok=True)
-        
+
         with open(os.path.join(subdir, "file3.txt"), "w") as f:
             f.write("This is file3 with different content.\n")
 
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
-        
+
         # Test searching in all files
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
-                result = await search_content_tool.call(mcp_context, pattern="findable", path=test_dir, file_pattern="*")
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+                result = await grep_tool.call(
+                    mcp_context, pattern="findable", path=test_dir, file_pattern="*"
+                )
 
         # Verify result contains matches from both files
         assert "file1 with findable content" in result
         assert "file2 with findable content" in result
         assert "different content" not in result
-        
+
         # Test searching with a file pattern
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
-                result2 = await search_content_tool.call(mcp_context, pattern="findable", path=test_dir, file_pattern="*.py")
-        
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+                result2 = await grep_tool.call(
+                    mcp_context, pattern="findable", path=test_dir, file_pattern="*.py"
+                )
+
         # Verify result only contains matches from Python files
         assert "file1 with findable content" not in result2
         assert "file2 with findable content" in result2
@@ -830,19 +807,16 @@ class TestContentReplaceTool:
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
-        
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
+
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
                 result = await content_replace_tool.call(
-                    mcp_context, 
-                    pattern="old content", 
-                    replacement="new content", 
-                    path=test_file_path, 
-                    file_pattern="*", 
-                    dry_run=False
+                    mcp_context,
+                    pattern="old content",
+                    replacement="new content",
+                    path=test_file_path,
+                    file_pattern="*",
+                    dry_run=False,
                 )
 
         # Verify result
@@ -855,7 +829,7 @@ class TestContentReplaceTool:
             assert "This is new content that needs to be replaced." in content
             assert "This line should stay the same." in content
             assert "More new content here that will be replaced." in content
-    
+
     @pytest.mark.asyncio
     async def test_content_replace_dry_run(
         self,
@@ -877,19 +851,16 @@ class TestContentReplaceTool:
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
-        
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
+
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
                 result = await content_replace_tool.call(
-                    mcp_context, 
-                    pattern="would be replaced", 
-                    replacement="will be changed", 
-                    path=test_file_path, 
-                    file_pattern="*", 
-                    dry_run=True
+                    mcp_context,
+                    pattern="would be replaced",
+                    replacement="will be changed",
+                    path=test_file_path,
+                    file_pattern="*",
+                    dry_run=True,
                 )
 
         # Verify result shows what would be changed
@@ -900,7 +871,7 @@ class TestContentReplaceTool:
         with open(test_file_path, "r") as f:
             content = f.read()
             assert content == original_content
-    
+
     @pytest.mark.asyncio
     async def test_content_replace_directory_path(
         self,
@@ -912,98 +883,92 @@ class TestContentReplaceTool:
         # Create a test directory with multiple files
         test_dir = os.path.join(setup_allowed_path, "replace_dir")
         os.makedirs(test_dir, exist_ok=True)
-        
+
         # Create files with replaceable content
         with open(os.path.join(test_dir, "file1.txt"), "w") as f:
             f.write("This is file1 with replaceable text.\n")
             f.write("Another line in file1.\n")
-            
+
         with open(os.path.join(test_dir, "file2.py"), "w") as f:
             f.write("# This is file2 with replaceable text\n")
             f.write("def example():\n")
             f.write("    return 'No replaceable text here'\n")
-            
+
         # Create a subdirectory with more files
         subdir = os.path.join(test_dir, "subdir")
         os.makedirs(subdir, exist_ok=True)
-        
+
         with open(os.path.join(subdir, "file3.txt"), "w") as f:
             f.write("This is file3 with replaceable text.\n")
 
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
-        
+
         # Test replacing in all files
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
                 result = await content_replace_tool.call(
-                    mcp_context, 
-                    pattern="replaceable text", 
-                    replacement="updated content", 
-                    path=test_dir, 
-                    file_pattern="*", 
-                    dry_run=False
+                    mcp_context,
+                    pattern="replaceable text",
+                    replacement="updated content",
+                    path=test_dir,
+                    file_pattern="*",
+                    dry_run=False,
                 )
 
         # Verify result shows replacements were made
         assert "Made" in result
         assert "replacements of 'replaceable text'" in result
         assert test_dir in result
-        
+
         # Verify files were modified
         with open(os.path.join(test_dir, "file1.txt"), "r") as f:
             content = f.read()
             assert "This is file1 with updated content." in content
-            
+
         with open(os.path.join(test_dir, "file2.py"), "r") as f:
             content = f.read()
             assert "# This is file2 with updated content" in content
-            
+
         with open(os.path.join(subdir, "file3.txt"), "r") as f:
             content = f.read()
             assert "This is file3 with updated content." in content
-        
+
         # Reset files
         with open(os.path.join(test_dir, "file1.txt"), "w") as f:
             f.write("This is file1 with replaceable text.\n")
             f.write("Another line in file1.\n")
-            
+
         with open(os.path.join(test_dir, "file2.py"), "w") as f:
             f.write("# This is file2 with replaceable text\n")
             f.write("def example():\n")
             f.write("    return 'No replaceable text here'\n")
-            
+
         with open(os.path.join(subdir, "file3.txt"), "w") as f:
             f.write("This is file3 with replaceable text.\n")
-        
+
         # Test replacing with a file pattern - execute the replacement with Python files only
-        with patch.object(FilesystemBaseTool, 'set_tool_context_info', AsyncMock()):
-            with patch(
-                "mcp_claude_code.tools.common.context.create_tool_context",
-                return_value=tool_ctx,
-            ):
+        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
+            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
                 await content_replace_tool.call(
-                    mcp_context, 
-                    pattern="replaceable text", 
-                    replacement="updated content", 
-                    path=test_dir, 
-                    file_pattern="*.py", 
-                    dry_run=False
+                    mcp_context,
+                    pattern="replaceable text",
+                    replacement="updated content",
+                    path=test_dir,
+                    file_pattern="*.py",
+                    dry_run=False,
                 )
-            
+
             # Verify only Python files were modified
         with open(os.path.join(test_dir, "file1.txt"), "r") as f:
             content = f.read()
             assert "This is file1 with replaceable text." in content  # Unchanged
-            
+
         with open(os.path.join(test_dir, "file2.py"), "r") as f:
             content = f.read()
             assert "# This is file2 with updated content" in content  # Changed
-            
+
         with open(os.path.join(subdir, "file3.txt"), "r") as f:
             content = f.read()
             assert "This is file3 with replaceable text." in content  # Unchanged

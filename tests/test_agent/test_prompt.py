@@ -38,7 +38,7 @@ class TestPrompt:
         
         # Create a non-read-only tool
         write_tool = MagicMock(spec=BaseTool)
-        write_tool.name = "write_file"
+        write_tool.name = "write"
         write_tool.description = "Write to files"
         write_tool.isReadOnly = MagicMock(return_value=False)
         write_tool.needsPermissions = MagicMock(return_value=True)
@@ -73,7 +73,7 @@ class TestPrompt:
         # Should include all tools except for agent
         assert len(allowed_tools) == 3
         assert "read_files" in [tool.name for tool in allowed_tools]
-        assert "write_file" in [tool.name for tool in allowed_tools]
+        assert "write" in [tool.name for tool in allowed_tools]
         assert "run_command" in [tool.name for tool in allowed_tools]
         assert "agent" not in [tool.name for tool in allowed_tools]
         
@@ -87,7 +87,7 @@ class TestPrompt:
         
         # Should mention all tools except agent
         assert "`read_files`" in system_prompt
-        assert "`write_file`" in system_prompt
+        assert "`write`" in system_prompt
         assert "`run_command`" in system_prompt
         assert "`agent`" not in system_prompt
         

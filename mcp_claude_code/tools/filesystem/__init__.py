@@ -11,21 +11,21 @@ from mcp_claude_code.tools.common.context import DocumentContext
 from mcp_claude_code.tools.common.permissions import PermissionManager
 from mcp_claude_code.tools.filesystem.content_replace import ContentReplaceTool
 from mcp_claude_code.tools.filesystem.directory_tree import DirectoryTreeTool
-from mcp_claude_code.tools.filesystem.edit_file import EditFileTool
+from mcp_claude_code.tools.filesystem.edit import Edit
 from mcp_claude_code.tools.filesystem.get_file_info import GetFileInfoTool
+from mcp_claude_code.tools.filesystem.grep import Grep
 from mcp_claude_code.tools.filesystem.grep_ast_tool import GrepAstTool
 from mcp_claude_code.tools.filesystem.read_files import ReadFilesTool
-from mcp_claude_code.tools.filesystem.search_content import SearchContentTool
-from mcp_claude_code.tools.filesystem.write_file import WriteFileTool
+from mcp_claude_code.tools.filesystem.write import Write
 
 # Export all tool classes
 __all__ = [
     "ReadFilesTool",
-    "WriteFileTool",
-    "EditFileTool",
+    "Write",
+    "Edit",
     "DirectoryTreeTool",
     "GetFileInfoTool",
-    "SearchContentTool",
+    "Grep",
     "ContentReplaceTool",
     "GrepAstTool",
     "get_filesystem_tools",
@@ -49,7 +49,7 @@ def get_read_only_filesystem_tools(
         ReadFilesTool(document_context, permission_manager),
         DirectoryTreeTool(document_context, permission_manager),
         GetFileInfoTool(document_context, permission_manager),
-        SearchContentTool(document_context, permission_manager),
+        Grep(document_context, permission_manager),
         GrepAstTool(document_context, permission_manager),
     ]
 
@@ -68,11 +68,11 @@ def get_filesystem_tools(
     """
     return [
         ReadFilesTool(document_context, permission_manager),
-        WriteFileTool(document_context, permission_manager),
-        EditFileTool(document_context, permission_manager),
+        Write(document_context, permission_manager),
+        Edit(document_context, permission_manager),
         DirectoryTreeTool(document_context, permission_manager),
         GetFileInfoTool(document_context, permission_manager),
-        SearchContentTool(document_context, permission_manager),
+        Grep(document_context, permission_manager),
         ContentReplaceTool(document_context, permission_manager),
         GrepAstTool(document_context, permission_manager),
     ]

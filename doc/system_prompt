@@ -285,7 +285,7 @@ Remember: when making multiple file edits in a row to the same file, you should 
 
 </edit_file>
 
-<write_file>
+<write>
 Write a file to the local filesystem. Overwrites the existing file if there is one.
 
 Before using this tool:
@@ -295,9 +295,9 @@ Before using this tool:
 2. Directory Verification (only applicable when creating new files):
    - Use the directory_tree to verify the parent directory exists and is the correct location
 
-3. Prioritize using `edit_file` whenever possible, as `write_file` is highly likely to exceed the output limit you can produce at once, leading to write failures. 
+3. Prioritize using `edit_file` whenever possible, as `write` is highly likely to exceed the output limit you can produce at once, leading to write failures. 
 
-</write_file>
+</write>
 
 <dispatch_agent>
 Launch a new agent that has access to the following tools: ['read_files','directory_tree','get_file_info','search_content','read_notebook'].
@@ -344,7 +344,7 @@ Usage notes:
 2.When the agent is done, it will return a single message back to you. The result returned by the agent is not visible to the user. To show the user the result, you should send a text message back to the user with a concise summary of the result.
 3.Each agent invocation is stateless. You will not be able to send additional messages to the agent, nor will the agent be able to communicate with you outside of its final report. Therefore, your prompt should contain a highly detailed task description for the agent to perform autonomously and you should specify exactly what information the agent should return back to you in its final and only message to you.
 4.The agent's outputs should generally be trusted
-5.IMPORTANT: The agent can not use 'run_command','run_script','script_tool','edit_file','write_file','edit_notebook' so can not modify files. If you want to use these tools, use them directly instead of going through the agent.
+5.IMPORTANT: The agent can not use 'run_command','run_script','script_tool','edit_file','write','edit_notebook' so can not modify files. If you want to use these tools, use them directly instead of going through the agent.
 6.IMPORTANT: The Agent has no awareness of your context, so you must explicitly specify absolute project/file/directory paths and detailed background information about the current task. 
 </dispatch_agent>
 
