@@ -9,13 +9,13 @@ import json
 import re
 import shlex
 import shutil
-import subprocess
 from pathlib import Path
-from typing import Any, List, Optional, final, override
+from typing import Any, final, override
 
 from mcp.server.fastmcp import Context as MCPContext
 from mcp.server.fastmcp import FastMCP
 
+from mcp_claude_code.tools.common.context import ToolContext
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
 
 
@@ -103,8 +103,8 @@ When you are doing an open ended search that may require multiple rounds of glob
         self,
         pattern: str,
         path: str,
-        include_pattern: Optional[str] = None,
-        tool_ctx: Any = None,
+        tool_ctx: ToolContext,
+        include_pattern: str | None = None,
     ) -> str:
         """Run ripgrep with the given parameters and return the results.
 
@@ -219,8 +219,8 @@ When you are doing an open ended search that may require multiple rounds of glob
         self,
         pattern: str,
         path: str,
-        include_pattern: Optional[str] = None,
-        tool_ctx: Any = None,
+        tool_ctx: ToolContext,
+        include_pattern: str | None = None,
     ) -> str:
         """Fallback Python implementation when ripgrep is not available.
 
@@ -383,9 +383,9 @@ When you are doing an open ended search that may require multiple rounds of glob
 
         # Extract parameters
         pattern = params.get("pattern")
-        path = params.get("path", ".")
+        path: str = params.get("path", ".")
         # Support both 'include' and legacy 'file_pattern' parameter for backward compatibility
-        include = params.get("include") or params.get("file_pattern", "*")
+        include: str = params.get("include") or params.get("file_pattern", "*")
 
         # Validate required parameters
         if pattern is None:
@@ -424,13 +424,13 @@ When you are doing an open ended search that may require multiple rounds of glob
         try:
             if self.is_ripgrep_installed():
                 await tool_ctx.info("ripgrep is installed, using ripgrep for search")
-                result = await self.run_ripgrep(pattern, path, include, tool_ctx)
+                result = await self.run_ripgrep(pattern, path, tool_ctx, include)
                 return result
             else:
                 await tool_ctx.info(
                     "ripgrep is not installed, using fallback implementation"
                 )
-                result = await self.fallback_grep(pattern, path, include, tool_ctx)
+                result = await self.fallback_grep(pattern, path, tool_ctx, include)
                 return result
         except Exception as e:
             await tool_ctx.error(f"Error in grep tool: {str(e)}")
@@ -453,8 +453,8 @@ When you are doing an open ended search that may require multiple rounds of glob
             ctx: MCPContext,
             pattern: str,
             path: str = ".",
-            include: Optional[str] = None,
-            file_pattern: Optional[str] = "*",
+            include: str | None = None,
+            file_pattern: str | None = "*",
         ) -> str:
             # Use 'include' parameter if provided, otherwise fall back to 'file_pattern'
             include_param = include or file_pattern
