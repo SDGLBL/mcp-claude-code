@@ -5,6 +5,15 @@ All notable changes to the MCP Claude Code project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.30] - 2025-05-15
+
+### Added
+- Added release creation prompt and registration (98fbd45)
+  - New prompt template with step-by-step guidance for creating project releases
+  - Detailed instructions for version analysis, updates, changelog creation, and tagging
+  - Structured approach for consistent release processes
+  - Improved documentation for the compact() prompt function
+
 ## [0.1.29] - 2025-05-15
 
 ### Added
