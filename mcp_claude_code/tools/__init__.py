@@ -12,9 +12,11 @@ to delegate tasks to sub-agents for concurrent execution and specialized process
 from mcp.server.fastmcp import FastMCP
 
 from mcp_claude_code.tools.agent import register_agent_tools
-from mcp_claude_code.tools.common import register_thinking_tool
+from mcp_claude_code.tools.common import register_batch_tool, register_thinking_tool
+from mcp_claude_code.tools.common.base import BaseTool, ToolRegistry
 from mcp_claude_code.tools.common.context import DocumentContext
 from mcp_claude_code.tools.common.permissions import PermissionManager
+from mcp_claude_code.tools.common.thinking_tool import ThinkingTool
 from mcp_claude_code.tools.filesystem import register_filesystem_tools
 from mcp_claude_code.tools.jupyter import register_jupyter_tools
 from mcp_claude_code.tools.shell import register_shell_tools
@@ -47,20 +49,33 @@ def register_all_tools(
         agent_max_tool_uses: Maximum number of total tool uses for agent (default: 30)
         enable_agent_tool: Whether to enable the agent tool (default: False)
     """
+    # Dictionary to store all registered tools
+    all_tools: dict[str, BaseTool] = {}
+
     # Register all filesystem tools
-    register_filesystem_tools(mcp_server, document_context, permission_manager)
+    filesystem_tools = register_filesystem_tools(
+        mcp_server, document_context, permission_manager
+    )
+    for tool in filesystem_tools:
+        all_tools[tool.name] = tool
 
     # Register all jupyter tools
-    register_jupyter_tools(mcp_server, document_context, permission_manager)
+    jupyter_tools = register_jupyter_tools(
+        mcp_server, document_context, permission_manager
+    )
+    for tool in jupyter_tools:
+        all_tools[tool.name] = tool
 
     # Register shell tools
-    register_shell_tools(mcp_server, permission_manager)
+    shell_tools = register_shell_tools(mcp_server, permission_manager)
+    for tool in shell_tools:
+        all_tools[tool.name] = tool
 
     # Register agent tools only if enabled
     if enable_agent_tool:
-        register_agent_tools(
-            mcp_server, 
-            document_context, 
+        agent_tools = register_agent_tools(
+            mcp_server,
+            document_context,
             permission_manager,
             CommandExecutor(permission_manager),
             agent_model=agent_model,
@@ -68,8 +83,15 @@ def register_all_tools(
             agent_api_key=agent_api_key,
             agent_base_url=agent_base_url,
             agent_max_iterations=agent_max_iterations,
-            agent_max_tool_uses=agent_max_tool_uses
+            agent_max_tool_uses=agent_max_tool_uses,
         )
-    
+        for tool in agent_tools:
+            all_tools[tool.name] = tool
+
     # Initialize and register thinking tool
-    register_thinking_tool(mcp_server)
+    thinking_tool = register_thinking_tool(mcp_server)
+    for tool in thinking_tool:
+        all_tools[tool.name] = tool
+
+    # Register batch tool
+    register_batch_tool(mcp_server, all_tools)

@@ -23,6 +23,7 @@ owner: {git user name}
 - When doing file search, architecture research or large-scale dive operations, prefer to use the **dispatch_agent** tool in order to reduce context usage and speed up.
 - For understanding code structure within files, prefer **grep_ast** over standard text search tools to get AST context.
 - When examining how patterns fit into larger code contexts (functions, classes), use **grep_ast** to see the structural relationships.
+- For executing multiple independent tool operations at once, use the **batch** tool to reduce context usage and latency.
 - Problem-First Thinking: Always start with understanding the problem before selecting tools or approaches
 - Principle-Based Decisions: Choose approaches based on principles rather than rigid procedures
 - Incremental Validation: Verify changes as you make them rather than making large batches of unverified changes
@@ -95,6 +96,41 @@ Parameters:
 - ignore_case: Whether to ignore case when matching (default: False)
 - line_number: Whether to display line numbers (default: False)
 </grep_ast_tool>
+
+<batch>
+Batch execution tool that runs multiple tool invocations in a single request.
+
+Tools are executed in parallel when possible, and otherwise serially.
+Takes a list of tool invocations (tool_name and input pairs).
+Returns the collected results from all invocations.
+Use this tool when you need to run multiple independent tool operations at once -- it is awesome for speeding up your workflow, reducing both context usage and latency.
+Each tool will respect its own permissions and validation rules.
+The tool's outputs are NOT shown to the user; to answer the user's query, you MUST send a message with the results after the tool call completes, otherwise the user will not see the results.
+
+To make a batch call, provide the following:
+1. description: A short (3-5 word) description of the batch operation
+2. edits: List of invocation [{"tool_name": "...", "input": "..."}], tool_name: The name of the tool to invoke,newText: The input to pass to the tool
+
+
+Available tools:
+Tool: dispatch_agent
+Arguments: prompt: string "The task for the agent to perform"
+Usage: Launch a new agent that has access to the following tools: run_command, gpre_ast, grep, directory_tree, read_files, edit, write, read_notebook, edit_notebook When you are searching for a keyword or file and are not confident that you will find the right match in the first few tries, use the dispatch_agent tool to perform the search for you.
+
+When to use the dispatch_agent tool:
+- If you are searching for a keyword like "config" or "logger", or for questions like "which file does X?", the dispatch_agent tool is strongly recommended
+
+When NOT to use the dispatch_agent tool:
+- If you want to read_files a specific file path, use the read_files or gpre_ast tool instead of the dispatch_agent tool, to find the match more quickly
+- If you are searching for a specific class definition like "class Foo", use the gpre_ast tool instead, to find the match more quickly
+- If you are searching for code within a specific file or set of 2-3 files, use the read_files tool instead of the dispatch_agent tool, to find the match more quickly
+
+Usage notes:
+1. Launch multiple agents concurrently whenever possible, to maximize performance; to do that, use a single message with multiple tool uses
+2. When the agent is done, it will return a single message back to you. The result returned by the agent is not visible to the user. To show the user the result, you should send a text message back to the user with a concise summary of the result.
+3. Each agent invocation is stateless. You will not be able to send additional messages to the agent, nor will the agent be able to communicate with you outside of its final report. Therefore, your prompt should contain a highly detailed task description for the agent to perform autonomously and you should specify exactly what information the agent should return back to you in its final and only message to you.
+4. The agent's outputs should generally be trusted
+</batch>
 
 <run_command>
 Executes a given bash command in a persistent shell session with optional timeout, ensuring proper handling and security measures.

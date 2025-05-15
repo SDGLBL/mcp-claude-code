@@ -82,13 +82,17 @@ def register_filesystem_tools(
     mcp_server: FastMCP,
     document_context: DocumentContext,
     permission_manager: PermissionManager,
-) -> None:
+) -> list[BaseTool]:
     """Register all filesystem tools with the MCP server.
 
     Args:
         mcp_server: The FastMCP server instance
         document_context: Document context for tracking file contents
         permission_manager: Permission manager for access control
+        
+    Returns:
+        List of registered tools
     """
     tools = get_filesystem_tools(document_context, permission_manager)
     ToolRegistry.register_tools(mcp_server, tools)
+    return tools

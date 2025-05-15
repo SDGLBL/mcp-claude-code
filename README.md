@@ -38,6 +38,7 @@ This project provides an MCP server that implements Claude Code-like functionali
 | `edit_notebook`        | Edit, insert, or delete cells in a Jupyter notebook                                           |
 | `think`                | Structured space for complex reasoning and analysis without making changes                    |
 | `dispatch_agent`       | Launch one or more agents that can perform tasks using read-only tools concurrently           |
+| `batch`                | Execute multiple tool invocations in parallel or serially in a single request                 |
 
 ## Getting Started
 
