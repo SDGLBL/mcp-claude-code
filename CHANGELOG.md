@@ -5,6 +5,25 @@ All notable changes to the MCP Claude Code project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.29] - 2025-05-15
+
+### Added
+- Added compact conversation prompt and registration (893bef5)
+  - New prompt module with detailed instructions for summarizing technical conversations
+  - Structured format for capturing user requests, technical concepts, and problem-solving approaches
+  - Helps maintain context during technical discussions with structured summaries
+
+### Changed
+- Reorganized grep parameters and improved type hints (25c699a)
+  - Reordered parameters to make tool_ctx required and first in parameter lists
+  - Replaced Optional type hints with modern | None syntax
+  - Added explicit type hints for path and include parameters
+  - Improved code clarity while maintaining backward compatibility
+
+### Maintenance
+- Added claude-code-doc directory to .gitignore (918e88e)
+  - Prevents accidental commits of generated documentation files
+
 ## [0.1.28] - 2025-05-14
 
 ### Added

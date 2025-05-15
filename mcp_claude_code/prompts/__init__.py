@@ -84,7 +84,7 @@ When you are using compact - please focus on test output and code changes. Inclu
 
 def register_all_prompts(mcp_server: FastMCP) -> None:
     @mcp_server.prompt()
-    def compact(text: str) -> str:
+    def compact() -> str:
         return COMPACT_CONVERSATION_PROMPT
 
     return
