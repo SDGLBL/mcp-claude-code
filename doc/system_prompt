@@ -34,7 +34,7 @@ owner: {git user name}
 </best_practice>
 
 <tools>
-<think_tool>
+<think>
 Use the tool to think about something. It will not obtain new information or make any changes to the repository, but just log the thought. Use it when complex reasoning or brainstorming is needed. 
 Ensure thinking content is concise and accurate, without needing to include code details
 
@@ -69,9 +69,9 @@ Feature Implementation Planning
 * Integration tests with existing components
 * Performance tests with large codebases
 </think_example>
-</think_tool>
+</think>
 
-<grep_ast_tool>
+<grep_ast>
 Search through source code files and see matching lines with useful AST (Abstract Syntax Tree) context. This tool helps you understand code structure by showing how matched lines fit into functions, classes, and other code blocks.
 
 Unlike traditional search tools like `search_content` that only show matching lines, `grep_ast` leverages the AST to reveal the structural context around matches, making it easier to understand the code organization.
@@ -95,7 +95,7 @@ Parameters:
 - path: The path to search in (file or directory)
 - ignore_case: Whether to ignore case when matching (default: False)
 - line_number: Whether to display line numbers (default: False)
-</grep_ast_tool>
+</grep_ast>
 
 <batch>
 Batch execution tool that runs multiple tool invocations in a single request.
