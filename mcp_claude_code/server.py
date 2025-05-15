@@ -4,6 +4,7 @@ from typing import Literal, cast, final
 
 from mcp.server.fastmcp import FastMCP
 
+from mcp_claude_code.prompts import register_all_prompts
 from mcp_claude_code.tools import register_all_tools
 from mcp_claude_code.tools.common.context import DocumentContext
 from mcp_claude_code.tools.common.permissions import PermissionManager
@@ -67,7 +68,7 @@ class ClaudeCodeServer:
         self.agent_max_iterations = agent_max_iterations
         self.agent_max_tool_uses = agent_max_tool_uses
         self.enable_agent_tool = enable_agent_tool
-        
+
         # Register all tools
         register_all_tools(
             mcp_server=self.mcp,
@@ -81,6 +82,8 @@ class ClaudeCodeServer:
             agent_max_tool_uses=self.agent_max_tool_uses,
             enable_agent_tool=self.enable_agent_tool,
         )
+
+        register_all_prompts(mcp_server=self.mcp)
 
     def run(self, transport: str = "stdio", allowed_paths: list[str] | None = None):
         """Run the MCP server.
