@@ -218,7 +218,10 @@ class TestAgentTool:
                 "mcp_claude_code.tools.agent.agent_tool.create_tool_context",
                 return_value=tool_ctx,
             ):
-                result = await agent_tool.call(ctx=mcp_context, prompt="Test prompt")
+                result = await agent_tool.call(
+                    ctx=mcp_context,
+                    prompt="Test prompt with absolute path /Users/bytedance/project/",
+                )
 
         assert "Agent execution completed" in result
         assert "Agent result" in result
@@ -263,6 +266,58 @@ class TestAgentTool:
         assert "Error" in result
         assert "Parameter 'prompt' must be a string" in result
         tool_ctx.error.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_call_with_no_absolute_path(self, agent_tool, mcp_context):
+        """Test agent tool call with a prompt missing an absolute path."""
+        # Mock the tool context
+        tool_ctx = MagicMock()
+        tool_ctx.set_tool_info = AsyncMock()
+        tool_ctx.info = AsyncMock()
+        tool_ctx.error = AsyncMock()
+
+        with patch(
+            "mcp_claude_code.tools.agent.agent_tool.create_tool_context",
+            return_value=tool_ctx,
+        ):
+            # Test with a prompt without an absolute path
+            result = await agent_tool.call(
+                ctx=mcp_context, prompt="Search for all config files"
+            )
+
+        assert "Error" in result
+        assert "must contain at least one absolute path" in result
+        tool_ctx.error.assert_called_with(
+            "The prompt does not contain an absolute path"
+        )
+
+    @pytest.mark.asyncio
+    async def test_call_with_absolute_path(self, agent_tool, mcp_context, mock_tools):
+        """Test agent tool call with a prompt containing an absolute path."""
+        # Mock the tool context
+        tool_ctx = MagicMock()
+        tool_ctx.set_tool_info = AsyncMock()
+        tool_ctx.info = AsyncMock()
+        tool_ctx.error = AsyncMock()
+        tool_ctx.mcp_context = mcp_context
+
+        # Mock the _execute_agent method to avoid actually calling it
+        with patch.object(
+            agent_tool, "_execute_agent", AsyncMock(return_value="Agent result")
+        ):
+            with patch(
+                "mcp_claude_code.tools.agent.agent_tool.create_tool_context",
+                return_value=tool_ctx,
+            ):
+                # Test with a prompt containing an absolute path
+                result = await agent_tool.call(
+                    ctx=mcp_context,
+                    prompt="Search for all config files in /Users/bytedance/project/mcp-claude-code",
+                )
+
+        assert "Agent execution completed" in result
+        assert "Agent result" in result
+        tool_ctx.info.assert_called()
 
     @pytest.mark.asyncio
     async def test_execute_agent_with_tools_simple(
@@ -440,4 +495,3 @@ class TestAgentTool:
         # Check the result format
         assert "Error" in result
         assert "Task failed" in result
-

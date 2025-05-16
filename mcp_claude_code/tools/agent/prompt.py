@@ -26,7 +26,7 @@ def get_allowed_agent_tools(
     """
     # Get all tools except for the agent tool itself (avoid recursion)
     filtered_tools = [tool for tool in tools if tool.name != "agent"]
-    
+
     return filtered_tools
 
 
@@ -44,9 +44,7 @@ def get_system_prompt(
         System prompt for the sub-agent
     """
     # Get filtered tools
-    filtered_tools = get_allowed_agent_tools(
-        tools, permission_manager
-    )
+    filtered_tools = get_allowed_agent_tools(tools, permission_manager)
 
     # Extract tool names for display
     tool_names = ", ".join(f"`{tool.name}`" for tool in filtered_tools)
@@ -61,6 +59,7 @@ GUIDELINES:
 4. Be concise and focus on the specific task assigned
 5. When relevant, share file names and code snippets relevant to the query
 6. Any file paths you return in your final response MUST be absolute. DO NOT use relative paths.
+7. CRITICAL: You can only work with the absolute paths provided in your task prompt. You cannot infer or guess other locations.
 
 RESPONSE FORMAT:
 - Begin with a summary of findings
@@ -86,24 +85,28 @@ def get_default_model(model_override: str | None = None) -> str:
         # If in testing mode and using a test model, return as-is
         if model_override.startswith("test-model") or "TEST_MODE" in os.environ:
             return model_override
-        
+
         # If the model already has a provider prefix, return as-is
         if "/" in model_override:
             return model_override
-        
+
         # Otherwise, add the default provider prefix
         provider = os.environ.get("AGENT_PROVIDER", "openai")
         return f"{provider}/{model_override}"
-    
+
     # Fall back to environment variables
     model = os.environ.get("AGENT_MODEL", "gpt-4o")
-    
+
     # Special cases for tests
-    if model.startswith("test-model") or model == "gpt-4o" and "TEST_MODE" in os.environ:
+    if (
+        model.startswith("test-model")
+        or model == "gpt-4o"
+        and "TEST_MODE" in os.environ
+    ):
         return model
-        
+
     provider = os.environ.get("AGENT_PROVIDER", "openai")
-    
+
     # Only add provider prefix if it's not already in the model name
     if "/" not in model and provider != "openai":
         return f"{provider}/{model}"
@@ -127,11 +130,11 @@ def get_model_parameters(max_tokens: int | None = None) -> dict[str, Any]:
         "temperature": float(os.environ.get("AGENT_TEMPERATURE", "0.7")),
         "timeout": int(os.environ.get("AGENT_API_TIMEOUT", "60")),
     }
-    
+
     # Add max_tokens if provided or if set in environment variable
     if max_tokens is not None:
         params["max_tokens"] = max_tokens
     elif os.environ.get("AGENT_MAX_TOKENS"):
         params["max_tokens"] = int(os.environ.get("AGENT_MAX_TOKENS", "1000"))
-    
+
     return params
