@@ -117,11 +117,21 @@ batch(
   ]
 )
 
+When dispatching multiple agents to find necessary information.
+batch(
+  description="Update import statements across modules",
+  invocations=[
+    {tool: "dispatch_agent", input: {prompt: "Search for all instances of 'logger' configuration in /app/config directory"}},
+    {tool: "dispatch_agent", input: {prompt: "Find all test files that reference 'UserService' in /app/tests"}},
+  ]
+)
+
 Common scenarios for effective batching:
 1. Reading multiple related files in one operation
 2. Making similar edits across multiple files
 3. Performing a series of simple mechanical changes
 4. Running multiple diagnostic commands
+5. Dispatch multiple agents to complete the task
 </batch_example>
 
 To make a batch call, provide the following:
