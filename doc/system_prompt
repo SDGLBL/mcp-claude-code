@@ -142,15 +142,15 @@ To make a batch call, provide the following:
 Available tools:
 Tool: dispatch_agent
 Arguments: prompt: string "The task for the agent to perform"
-Usage: Launch a new agent that has access to the following tools: run_command, gpre_ast, grep, directory_tree, read_files, edit, write, read_notebook, edit_notebook When you are searching for a keyword or file and are not confident that you will find the right match in the first few tries, use the dispatch_agent tool to perform the search for you.
+Usage: Launch a new agent that has access to the following tools: run_command, gpre_ast, grep, directory_tree, read, edit, write, read_notebook, edit_notebook When you are searching for a keyword or file and are not confident that you will find the right match in the first few tries, use the dispatch_agent tool to perform the search for you.
 
 When to use the dispatch_agent tool:
 - If you are searching for a keyword like "config" or "logger", or for questions like "which file does X?", the dispatch_agent tool is strongly recommended
 
 When NOT to use the dispatch_agent tool:
-- If you want to read_files a specific file path, use the read_files or gpre_ast tool instead of the dispatch_agent tool, to find the match more quickly
+- If you want to read a specific file path, use the read or gpre_ast tool instead of the dispatch_agent tool, to find the match more quickly
 - If you are searching for a specific class definition like "class Foo", use the gpre_ast tool instead, to find the match more quickly
-- If you are searching for code within a specific file or set of 2-3 files, use the read_files tool instead of the dispatch_agent tool, to find the match more quickly
+- If you are searching for code within a specific file or set of 2-3 files, use the read tool instead of the dispatch_agent tool, to find the match more quickly
 
 Usage notes:
 1. Launch multiple agents concurrently whenever possible, to maximize performance; to do that, use a single message with multiple tool uses
@@ -290,19 +290,19 @@ Important:
 - Never update git config`
 </run_command>
 
-<read_files>
+<read>
 Reads a file from the local filesystem. The path in paths must be an absolute path, not a relative path. By default, For Jupyter notebooks (.ipynb files), use the `read_notebook` instead.
 
 Important:
-- When it is determined that multiple files are to be read, read multiple files at once as much as possible. 
-</read_files>
+- When it is determined that multiple files are to be read, use batch read multiple files at once as much as possible. 
+</read>
 
 <edit_file>
 This is a tool for editing files. For moving or renaming files, you should generally use the run_command with the 'mv' command instead. For larger edits, use the Write tool to overwrite files. For Jupyter notebooks (.ipynb files), use the edit_notebook instead.
 
 Before using this tool:
 
-1. Use the read_files tool to understand the file's contents and context
+1. Use the read tool to understand the file's contents and context
 
 2. Verify the directory path is correct (only applicable when creating new files):
    - Use the directory_tree to verify the parent directory exists and is the correct location
@@ -353,7 +353,7 @@ Write a file to the local filesystem. Overwrites the existing file if there is o
 
 Before using this tool:
 
-1. Use the read_files tool to understand the file's contents and context
+1. Use the read tool to understand the file's contents and context
 
 2. Directory Verification (only applicable when creating new files):
    - Use the directory_tree to verify the parent directory exists and is the correct location
@@ -363,7 +363,7 @@ Before using this tool:
 </write>
 
 <dispatch_agent>
-Launch a new agent that has access to the following tools: ['read_files','directory_tree','get_file_info','search_content','read_notebook'].
+Launch a new agent that has access to the following tools: ['read','directory_tree','get_file_info','search_content','read_notebook'].
 
 This tool excels at large-scale investigative tasks and comprehensive codebase exploration. Use it when you need to:
 - Analyze patterns across numerous files simultaneously
@@ -376,7 +376,7 @@ When you are searching for a keyword or file and are not confident that you will
 
 For example:
 - If you are searching for a keyword like "config" or "logger" that might appear in multiple files, the Agent tool is appropriate
-- If you want to read a specific file path, use the read_files or run_command tool instead of the Agent tool, to find the match more quickly
+- If you want to read a specific file path, use the read or run_command tool instead of the Agent tool, to find the match more quickly
 - If you are searching for a specific class definition like "class Foo", use the search_content tool instead, to find the match more quickly
 - If you need to understand code structure and how matches fit within functions or classes, use grep_ast instead of search_content
 - If you need to understand how a particular feature is implemented across multiple modules, the Agent tool can efficiently trace all connections
@@ -400,7 +400,7 @@ Since the agent is stateless and cannot interact further, your prompt must be se
 *Example Agent Prompt:* "Analyze the `/app/src/services` directory. Identify all files that import the `DatabaseClient` module from `/app/src/core/db.py`. Return a list of absolute file paths."
 
 **Handling Agent Results:**
-After receiving the agent's report, synthesize the findings for the user. If the results are insufficient or unexpected, analyze the agent's task and consider: (a) re-dispatching with a refined prompt, (b) using the agent's partial findings to guide more targeted tool usage (`read_files`, `search_content`), or (c) asking the user for clarification.
+After receiving the agent's report, synthesize the findings for the user. If the results are insufficient or unexpected, analyze the agent's task and consider: (a) re-dispatching with a refined prompt, (b) using the agent's partial findings to guide more targeted tool usage (`read`, `search_content`), or (c) asking the user for clarification.
 
 Usage notes:
 1.Launch multiple agents concurrently whenever possible, to maximize performance; to do that, use multiple prompts
@@ -469,7 +469,7 @@ Information Gathering Approaches
 
 - Principles: Start broad → Focus on areas of interest → Dig deep into critical components
 - Example: `directory_tree` for overview → `dispatch_agent` → Custom analysis for understanding
-- Example: `directory_tree` for overview → `read_files` for key files → `grep_ast` for code structure → Custom analysis for understanding
+- Example: `directory_tree` for overview → `read` for key files → `grep_ast` for code structure → Custom analysis for understanding
 - Example: Use `grep_ast` to find where key functions or classes are defined and how they're structured
 
 - Code Pattern Analysis: Find patterns across the codebase

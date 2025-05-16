@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 from mcp_claude_code.tools.filesystem import (
     Edit,
-    ReadFilesTool,
+    ReadTool,
     Write,
     get_filesystem_tools,
 )
@@ -36,8 +36,8 @@ class TestRefactoredFileTools:
         document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
-        """Create a ReadFilesTool instance for testing."""
-        return ReadFilesTool(document_context, permission_manager)
+        """Create a ReadTool instance for testing."""
+        return ReadTool(document_context, permission_manager)
 
     @pytest.fixture
     def write_tool(
@@ -72,7 +72,7 @@ class TestRefactoredFileTools:
     @pytest.mark.asyncio
     async def test_read_files_single_allowed(
         self,
-        read_files_tool: ReadFilesTool,
+        read_files_tool: ReadTool,
         setup_allowed_path: str,
         test_file: str,
         mcp_context: MagicMock,
@@ -85,7 +85,7 @@ class TestRefactoredFileTools:
             return_value=tool_ctx,
         ):
             # Call the tool directly
-            result = await read_files_tool.call(ctx=mcp_context, paths=test_file)
+            result = await read_files_tool.call(ctx=mcp_context, file_path=test_file)
 
             # Verify result
             assert "This is a test file content" in result
@@ -144,7 +144,11 @@ class TestRefactoredFileTools:
         ):
             # Call the tool directly
             result = await edit_file_tool.call(
-                ctx=mcp_context, file_path=test_file, old_string=old_string, new_string=new_string, expected_replacements=1
+                ctx=mcp_context,
+                file_path=test_file,
+                old_string=old_string,
+                new_string=new_string,
+                expected_replacements=1,
             )
 
             # Verify result

@@ -23,7 +23,7 @@ This project provides an MCP server that implements Claude Code-like functionali
 
 | Tool                   | Description                                                                                   |
 | ---------------------- | --------------------------------------------------------------------------------------------- |
-| `read_files`           | Read one or multiple files with encoding detection                                            |
+| `read`                | Read file contents with line numbers, offset, and limit capabilities                       |
 | `write`           | Create or overwrite files                                                                     |
 | `edit_file`            | Make line-based edits to text files                                                           |
 | `directory_tree`       | Get a recursive tree view of directories                                                      |

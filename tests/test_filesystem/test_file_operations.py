@@ -16,13 +16,13 @@ if TYPE_CHECKING:
 from mcp_claude_code.tools.filesystem.content_replace import ContentReplaceTool
 from mcp_claude_code.tools.filesystem.directory_tree import DirectoryTreeTool
 from mcp_claude_code.tools.filesystem.edit import Edit
-from mcp_claude_code.tools.filesystem.read_files import ReadFilesTool
 from mcp_claude_code.tools.filesystem.grep import Grep
+from mcp_claude_code.tools.filesystem.read import ReadTool
 from mcp_claude_code.tools.filesystem.write import Write
 
 
-class TestReadFilesTool:
-    """Test the ReadFilesTool class."""
+class TestReadTool:
+    """Test the ReadTool class."""
 
     @pytest.fixture
     def read_files_tool(
@@ -30,8 +30,8 @@ class TestReadFilesTool:
         document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
-        """Create a ReadFilesTool instance for testing."""
-        return ReadFilesTool(document_context, permission_manager)
+        """Create a ReadTool instance for testing."""
+        return ReadTool(document_context, permission_manager)
 
     @pytest.fixture
     def setup_allowed_path(
@@ -48,7 +48,7 @@ class TestReadFilesTool:
     @pytest.mark.asyncio
     async def test_read_files_single_allowed(
         self,
-        read_files_tool: ReadFilesTool,
+        read_files_tool: ReadTool,
         setup_allowed_path: str,
         test_file: str,
         mcp_context: MagicMock,
@@ -60,15 +60,17 @@ class TestReadFilesTool:
 
         # Mock the base class method
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
-                result = await read_files_tool.call(mcp_context, paths=test_file)
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
+                result = await read_files_tool.call(mcp_context, file_path=test_file)
 
         # Verify result
         assert "This is a test file content" in result
 
     @pytest.mark.asyncio
     async def test_read_files_single_not_allowed(
-        self, read_files_tool: ReadFilesTool, mcp_context: MagicMock
+        self, read_files_tool: ReadTool, mcp_context: MagicMock
     ):
         """Test reading a file that is not allowed."""
         # Path outside of allowed paths
@@ -80,60 +82,68 @@ class TestReadFilesTool:
 
         # Mock the base class method
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
-                result = await read_files_tool.call(mcp_context, paths=path)
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
+                result = await read_files_tool.call(mcp_context, file_path=path)
 
         # Verify result
         assert "Error: Access denied" in result
 
     @pytest.mark.asyncio
-    async def test_read_files_multiple(
+    async def test_read_file_with_offset_and_limit(
         self,
-        read_files_tool: ReadFilesTool,
+        read_files_tool: ReadTool,
         setup_allowed_path: str,
-        test_file: str,
         mcp_context: MagicMock,
     ):
-        """Test reading multiple files."""
-        # Create a second test file
-        second_file = os.path.join(setup_allowed_path, "test_file2.txt")
-        with open(second_file, "w") as f:
-            f.write("This is the second test file.")
+        """Test reading a file with offset and limit."""
+        # Create a test file with multiple lines
+        test_file = os.path.join(setup_allowed_path, "multiline_test.txt")
+        with open(test_file, "w") as f:
+            for i in range(10):
+                f.write(f"This is line {i + 1}\n")
 
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
 
-        # Mock the base class method
+        # Read with offset and limit
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result = await read_files_tool.call(
-                    mcp_context, paths=[test_file, second_file]
+                    mcp_context, file_path=test_file, offset=2, limit=3
                 )
 
-        # Verify result contains both file contents
-        assert "This is a test file content" in result
-        assert "This is the second test file" in result
-        assert "---" in result  # Separator between files
+        # Verify result contains only the requested lines
+        assert "This is line 3" in result  # First line after offset
+        assert "This is line 4" in result
+        assert "This is line 5" in result  # Last line within limit
+        assert "This is line 1" not in result  # Before offset
+        assert "This is line 6" not in result  # After limit
 
     @pytest.mark.asyncio
-    async def test_read_files_empty_list(
+    async def test_read_file_missing_path(
         self,
-        read_files_tool: ReadFilesTool,
+        read_files_tool: ReadTool,
         mcp_context: MagicMock,
     ):
-        """Test reading an empty list of files."""
+        """Test reading with a missing path parameter."""
         # Mock context calls
         tool_ctx = AsyncMock()
         tool_ctx.set_tool_info = AsyncMock()
 
         # Mock the base class method
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
-                result = await read_files_tool.call(mcp_context, paths=[])
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
+                result = await read_files_tool.call(mcp_context, file_path=None)
 
         # Verify result
-        assert "Error: Parameter 'paths' is required" in result
+        assert "Error: Parameter 'file_path' is required but was None" in result
 
 
 class TestWrite:
@@ -178,7 +188,9 @@ class TestWrite:
 
         # Mock the base class method
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result = await write_tool.call(
                     mcp_context, file_path=test_path, content=test_content
                 )
@@ -239,9 +251,14 @@ class TestEdit:
 
         # Mock the base class method
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result = await edit_file_tool.call(
-                    mcp_context, file_path=test_file, old_string=edits[0]["oldText"], new_string=edits[0]["newText"]
+                    mcp_context,
+                    file_path=test_file,
+                    old_string=edits[0]["oldText"],
+                    new_string=edits[0]["newText"],
                 )
 
         # Verify result
@@ -275,13 +292,20 @@ class TestEdit:
 
         # Mock the base class method
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result = await edit_file_tool.call(
-                    mcp_context, file_path=test_file, old_string=edits[0]["oldText"], new_string=edits[0]["newText"]
+                    mcp_context,
+                    file_path=test_file,
+                    old_string=edits[0]["oldText"],
+                    new_string=edits[0]["newText"],
                 )
 
         # Verify result indicates error about empty old_string
-        assert "Error: Parameter 'old_string' cannot be empty for existing files" in result
+        assert (
+            "Error: Parameter 'old_string' cannot be empty for existing files" in result
+        )
 
     @pytest.mark.asyncio
     async def test_edit_file_with_whitespace_oldtext(
@@ -306,13 +330,20 @@ class TestEdit:
 
         # Mock the base class method
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result = await edit_file_tool.call(
-                    mcp_context, file_path=test_file, old_string=edits[0]["oldText"], new_string=edits[0]["newText"]
+                    mcp_context,
+                    file_path=test_file,
+                    old_string=edits[0]["oldText"],
+                    new_string=edits[0]["newText"],
                 )
 
         # Verify result indicates error about whitespace old_string
-        assert "Error: Parameter 'old_string' cannot be empty for existing files" in result
+        assert (
+            "Error: Parameter 'old_string' cannot be empty for existing files" in result
+        )
 
     @pytest.mark.asyncio
     async def test_edit_file_with_missing_oldtext(
@@ -337,19 +368,29 @@ class TestEdit:
 
         # Mock the base class method
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 # Special handling for missing oldText field
                 if "oldText" in edits[0]:
                     result = await edit_file_tool.call(
-                        mcp_context, file_path=test_file, old_string=edits[0]["oldText"], new_string=edits[0]["newText"]
+                        mcp_context,
+                        file_path=test_file,
+                        old_string=edits[0]["oldText"],
+                        new_string=edits[0]["newText"],
                     )
                 else:
                     result = await edit_file_tool.call(
-                        mcp_context, file_path=test_file, old_string="", new_string=edits[0]["newText"]
+                        mcp_context,
+                        file_path=test_file,
+                        old_string="",
+                        new_string=edits[0]["newText"],
                     )
 
         # Verify result indicates error about missing old_string
-        assert "Error: Parameter 'old_string' cannot be empty for existing files" in result
+        assert (
+            "Error: Parameter 'old_string' cannot be empty for existing files" in result
+        )
 
 
 class TestDirectoryTreeTool:
@@ -408,7 +449,9 @@ class TestDirectoryTreeTool:
 
         # Mock the base class method
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result = await directory_tree_tool.call(mcp_context, path=test_dir)
 
         # Verify result format
@@ -458,7 +501,9 @@ class TestDirectoryTreeTool:
 
         # Test with depth=1
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result = await directory_tree_tool.call(
                     mcp_context, path=test_dir, depth=1, include_filtered=False
                 )
@@ -471,7 +516,9 @@ class TestDirectoryTreeTool:
 
         # Test with deeper depth
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result2 = await directory_tree_tool.call(
                     mcp_context, path=test_dir, depth=2, include_filtered=False
                 )
@@ -484,7 +531,9 @@ class TestDirectoryTreeTool:
 
         # Test with unlimited depth
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result3 = await directory_tree_tool.call(
                     mcp_context, path=test_dir, depth=0, include_filtered=False
                 )
@@ -540,7 +589,9 @@ class TestDirectoryTreeTool:
 
         # Test with default filtering (filtered dirs should be marked but not traversed)
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result = await directory_tree_tool.call(mcp_context, path=test_dir)
 
         assert "normal_dir/" in result
@@ -557,7 +608,9 @@ class TestDirectoryTreeTool:
 
         # Test with include_filtered=True
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result2 = await directory_tree_tool.call(
                     mcp_context, path=test_dir, include_filtered=True
                 )
@@ -593,7 +646,9 @@ class TestDirectoryTreeTool:
 
         # Test direct access to filtered directory
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result3 = await directory_tree_tool.call(mcp_context, path=git_dir)
 
         # When directly accessing a filtered directory, it should be traversed
@@ -615,7 +670,9 @@ class TestDirectoryTreeTool:
         tool_ctx.set_tool_info = AsyncMock()
 
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result = await directory_tree_tool.call(mcp_context, path=path)
 
         # Verify result
@@ -666,7 +723,9 @@ class TestGrep:
         tool_ctx.set_tool_info = AsyncMock()
 
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result = await grep_tool.call(
                     mcp_context,
                     pattern="searchable",
@@ -698,7 +757,9 @@ class TestGrep:
         tool_ctx.set_tool_info = AsyncMock()
 
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result = await grep_tool.call(
                     mcp_context,
                     pattern="pattern",
@@ -743,7 +804,9 @@ class TestGrep:
 
         # Test searching in all files
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result = await grep_tool.call(
                     mcp_context, pattern="findable", path=test_dir, file_pattern="*"
                 )
@@ -755,7 +818,9 @@ class TestGrep:
 
         # Test searching with a file pattern
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result2 = await grep_tool.call(
                     mcp_context, pattern="findable", path=test_dir, file_pattern="*.py"
                 )
@@ -809,7 +874,9 @@ class TestContentReplaceTool:
         tool_ctx.set_tool_info = AsyncMock()
 
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result = await content_replace_tool.call(
                     mcp_context,
                     pattern="old content",
@@ -853,7 +920,9 @@ class TestContentReplaceTool:
         tool_ctx.set_tool_info = AsyncMock()
 
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result = await content_replace_tool.call(
                     mcp_context,
                     pattern="would be replaced",
@@ -907,7 +976,9 @@ class TestContentReplaceTool:
 
         # Test replacing in all files
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result = await content_replace_tool.call(
                     mcp_context,
                     pattern="replaceable text",
@@ -950,7 +1021,9 @@ class TestContentReplaceTool:
 
         # Test replacing with a file pattern - execute the replacement with Python files only
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 await content_replace_tool.call(
                     mcp_context,
                     pattern="replaceable text",
