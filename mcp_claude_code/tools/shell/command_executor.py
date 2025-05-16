@@ -10,11 +10,10 @@ import os
 import re
 import shlex
 import shutil
-import subprocess
 import sys
 import tempfile
 from collections.abc import Awaitable, Callable
-from typing import Dict, Optional, final
+from typing import final
 
 from mcp.server.fastmcp import Context as MCPContext
 from mcp.server.fastmcp import FastMCP
@@ -48,21 +47,19 @@ class CommandExecutor:
         self.excluded_commands: list[str] = ["rm"]
 
         # Map of supported interpreters with special handling
-        self.special_interpreters: Dict[
+        self.special_interpreters: dict[
             str,
-            Callable[
-                [str, str, str], dict[str, str]
-            ] | Awaitable[CommandResult],
+            Callable[[str, str, str], dict[str, str]] | Awaitable[CommandResult],
         ] = {
             "fish": self._handle_fish_script,
         }
 
     def _get_shell_by_type(self, shell_type: str) -> tuple[str, str]:
         """Get shell information for a specified shell type.
-        
+
         Args:
             shell_type: The shell name to use (e.g., "bash", "cmd", "powershell")
-            
+
         Returns:
             Tuple of (shell_basename, shell_path)
         """
@@ -71,26 +68,26 @@ class CommandExecutor:
             # Shell not found, fall back to default
             self._log(f"Requested shell '{shell_type}' not found, using system default")
             return self._get_system_shell()
-        
+
         if sys.platform == "win32":
             shell_path = shell_path.lower()
-        
+
         shell_basename = os.path.basename(shell_path).lower()
         return shell_basename, shell_path
 
     def _get_system_shell(self, shell_type: str | None = None) -> tuple[str, str]:
         """Get the system's default shell based on the platform.
-        
+
         Args:
             shell_type: Optional specific shell to use instead of system default
-            
+
         Returns:
             Tuple of (shell_basename, shell_path)
         """
         # If a specific shell is requested, use that
         if shell_type is not None:
             return self._get_shell_by_type(shell_type)
-            
+
         # Otherwise use system default
         if sys.platform == "win32":
             # On Windows, default to Command Prompt
@@ -100,8 +97,10 @@ class CommandExecutor:
             # Unix systems
             user_shell = os.environ.get("SHELL", "/bin/bash")
             return os.path.basename(user_shell).lower(), user_shell
-        
-    def _format_win32_shell_command(self, shell_basename, user_shell, command, use_login_shell=True):
+
+    def _format_win32_shell_command(
+        self, shell_basename, user_shell, command, use_login_shell=True
+    ):
         """Format a command for execution with the appropriate Windows shell.
 
         Args:
@@ -109,7 +108,7 @@ class CommandExecutor:
             user_shell: The full path to the shell
             command: The command to execute
             use_login_shell: Whether to use login shell settings
-            
+
         Returns:
             Formatted shell command string
         """
@@ -143,13 +142,16 @@ class CommandExecutor:
             # CMD doesn't have an explicit login shell concept
             formatted_command = f'"{user_shell}" /c "{command}"'
 
-        self._log("Win32 Shell Results", {
-            "shell_basename": shell_basename,
-            "user_shell": user_shell,
-            "command": command,
-            "use_login_shell": use_login_shell,
-            "formatted_command": formatted_command,
-        })
+        self._log(
+            "Win32 Shell Results",
+            {
+                "shell_basename": shell_basename,
+                "user_shell": user_shell,
+                "command": command,
+                "use_login_shell": use_login_shell,
+                "formatted_command": formatted_command,
+            },
+        )
 
         return formatted_command
 
@@ -274,11 +276,11 @@ class CommandExecutor:
         try:
             # Get shell information
             shell_basename, user_shell = self._get_system_shell(shell_type)
-            
+
             if sys.platform == "win32":
                 # On Windows, always use shell execution
                 self._log(f"Using shell on Windows: {user_shell} ({shell_basename})")
-                
+
                 # Format command using helper method
                 shell_cmd = self._format_win32_shell_command(
                     shell_basename, user_shell, command, use_login_shell
@@ -304,20 +306,31 @@ class CommandExecutor:
                     if use_login_shell:
                         self._log(f"Using login shell: {user_shell} ({shell_basename})")
 
+                        # Escape single quotes in command for shell -c wrapper
+                        # The standard way to escape a single quote within a single-quoted string in POSIX shells is '\''
+                        escaped_command = command.replace("'", "'\\''")
+                        self._log(f"Original command: {command}")
+                        self._log(f"Escaped command: {escaped_command}")
+
                         # Wrap command with appropriate shell invocation
                         if shell_basename == "zsh":
-                            shell_cmd = f"{user_shell} -l -c '{command}'"
+                            shell_cmd = f"{user_shell} -l -c '{escaped_command}'"
                         elif shell_basename == "bash":
-                            shell_cmd = f"{user_shell} -l -c '{command}'"
+                            shell_cmd = f"{user_shell} -l -c '{escaped_command}'"
                         elif shell_basename == "fish":
-                            shell_cmd = f"{user_shell} -l -c '{command}'"
+                            shell_cmd = f"{user_shell} -l -c '{escaped_command}'"
                         else:
                             # Default fallback
-                            shell_cmd = f"{user_shell} -c '{command}'"
+                            shell_cmd = f"{user_shell} -c '{escaped_command}'"
                     else:
                         self._log(
                             f"Using shell for command with shell operators: {command}"
                         )
+                        # Escape single quotes in command for shell execution
+                        escaped_command = command.replace("'", "'\\''")
+                        self._log(f"Original command: {command}")
+                        self._log(f"Escaped command: {escaped_command}")
+                        shell_cmd = f"{user_shell} -c '{escaped_command}'"
 
                     # Use shell for command execution
                     process = await asyncio.create_subprocess_shell(
@@ -376,7 +389,7 @@ class CommandExecutor:
         shell_type: str | None = None,
         env: dict[str, str] | None = None,
         timeout: float | None = 60.0,
-        use_login_shell: bool = True
+        use_login_shell: bool = True,
     ) -> CommandResult:
         """Execute a script with the specified interpreter.
 
@@ -427,7 +440,7 @@ class CommandExecutor:
         shell_type: str | None = None,
         env: dict[str, str] | None = None,
         timeout: float | None = 60.0,
-        use_login_shell: bool = True
+        use_login_shell: bool = True,
     ) -> CommandResult:
         """Execute a script by passing it to stdin of the interpreter.
 
@@ -451,16 +464,16 @@ class CommandExecutor:
         try:
             # Get shell information
             shell_basename, user_shell = self._get_system_shell(shell_type)
-            
+
             if sys.platform == "win32":
                 # On Windows, always use shell
                 self._log(f"Using shell on Windows for interpreter: {user_shell}")
-                
+
                 # Format command using helper method for the interpreter
                 shell_cmd = self._format_win32_shell_command(
                     shell_basename, user_shell, interpreter, use_login_shell
                 )
-                
+
                 # Create and run the process with shell
                 process = await asyncio.create_subprocess_shell(
                     shell_cmd,
@@ -636,7 +649,7 @@ class CommandExecutor:
         """
         # Get language info from the centralized language map
         language_map = self._get_language_map()
-        
+
         # Check if the language is supported
         if language not in language_map:
             return CommandResult(
@@ -647,7 +660,7 @@ class CommandExecutor:
         # Get language info
         language_info = language_map[language]
         extension = language_info["extension"]
-        
+
         # Get interpreter command with full path if possible
         command, language_args = self._get_interpreter_path(language, shell_type)
 
@@ -676,7 +689,6 @@ class CommandExecutor:
 
                 # Convert Windows path to WSL path if using WSL
                 if shell_basename in ["wsl", "wsl.exe"]:
-
                     match = re.match(r"([a-zA-Z]):\\(.*)", temp_path)
                     if match:
                         drive, path = match.groups()
@@ -685,23 +697,27 @@ class CommandExecutor:
                         wsl_path = temp_path.replace("\\", "/")
                         self._log(f"WSL path conversion may be incomplete: {wsl_path}")
 
-                    self._log(f"Converted Windows path '{temp_path}' to WSL path '{wsl_path}'")
+                    self._log(
+                        f"Converted Windows path '{temp_path}' to WSL path '{wsl_path}'"
+                    )
                     temp_path = wsl_path
-                
+
                 # Build the command including args
                 cmd = f"{command} {temp_path}"
                 if language_args:
                     cmd = f"{command} {' '.join(language_args)} {temp_path}"
                 if args:
                     cmd += " " + " ".join(args)
-                
+
                 # Format command using helper method
                 shell_cmd = self._format_win32_shell_command(
                     shell_basename, user_shell, cmd, use_login_shell
                 )
-                
-                self._log(f"Executing script from file on Windows with shell: {shell_cmd}")
-                
+
+                self._log(
+                    f"Executing script from file on Windows with shell: {shell_cmd}"
+                )
+
                 # Create and run the process with shell
                 process = await asyncio.create_subprocess_shell(
                     shell_cmd,
@@ -726,7 +742,9 @@ class CommandExecutor:
                     # Create command that runs script through login shell
                     shell_cmd = f"{user_shell} -l -c '{cmd}'"
 
-                    self._log(f"Executing script from file with login shell: {shell_cmd}")
+                    self._log(
+                        f"Executing script from file with login shell: {shell_cmd}"
+                    )
 
                     # Create and run the process with shell
                     process = await asyncio.create_subprocess_shell(
@@ -789,10 +807,10 @@ class CommandExecutor:
 
     def _get_language_map(self) -> dict[str, dict[str, str | list[str]]]:
         """Get the mapping of languages to interpreter information.
-        
+
         This is a single source of truth for language mappings used by
         both execute_script_from_file and get_available_languages.
-        
+
         Returns:
             Dictionary mapping language names to interpreter information
         """
@@ -800,12 +818,12 @@ class CommandExecutor:
             "python": {
                 "command": "python",
                 "extension": ".py",
-                "alternatives": ["python3"]  # Alternative command names to try
+                "alternatives": ["python3"],  # Alternative command names to try
             },
             "javascript": {
                 "command": "node",
                 "extension": ".js",
-                "alternatives": ["nodejs"]
+                "alternatives": ["nodejs"],
             },
             "typescript": {
                 "command": "ts-node",
@@ -831,11 +849,7 @@ class CommandExecutor:
                 "command": "perl",
                 "extension": ".pl",
             },
-            "r": {
-                "command": "Rscript",
-                "extension": ".R",
-                "alternatives": ["R"]
-            },
+            "r": {"command": "Rscript", "extension": ".R", "alternatives": ["R"]},
             # Windows-specific languages
             "batch": {
                 "command": "cmd.exe",
@@ -846,36 +860,38 @@ class CommandExecutor:
                 "command": "powershell.exe",
                 "extension": ".ps1",
                 "args": ["-ExecutionPolicy", "Bypass", "-File"],
-                "alternatives": ["pwsh.exe", "pwsh"]
+                "alternatives": ["pwsh.exe", "pwsh"],
             },
         }
-    
-    def _get_interpreter_path(self, language: str, shell_type: str | None = None) -> tuple[str, list[str]]:
+
+    def _get_interpreter_path(
+        self, language: str, shell_type: str | None = None
+    ) -> tuple[str, list[str]]:
         """Get the full path to the interpreter for the given language.
-        
+
         Attempts to find the full path to the interpreter command, but only for
         Windows shell types (cmd, powershell). For WSL, just returns the command name.
-        
+
         Args:
             language: The language name (e.g., "python", "javascript")
             shell_type: Optional shell type (e.g., "wsl", "cmd", "powershell")
-            
+
         Returns:
             Tuple of (interpreter_command, args) where:
               - interpreter_command is either the full path to the interpreter or the command name
               - args is a list of additional arguments to pass to the interpreter
         """
         language_map = self._get_language_map()
-        
+
         if language not in language_map:
             # Return the language name itself as a fallback
             return language, []
-            
+
         language_info = language_map[language]
         command = language_info["command"]
         args = language_info.get("args", [])
         alternatives = language_info.get("alternatives", [])
-        
+
         # Special handling for WSL - use command name directly (not Windows paths)
         if shell_type and shell_type.lower() in ["wsl", "wsl.exe"]:
             # For Python specifically, use python3 in WSL environments
@@ -883,25 +899,32 @@ class CommandExecutor:
                 return "python3", args
             # For other languages, just use the command name
             return command, args
-            
+
         # For Windows shell types, try to find the full path
-        if sys.platform == "win32" and (not shell_type or shell_type.lower() in ["cmd", "powershell", "cmd.exe", "powershell.exe"]):
+        if sys.platform == "win32" and (
+            not shell_type
+            or shell_type.lower() in ["cmd", "powershell", "cmd.exe", "powershell.exe"]
+        ):
             try:
                 # Try to find the full path to the command
                 full_path = shutil.which(command)
                 if full_path:
-                    self._log(f"Found full path for {language} interpreter: {full_path}")
+                    self._log(
+                        f"Found full path for {language} interpreter: {full_path}"
+                    )
                     return full_path, args
-                    
+
                 # If primary command not found, try alternatives
                 for alt_command in alternatives:
                     alt_path = shutil.which(alt_command)
                     if alt_path:
-                        self._log(f"Found alternative path for {language} interpreter: {alt_path}")
+                        self._log(
+                            f"Found alternative path for {language} interpreter: {alt_path}"
+                        )
                         return alt_path, args
             except Exception as e:
                 self._log(f"Error finding path for {language} interpreter: {str(e)}")
-        
+
         # If we can't find the full path or it's not appropriate, return the command name
         self._log(f"Using command name for {language} interpreter: {command}")
         return command, args
@@ -918,13 +941,14 @@ class CommandExecutor:
     # Legacy method to keep backwards compatibility with tests
     def register_tools(self, mcp_server: FastMCP) -> None:
         """Register command execution tools with the MCP server.
-        
+
         Legacy method for backwards compatibility with existing tests.
         New code should use the modular tool classes instead.
 
         Args:
             mcp_server: The FastMCP server instance
         """
+
         # Run Command Tool - keep original method names for test compatibility
         @mcp_server.tool()
         async def run_command(
@@ -932,7 +956,7 @@ class CommandExecutor:
             cwd: str,
             ctx: MCPContext,
             shell_type: str | None = None,
-            use_login_shell: bool = True
+            use_login_shell: bool = True,
         ) -> str:
             tool_ctx = create_tool_context(ctx)
             tool_ctx.set_tool_info("run_command")
@@ -940,18 +964,18 @@ class CommandExecutor:
 
             # Run validations and execute
             result = await self.execute_command(
-                command, 
-                cwd, 
+                command,
+                cwd,
                 shell_type=shell_type,
-                timeout=30.0, 
-                use_login_shell=use_login_shell
+                timeout=30.0,
+                use_login_shell=use_login_shell,
             )
-            
+
             if result.is_success:
                 return result.stdout
             else:
                 return result.format_output()
-                
+
         # Run Script Tool
         @mcp_server.tool()
         async def run_script(
@@ -960,11 +984,11 @@ class CommandExecutor:
             ctx: MCPContext,
             shell_type: str | None = None,
             interpreter: str = "bash",
-            use_login_shell: bool = True
+            use_login_shell: bool = True,
         ) -> str:
             tool_ctx = create_tool_context(ctx)
             tool_ctx.set_tool_info("run_script")
-            
+
             # Execute the script
             result = await self.execute_script(
                 script=script,
@@ -988,11 +1012,11 @@ class CommandExecutor:
             ctx: MCPContext,
             shell_type: str | None = None,
             args: list[str] | None = None,
-            use_login_shell: bool = True
+            use_login_shell: bool = True,
         ) -> str:
             tool_ctx = create_tool_context(ctx)
             tool_ctx.set_tool_info("script_tool")
-            
+
             # Execute the script
             result = await self.execute_script_from_file(
                 script=script,
@@ -1001,9 +1025,9 @@ class CommandExecutor:
                 shell_type=shell_type,
                 timeout=30.0,
                 args=args,
-                use_login_shell=use_login_shell
+                use_login_shell=use_login_shell,
             )
-            
+
             if result.is_success:
                 return result.stdout
             else:
