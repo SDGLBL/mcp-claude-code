@@ -25,6 +25,7 @@ from mcp_claude_code.tools.agent.tool_adapter import (
     convert_tools_to_openai_functions,
 )
 from mcp_claude_code.tools.common.base import BaseTool
+from mcp_claude_code.tools.common.batch_tool import BatchTool
 from mcp_claude_code.tools.common.context import (
     DocumentContext,
     ToolContext,
@@ -148,6 +149,9 @@ Returns:
         )
         self.available_tools.extend(
             get_read_only_jupyter_tools(self.document_context, self.permission_manager)
+        )
+        self.available_tools.append(
+            BatchTool({t.name: t for t in self.available_tools})
         )
 
     @override
