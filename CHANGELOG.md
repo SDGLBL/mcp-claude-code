@@ -5,6 +5,20 @@ All notable changes to the MCP Claude Code project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.31] - 2025-05-16
+
+### Added
+- Added batch tool for parallel tool execution (eade6f7)
+  - New tool that enables executing multiple tool invocations in parallel within a single request
+  - Significantly improves performance by reducing context usage and latency for multiple operations
+  - Supports independent tool operations with proper error handling and result formatting
+  - Particularly useful for running multiple searches, file operations, or data gathering in parallel
+
+### Changed
+- Renamed tool tags in system prompt for consistency and clarity (030956c)
+  - Changed `<think_tool>` to `<think>` and `<grep_ast_tool>` to `<grep_ast>` to maintain consistent naming
+  - Improves readability and aligns with the simpler tag naming pattern used elsewhere in documentation
+
 ## [0.1.30] - 2025-05-15
 
 ### Added
