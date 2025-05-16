@@ -5,6 +5,51 @@ All notable changes to the MCP Claude Code project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2025-05-16
+
+### Added
+- Added batch tool availability to dispatch_agent (c7bc6a8)
+  - Enhanced agent capabilities by adding BatchTool to available tools
+  - Enables batch processing for improved agent performance
+  - Allows for concurrent execution of multiple operations
+
+### Changed
+- Renamed read_files tool to read with improved functionality (42d8e94)
+  - Simplified interface with single file_path parameter
+  - Added line number display in output (cat -n format)
+  - Added offset and limit parameters for reading specific line ranges
+  - Added line truncation for very long lines
+  - Improved error handling and parameter validation
+- Enforced absolute path requirement in agent prompts (c3fe452)
+  - Added validation for absolute paths in dispatch_agent prompts
+  - Improved error messages with usage examples
+  - Enhanced reliability for filesystem operations
+- Renamed edit_file tool to edit throughout documentation and code (10cfe12)
+  - Updated all references for consistency
+  - Improved parameter handling and validation
+  - Enhanced error messages
+
+### Fixed
+- Removed outdated docstring section in agent_tool.py (c30ad80)
+  - Eliminated obsolete information about args and returns
+  - Maintained core tool functionality description
+- Updated directory verification tool reference in write.py docs (fb36e12)
+  - Changed LS tool reference to directory_tree tool for accuracy
+  - Aligned documentation with actual tool naming conventions
+
+### Documentation
+- Added example for dispatching multiple agents in batch operations (8ed8769)
+  - Demonstrated concurrent agent dispatch for information retrieval
+  - Added batch operations as valid use case for agent operations
+- Clarified batch tool usage guidelines and added examples (9e14410)
+  - Emphasized related changes vs. independent operations
+  - Distinguished between simple mechanical changes and complex validations
+  - Added practical usage scenarios and examples
+- Refactored dispatch_agent documentation (81292c8)
+  - Simplified and consolidated usage guidelines
+  - Updated concurrency recommendations for batch capabilities
+  - Improved readability with clearer section organization
+
 ## [0.1.31] - 2025-05-16
 
 ### Added
