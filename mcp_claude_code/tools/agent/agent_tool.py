@@ -69,13 +69,6 @@ This tool creates an agent for delegation of tasks such as multi-step searches, 
 or other operations that benefit from focused processing.
 
 The agent works with its own context and provides a response containing the results of its work.
-
-Args:
-    prompt: A task description for the agent to perform. Must include absolute paths (starting with /)
-           to specify which files or directories to work with.
-
-Returns:
-    Results from the agent execution
 """
 
     @property
