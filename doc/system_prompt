@@ -112,8 +112,8 @@ When modifying multiple related files or making a series of consistent changes, 
 batch(
   description="Update import statements across modules",
   invocations=[
-    {tool: "edit", input: {file_path: "module1.py", old_string: "...", new_string: "..."}},
-    {tool: "edit", input: {file_path: "module2.py", old_string: "...", new_string: "..."}}
+    {tool_name: "edit", input: {file_path: "module1.py", old_string: "...", new_string: "..."}},
+    {tool_name: "edit", input: {file_path: "module2.py", old_string: "...", new_string: "..."}}
   ]
 )
 
@@ -121,8 +121,8 @@ When dispatching multiple agents to find necessary information.
 batch(
   description="Update import statements across modules",
   invocations=[
-    {tool: "dispatch_agent", input: {prompt: "Search for all instances of 'logger' configuration in /app/config directory"}},
-    {tool: "dispatch_agent", input: {prompt: "Find all test files that reference 'UserService' in /app/tests"}},
+    {tool_name: "dispatch_agent", input: {prompt: "Search for all instances of 'logger' configuration in /app/config directory"}},
+    {tool_name: "dispatch_agent", input: {prompt: "Find all test files that reference 'UserService' in /app/tests"}},
   ]
 )
 
