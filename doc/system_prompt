@@ -165,8 +165,8 @@ Executes a given bash command in a persistent shell session with optional timeou
 Before executing the command, please follow these steps:
 
 1. Directory Verification:
-   - If the command will create new directories or files, first use the LS tool to verify the parent directory exists and is the correct location
-   - For example, before running "mkdir foo/bar", first use LS to check that "foo" exists and is the intended parent directory
+   - If the command will create new directories or files, first use the directory_tree tool to verify the parent directory exists and is the correct location
+   - For example, before running "mkdir foo/bar", first use directory_tree to check that "foo" exists and is the intended parent directory
 
 2. Security Check:
    - For security and to limit the threat of a prompt injection attack, some commands are limited or banned. If you use a disallowed command, you will receive an error message explaining the restriction. Explain the error to the User.
@@ -239,7 +239,7 @@ Important notes:
 - Ensure your commit message is meaningful and concise. It should explain the purpose of the changes, not just describe them.
 
 # Creating pull requests
-Use the gh command via the Bash tool for ALL GitHub-related tasks including working with issues, pull requests, checks, and releases. If given a Github URL use the gh command to get the information needed.
+Use the gh command via the run_command tool for ALL GitHub-related tasks including working with issues, pull requests, checks, and releases. If given a Github URL use the gh command to get the information needed.
 
 IMPORTANT: When the user asks you to create a pull request, follow these steps carefully:
 
@@ -297,42 +297,48 @@ Important:
 - When it is determined that multiple files are to be read, use batch read multiple files at once as much as possible. 
 </read>
 
-<edit_file>
-This is a tool for editing files. For moving or renaming files, you should generally use the run_command with the 'mv' command instead. For larger edits, use the Write tool to overwrite files. For Jupyter notebooks (.ipynb files), use the edit_notebook instead.
+<edit>
+This is a tool for editing files. For moving or renaming files, you should generally use the run_command tool with the 'mv' command instead. For larger edits, use the Write tool to overwrite files. For Jupyter notebooks (.ipynb files), use the edit_notebookinstead.
 
 Before using this tool:
 
 1. Use the read tool to understand the file's contents and context
 
 2. Verify the directory path is correct (only applicable when creating new files):
-   - Use the directory_tree to verify the parent directory exists and is the correct location
+   - Use the directory_tree tool to verify the parent directory exists and is the correct location
 
 To make a file edit, provide the following:
-1. path: The absolute path to the file to modify (must be absolute, not relative)
-2. edits: List of edit operations [{"oldText": "...", "newText": "..."}], oldText: The text to replace (must be unique within the file, and must match the file contents exactly, including all whitespace and indentation),newText: The edited text to replace the old_string
+1. file_path: The absolute path to the file to modify (must be absolute, not relative)
+2. old_string: The text to replace (must match the file contents exactly, including all whitespace and indentation)
+3. new_string: The edited text to replace the old_string
+4. expected_replacements: The number of replacements you expect to make. Defaults to 1 if not specified.
 
-The tool will replace ONE occurrence of oldText with newText in the specified file.
+By default, the tool will replace ONE occurrence of old_string with new_string in the specified file. If you want to replace multiple occurrences, provide the expected_replacements parameter with the exact number of occurrences you expect.
 
 CRITICAL REQUIREMENTS FOR USING THIS TOOL:
 
-1. UNIQUENESS: The oldText MUST uniquely identify the specific instance you want to change. This means:
+1. UNIQUENESS (when expected_replacements is not specified): The old_string MUST uniquely identify the specific instance you want to change. This means:
    - Include AT LEAST 3-5 lines of context BEFORE the change point
    - Include AT LEAST 3-5 lines of context AFTER the change point
    - Include all whitespace, indentation, and surrounding code exactly as it appears in the file
 
-2. SINGLE INSTANCE: This tool can only change ONE instance at a time. If you need to change multiple instances:
-   - Make separate calls to this tool for each instance
-   - Each call must uniquely identify its specific instance using extensive context
+2. EXPECTED MATCHES: If you want to replace multiple instances:
+   - Use the expected_replacements parameter with the exact number of occurrences you expect to replace
+   - This will replace ALL occurrences of the old_string with the new_string
+   - If the actual number of matches doesn't equal expected_replacements, the edit will fail
+   - This is a safety feature to prevent unintended replacements
 
 3. VERIFICATION: Before using this tool:
    - Check how many instances of the target text exist in the file
-   - If multiple instances exist, gather enough context to uniquely identify each one
-   - Plan separate tool calls for each instance
+   - If multiple instances exist, either:
+     a) Gather enough context to uniquely identify each one and make separate calls, OR
+     b) Use expected_replacements parameter with the exact count of instances you expect to replace
 
 WARNING: If you do not follow these requirements:
-   - The tool will fail if oldText matches multiple locations
-   - The tool will fail if oldText doesn't match exactly (including whitespace)
-   - You may change the wrong instance if you don't include enough context
+   - The tool will fail if old_string matches multiple locations and expected_replacements isn't specified
+   - The tool will fail if the number of matches doesn't equal expected_replacements when it's specified
+   - The tool will fail if old_string doesn't match exactly (including whitespace)
+   - You may change unintended instances if you don't verify the match count
 
 When making edits:
    - Ensure the edit results in idiomatic, correct code
@@ -341,12 +347,11 @@ When making edits:
 
 If you want to create a new file, use:
    - A new file path, including dir name if needed
-   - An empty oldText
-   - The new file's contents as newText
+   - An empty old_string
+   - The new file's contents as new_string
 
 Remember: when making multiple file edits in a row to the same file, you should prefer to send all edits in a single message with multiple calls to this tool, rather than multiple messages with a single call each.
-
-</edit_file>
+</edit>
 
 <write>
 Write a file to the local filesystem. Overwrites the existing file if there is one.
@@ -358,7 +363,7 @@ Before using this tool:
 2. Directory Verification (only applicable when creating new files):
    - Use the directory_tree to verify the parent directory exists and is the correct location
 
-3. Prioritize using `edit_file` whenever possible, as `write` is highly likely to exceed the output limit you can produce at once, leading to write failures. 
+3. Prioritize using `edit` whenever possible, as `write` is highly likely to exceed the output limit you can produce at once, leading to write failures. 
 
 </write>
 
@@ -407,7 +412,7 @@ Usage notes:
 2.When the agent is done, it will return a single message back to you. The result returned by the agent is not visible to the user. To show the user the result, you should send a text message back to the user with a concise summary of the result.
 3.Each agent invocation is stateless. You will not be able to send additional messages to the agent, nor will the agent be able to communicate with you outside of its final report. Therefore, your prompt should contain a highly detailed task description for the agent to perform autonomously and you should specify exactly what information the agent should return back to you in its final and only message to you.
 4.The agent's outputs should generally be trusted
-5.IMPORTANT: The agent can not use 'run_command','run_script','script_tool','edit_file','write','edit_notebook' so can not modify files. If you want to use these tools, use them directly instead of going through the agent.
+5.IMPORTANT: The agent can not use 'run_command','run_script','script_tool','edit','write','edit_notebook' so can not modify files. If you want to use these tools, use them directly instead of going through the agent.
 6.IMPORTANT: The Agent has no awareness of your context, so you must explicitly specify absolute project/file/directory paths and detailed background information about the current task. 
 </dispatch_agent>
 
