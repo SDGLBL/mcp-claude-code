@@ -5,6 +5,16 @@ All notable changes to the MCP Claude Code project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2025-05-18
+
+### Fixed
+- Added proper single quote escaping for shell commands (2313d99)
+  - Fixed command execution failures when commands contain single quotes
+  - Modified `_execute_command` method to escape single quotes by replacing them with `'\''`
+  - Added logging for original and escaped commands to assist with debugging
+  - Added comprehensive tests for various quote patterns in shell commands
+  - Tests verify proper handling of commands containing single quotes, double quotes, and mixed quote patterns
+
 ## [0.2.0] - 2025-05-16
 
 ### Added
