@@ -13,6 +13,7 @@ from typing import Any, ClassVar, final
 
 from mcp.server.fastmcp import Context as MCPContext
 from mcp.server.lowlevel.helper_types import ReadResourceContents
+from mcp_claude_code.tools.common.undo_manager import UndoManager
 
 
 @final
@@ -166,12 +167,23 @@ def create_tool_context(mcp_context: MCPContext) -> ToolContext:
 class DocumentContext:
     """Manages document context and codebase understanding."""
 
-    def __init__(self) -> None:
-        """Initialize the document context."""
+    def __init__(self, undo_enabled: bool = True, max_undo_operations: int = 10) -> None:
+        """Initialize the document context.
+        
+        Args:
+            undo_enabled: Whether to enable undo functionality
+            max_undo_operations: Maximum number of undo operations to keep per file
+        """
         self.documents: dict[str, str] = {}
         self.document_metadata: dict[str, dict[str, Any]] = {}
         self.modified_times: dict[str, float] = {}
         self.allowed_paths: set[Path] = set()
+        
+        # Initialize undo manager
+        self.undo_manager = UndoManager(
+            max_operations_per_file=max_undo_operations,
+            enabled=undo_enabled
+        )
 
     def add_allowed_path(self, path: str) -> None:
         """Add a path to the allowed paths.
@@ -256,6 +268,31 @@ class DocumentContext:
 
         # Update metadata
         self.document_metadata[path] = self._infer_metadata(path, content)
+
+    def record_operation_for_undo(
+        self,
+        file_path: str,
+        operation_type: str,
+        previous_content: str | None,
+        new_content: str,
+        operation_details: dict[str, Any] | None = None,
+    ) -> None:
+        """Record an operation in undo history.
+
+        Args:
+            file_path: Absolute path to the file that was modified
+            operation_type: Type of operation ("write" or "edit")
+            previous_content: File content before the operation (None if file didn't exist)
+            new_content: File content after the operation
+            operation_details: Additional details about the operation
+        """
+        self.undo_manager.record_operation(
+            file_path=file_path,
+            operation_type=operation_type,
+            previous_content=previous_content,
+            new_content=new_content,
+            operation_details=operation_details,
+        )
 
     def remove_document(self, path: str) -> None:
         """Remove a document from the context.

@@ -86,6 +86,22 @@ def main() -> None:
     )
 
     _ = parser.add_argument(
+        "--max-undo-operations",
+        dest="max_undo_operations",
+        type=int,
+        default=10,
+        help="Maximum number of undo operations to keep per file (default: 10)"
+    )
+
+    _ = parser.add_argument(
+        "--disable-undo",
+        dest="disable_undo",
+        action="store_true",
+        default=False,
+        help="Disable undo functionality"
+    )
+
+    _ = parser.add_argument(
         "--install",
         action="store_true",
         help="Install server configuration in Claude Desktop",
@@ -104,6 +120,8 @@ def main() -> None:
     agent_max_iterations: int = cast(int, args.agent_max_iterations)
     agent_max_tool_uses: int = cast(int, args.agent_max_tool_uses)
     enable_agent_tool: bool = cast(bool, args.enable_agent_tool)
+    max_undo_operations: int = cast(int, args.max_undo_operations)
+    disable_undo: bool = cast(bool, args.disable_undo)
     allowed_paths: list[str] = (
         cast(list[str], args.allowed_paths) if args.allowed_paths else []
     )
@@ -126,7 +144,9 @@ def main() -> None:
         agent_base_url=agent_base_url,
         agent_max_iterations=agent_max_iterations,
         agent_max_tool_uses=agent_max_tool_uses,
-        enable_agent_tool=enable_agent_tool
+        enable_agent_tool=enable_agent_tool,
+        undo_enabled=not disable_undo,
+        max_undo_operations=max_undo_operations,
     )
     # Transport will be automatically cast to Literal['stdio', 'sse'] by the server
     server.run(transport=transport)

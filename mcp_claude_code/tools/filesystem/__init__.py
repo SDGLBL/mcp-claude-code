@@ -16,6 +16,7 @@ from mcp_claude_code.tools.filesystem.get_file_info import GetFileInfoTool
 from mcp_claude_code.tools.filesystem.grep import Grep
 from mcp_claude_code.tools.filesystem.grep_ast_tool import GrepAstTool
 from mcp_claude_code.tools.filesystem.read import ReadTool
+from mcp_claude_code.tools.filesystem.undo import UndoTool
 from mcp_claude_code.tools.filesystem.write import Write
 
 # Export all tool classes
@@ -28,6 +29,7 @@ __all__ = [
     "Grep",
     "ContentReplaceTool",
     "GrepAstTool",
+    "UndoTool",
     "get_filesystem_tools",
     "register_filesystem_tools",
 ]
@@ -75,6 +77,7 @@ def get_filesystem_tools(
         Grep(document_context, permission_manager),
         ContentReplaceTool(document_context, permission_manager),
         GrepAstTool(document_context, permission_manager),
+        UndoTool(document_context, permission_manager),
     ]
 
 

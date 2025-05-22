@@ -27,6 +27,8 @@ class ClaudeCodeServer:
         agent_max_iterations: int = 10,
         agent_max_tool_uses: int = 30,
         enable_agent_tool: bool = False,
+        undo_enabled: bool = True,
+        max_undo_operations: int = 10,
     ):
         """Initialize the Claude Code server.
 
@@ -41,11 +43,16 @@ class ClaudeCodeServer:
             agent_max_iterations: Maximum number of iterations for agent (default: 10)
             agent_max_tool_uses: Maximum number of total tool uses for agent (default: 30)
             enable_agent_tool: Whether to enable the agent tool (default: False)
+            undo_enabled: Whether to enable undo functionality (default: True)
+            max_undo_operations: Maximum number of undo operations to keep per file (default: 10)
         """
         self.mcp = mcp_instance if mcp_instance is not None else FastMCP(name)
 
         # Initialize context, permissions, and command executor
-        self.document_context = DocumentContext()
+        self.document_context = DocumentContext(
+            undo_enabled=undo_enabled,
+            max_undo_operations=max_undo_operations
+        )
         self.permission_manager = PermissionManager()
 
         # Initialize command executor

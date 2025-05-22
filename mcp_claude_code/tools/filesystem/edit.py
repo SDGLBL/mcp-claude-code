@@ -177,6 +177,20 @@ Before using this tool:
                 with open(file_path_obj, "w", encoding="utf-8") as f:
                     f.write(new_string)
 
+                # Record operation for undo (new file creation)
+                self.document_context.record_operation_for_undo(
+                    file_path=file_path,
+                    operation_type="edit",
+                    previous_content=None,  # File didn't exist
+                    new_content=new_string,
+                    operation_details={
+                        "operation": "create_file",
+                        "old_string": "",
+                        "new_string": new_string,
+                        "expected_replacements": expected_replacements,
+                    }
+                )
+
                 # Add to document context
                 self.document_context.add_document(file_path, new_string)
 
@@ -214,6 +228,21 @@ Before using this tool:
 
                     # Replace all occurrences since the count matches expectations
                     modified_content = original_content.replace(old_string, new_string)
+
+                    # Record operation for undo before writing
+                    self.document_context.record_operation_for_undo(
+                        file_path=file_path,
+                        operation_type="edit",
+                        previous_content=original_content,
+                        new_content=modified_content,
+                        operation_details={
+                            "operation": "edit",
+                            "old_string": old_string,
+                            "new_string": new_string,
+                            "expected_replacements": expected_replacements,
+                            "actual_replacements": occurrences,
+                        }
+                    )
                 else:
                     # If we can't find the exact string, report an error
                     await tool_ctx.error(

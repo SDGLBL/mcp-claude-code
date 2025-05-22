@@ -132,12 +132,36 @@ Before using this tool:
                 await tool_ctx.error(f"Parent directory not allowed: {parent_dir}")
                 return f"Error: Parent directory not allowed: {parent_dir}"
 
+            # Capture current state for undo before any modifications
+            previous_content = None
+            if path_obj.exists():
+                try:
+                    with open(path_obj, "r", encoding="utf-8") as f:
+                        previous_content = f.read()
+                except Exception:
+                    # If we can't read the existing file, treat as new file
+                    # This could happen with binary files or permission issues
+                    previous_content = None
+
             # Create parent directories if they don't exist
             path_obj.parent.mkdir(parents=True, exist_ok=True)
 
             # Write the file
             with open(path_obj, "w", encoding="utf-8") as f:
                 f.write(content)
+
+            # Record operation for undo
+            self.document_context.record_operation_for_undo(
+                file_path=file_path,
+                operation_type="write",
+                previous_content=previous_content,
+                new_content=content,
+                operation_details={
+                    "operation": "write",
+                    "file_size": len(content),
+                    "existed_before": previous_content is not None,
+                }
+            )
 
             # Add to document context
             self.document_context.add_document(file_path, content)
