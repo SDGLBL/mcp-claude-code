@@ -87,7 +87,11 @@ class ToolContext:
         Args:
             message: The message to log
         """
-        await self._mcp_context.info(self._format_message(message))
+        try:
+            await self._mcp_context.info(self._format_message(message))
+        except Exception:
+            # Silently ignore errors when client has disconnected
+            pass
 
     async def debug(self, message: str) -> None:
         """Log a debug message.
@@ -95,7 +99,11 @@ class ToolContext:
         Args:
             message: The message to log
         """
-        await self._mcp_context.debug(self._format_message(message))
+        try:
+            await self._mcp_context.debug(self._format_message(message))
+        except Exception:
+            # Silently ignore errors when client has disconnected
+            pass
 
     async def warning(self, message: str) -> None:
         """Log a warning message.
@@ -103,7 +111,11 @@ class ToolContext:
         Args:
             message: The message to log
         """
-        await self._mcp_context.warning(self._format_message(message))
+        try:
+            await self._mcp_context.warning(self._format_message(message))
+        except Exception:
+            # Silently ignore errors when client has disconnected
+            pass
 
     async def error(self, message: str) -> None:
         """Log an error message.
@@ -111,7 +123,11 @@ class ToolContext:
         Args:
             message: The message to log
         """
-        await self._mcp_context.error(self._format_message(message))
+        try:
+            await self._mcp_context.error(self._format_message(message))
+        except Exception:
+            # Silently ignore errors when client has disconnected
+            pass
 
     def _format_message(self, message: str) -> str:
         """Format a message with tool information if available.
@@ -135,7 +151,11 @@ class ToolContext:
             current: Current progress value
             total: Total progress value
         """
-        await self._mcp_context.report_progress(current, total)
+        try:
+            await self._mcp_context.report_progress(current, total)
+        except Exception:
+            # Silently ignore errors when client has disconnected
+            pass
 
     async def read_resource(self, uri: str) -> Iterable[ReadResourceContents]:
         """Read a resource via the MCP protocol.

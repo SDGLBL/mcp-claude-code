@@ -5,8 +5,10 @@ for all tools used in MCP Claude Code. These abstractions help ensure consistent
 behavior and provide a foundation for tool registration and management.
 """
 
+import asyncio
+import functools
 from abc import ABC, abstractmethod
-from typing import Any, final
+from typing import Any, Awaitable, Callable, final
 
 from mcp.server.fastmcp import Context as MCPContext
 from mcp.server.fastmcp import FastMCP
@@ -14,6 +16,35 @@ from mcp.server.fastmcp import FastMCP
 from mcp_claude_code.tools.common.context import DocumentContext 
 from mcp_claude_code.tools.common.permissions import PermissionManager
 from mcp_claude_code.tools.common.validation import ValidationResult, validate_path_parameter
+
+
+def handle_connection_errors(func: Callable[..., Awaitable[str]]) -> Callable[..., Awaitable[str]]:
+    """Decorator to handle connection errors in MCP tool functions.
+    
+    This decorator wraps tool functions to catch ClosedResourceError and other
+    connection-related exceptions that occur when the client disconnects.
+    
+    Args:
+        func: The async tool function to wrap
+        
+    Returns:
+        Wrapped function that handles connection errors gracefully
+    """
+    @functools.wraps(func)
+    async def wrapper(*args: Any, **kwargs: Any) -> str:
+        try:
+            return await func(*args, **kwargs)
+        except Exception as e:
+            # Check if this is a connection-related error
+            error_name = type(e).__name__
+            if any(name in error_name for name in ['ClosedResourceError', 'ConnectionError', 'BrokenPipeError']):
+                # Client has disconnected - log the error but don't crash
+                # Return a simple error message (though it likely won't be received)
+                return f"Client disconnected during operation: {error_name}"
+            else:
+                # Re-raise non-connection errors
+                raise
+    return wrapper
 
 
 class BaseTool(ABC):

@@ -86,6 +86,14 @@ def main() -> None:
     )
 
     _ = parser.add_argument(
+        "--command-timeout",
+        dest="command_timeout",
+        type=float,
+        default=120.0,
+        help="Default timeout for command execution in seconds (default: 120.0)"
+    )
+
+    _ = parser.add_argument(
         "--install",
         action="store_true",
         help="Install server configuration in Claude Desktop",
@@ -104,6 +112,7 @@ def main() -> None:
     agent_max_iterations: int = cast(int, args.agent_max_iterations)
     agent_max_tool_uses: int = cast(int, args.agent_max_tool_uses)
     enable_agent_tool: bool = cast(bool, args.enable_agent_tool)
+    command_timeout: float = cast(float, args.command_timeout)
     allowed_paths: list[str] = (
         cast(list[str], args.allowed_paths) if args.allowed_paths else []
     )
@@ -126,7 +135,8 @@ def main() -> None:
         agent_base_url=agent_base_url,
         agent_max_iterations=agent_max_iterations,
         agent_max_tool_uses=agent_max_tool_uses,
-        enable_agent_tool=enable_agent_tool
+        enable_agent_tool=enable_agent_tool,
+        command_timeout=command_timeout
     )
     # Transport will be automatically cast to Literal['stdio', 'sse'] by the server
     server.run(transport=transport)

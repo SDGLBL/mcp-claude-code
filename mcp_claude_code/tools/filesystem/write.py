@@ -165,4 +165,3 @@ Before using this tool:
         @mcp_server.tool(name=self.name, description=self.mcp_description)
         async def write(file_path: str, content: str, ctx: MCPContext) -> str:
             return await tool_self.call(ctx, file_path=file_path, content=content)
-

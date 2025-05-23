@@ -18,6 +18,7 @@ from typing import final
 from mcp.server.fastmcp import Context as MCPContext
 from mcp.server.fastmcp import FastMCP
 
+from mcp_claude_code.tools.common.base import handle_connection_errors
 from mcp_claude_code.tools.common.context import create_tool_context
 from mcp_claude_code.tools.common.permissions import PermissionManager
 from mcp_claude_code.tools.shell.base import CommandResult
@@ -951,6 +952,7 @@ class CommandExecutor:
 
         # Run Command Tool - keep original method names for test compatibility
         @mcp_server.tool()
+        @handle_connection_errors
         async def run_command(
             command: str,
             cwd: str,
@@ -967,7 +969,7 @@ class CommandExecutor:
                 command,
                 cwd,
                 shell_type=shell_type,
-                timeout=30.0,
+                timeout=120.0,  # Increased from 30s to 120s for better compatibility
                 use_login_shell=use_login_shell,
             )
 
@@ -978,6 +980,7 @@ class CommandExecutor:
 
         # Run Script Tool
         @mcp_server.tool()
+        @handle_connection_errors
         async def run_script(
             script: str,
             cwd: str,
@@ -995,7 +998,7 @@ class CommandExecutor:
                 interpreter=interpreter,
                 cwd=cwd,
                 shell_type=shell_type,
-                timeout=30.0,
+                timeout=120.0,  # Increased from 30s to 120s for better compatibility
                 use_login_shell=use_login_shell,
             )
             if result.is_success:
@@ -1005,6 +1008,7 @@ class CommandExecutor:
 
         # Script tool for executing scripts in various languages
         @mcp_server.tool()
+        @handle_connection_errors
         async def script_tool(
             language: str,
             script: str,
@@ -1023,7 +1027,7 @@ class CommandExecutor:
                 language=language,
                 cwd=cwd,
                 shell_type=shell_type,
-                timeout=30.0,
+                timeout=120.0,  # Increased from 30s to 120s for better compatibility
                 args=args,
                 use_login_shell=use_login_shell,
             )

@@ -27,6 +27,7 @@ class ClaudeCodeServer:
         agent_max_iterations: int = 10,
         agent_max_tool_uses: int = 30,
         enable_agent_tool: bool = False,
+        command_timeout: float = 120.0,
     ):
         """Initialize the Claude Code server.
 
@@ -41,6 +42,7 @@ class ClaudeCodeServer:
             agent_max_iterations: Maximum number of iterations for agent (default: 10)
             agent_max_tool_uses: Maximum number of total tool uses for agent (default: 30)
             enable_agent_tool: Whether to enable the agent tool (default: False)
+            command_timeout: Default timeout for command execution in seconds (default: 120.0)
         """
         self.mcp = mcp_instance if mcp_instance is not None else FastMCP(name)
 
@@ -68,6 +70,7 @@ class ClaudeCodeServer:
         self.agent_max_iterations = agent_max_iterations
         self.agent_max_tool_uses = agent_max_tool_uses
         self.enable_agent_tool = enable_agent_tool
+        self.command_timeout = command_timeout
 
         # Register all tools
         register_all_tools(
