@@ -5,6 +5,32 @@ All notable changes to the MCP Claude Code project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2025-05-23
+
+### Added
+- Added command timeout configuration with `--command-timeout` CLI parameter (099401c)
+  - Configurable timeout for shell command execution with default of 120 seconds
+  - Increased default timeout from 30s to 120s for more reliable long-running operations
+  - Enhanced shell tool reliability for complex command execution scenarios
+
+### Enhanced
+- Improved error handling for network-related command execution (099401c)
+  - Added `handle_connection_errors` decorator to gracefully handle client disconnections
+  - Prevents MCP server crashes when running network-related commands that could cause disconnections
+  - Enhanced connection stability for shell tools (run_command, run_script, script_tool)
+  - Improved ToolContext logging to silently handle connection errors
+
+### Changed
+- Optimized system prompt format and removed redundant instructions (f57e015)
+  - Removed outdated sections from system prompt to improve efficiency
+  - Leveraged Claude 4's enhanced capabilities to reduce unnecessary guidance
+  - Streamlined prompt structure for better performance and clarity
+
+### Fixed
+- Cleaned up code formatting by removing trailing whitespace (099401c)
+  - Improved code quality and consistency across the codebase
+  - Applied consistent formatting standards
+
 ## [0.2.1] - 2025-05-18
 
 ### Fixed

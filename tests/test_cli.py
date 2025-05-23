@@ -3,8 +3,8 @@
 import os
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 from typing import Callable
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -34,6 +34,7 @@ class TestCLI:
             mock_args.agent_max_iterations = 10
             mock_args.agent_max_tool_uses = 30
             mock_args.enable_agent_tool = False
+            mock_args.command_timeout = 120.0
             mock_parse_args.return_value = mock_args
 
             # Mock server instance
@@ -54,7 +55,8 @@ class TestCLI:
                 agent_base_url=None,
                 agent_max_iterations=10,
                 agent_max_tool_uses=30,
-                enable_agent_tool=False
+                enable_agent_tool=False,
+                command_timeout=120.0,
             )
             mock_server.run.assert_called_once_with(transport="stdio")
 
@@ -97,6 +99,7 @@ class TestCLI:
             mock_args.agent_max_iterations = 10
             mock_args.agent_max_tool_uses = 30
             mock_args.enable_agent_tool = False
+            mock_args.command_timeout = 120.0
             mock_parse_args.return_value = mock_args
 
             # Mock server instance
@@ -116,7 +119,8 @@ class TestCLI:
                 agent_base_url=None,
                 agent_max_iterations=10,
                 agent_max_tool_uses=30,
-                enable_agent_tool=False
+                enable_agent_tool=False,
+                command_timeout=120.0,
             )
             mock_server.run.assert_called_once_with(transport="stdio")
 
@@ -316,3 +320,4 @@ class TestInstallClaudeDesktopConfig:
             assert "--allow-path" in server_args
             home_path_index = server_args.index("--allow-path") + 1
             assert str(tmp_path) in server_args[home_path_index]
+
