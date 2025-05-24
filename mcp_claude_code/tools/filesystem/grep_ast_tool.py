@@ -53,13 +53,7 @@ This tool is superior to regular grep/search_content when you need to understand
 Example usage:
 ```
 grep_ast(pattern="function_name", path="/path/to/file.py", ignore_case=False, line_number=True)
-```
-
-Parameters:
-- pattern: The regex pattern to search for in source code files
-- path: The path to search in (file or directory)
-- ignore_case: Whether to ignore case when matching (default: False)
-- line_number: Whether to display line numbers (default: False)"""
+```"""
 
     @property
     @override
