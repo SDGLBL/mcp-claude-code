@@ -1,0 +1,126 @@
+# Smithery configuration for local deployment only
+# This MCP server requires filesystem access and must run locally
+deployment:
+  type: local-only
+  reason: "Requires filesystem access to user's project files"
+
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      workspace_path:
+        type: string
+        title: "Workspace Path"
+        description: "Primary workspace directory path (absolute path to your project folder)"
+        examples: ["/Users/username/projects", "/home/user/workspace", "C:\\Users\\Username\\Projects"]
+      additional_paths:
+        type: array
+        title: "Additional Allowed Paths"
+        description: "Additional directories to allow access to (optional)"
+        items:
+          type: string
+        examples: [["/Users/username/Documents", "/tmp"], ["/home/user/scripts"]]
+      agent_model:
+        type: string
+        title: "Agent Model"
+        description: "Model name in LiteLLM format (e.g., 'openai/gpt-4o', 'anthropic/claude-3-sonnet')"
+        examples: ["openai/gpt-4o", "anthropic/claude-3-5-sonnet-20241022", "groq/llama-3.1-8b-instant"]
+      agent_api_key:
+        type: string
+        title: "Agent API Key"
+        description: "API key for the LLM provider"
+        secret: true
+      agent_base_url:
+        type: string
+        title: "Agent Base URL"
+        description: "Base URL for the LLM provider API endpoint (e.g., 'http://localhost:1234/v1')"
+        examples: ["https://api.openai.com/v1", "https://api.anthropic.com", "http://localhost:1234/v1"]
+      agent_max_tokens:
+        type: integer
+        title: "Agent Max Tokens"
+        description: "Maximum tokens for agent responses"
+        minimum: 100
+        maximum: 100000
+        default: 4000
+      agent_max_iterations:
+        type: integer
+        title: "Agent Max Iterations"
+        description: "Maximum number of iterations for agent"
+        minimum: 1
+        maximum: 50
+        default: 10
+      agent_max_tool_uses:
+        type: integer
+        title: "Agent Max Tool Uses"
+        description: "Maximum number of total tool uses for agent"
+        minimum: 1
+        maximum: 100
+        default: 30
+      enable_agent_tool:
+        type: boolean
+        title: "Enable Agent Tool"
+        description: "Enable the agent tool for delegation capabilities"
+        default: false
+      command_timeout:
+        type: number
+        title: "Command Timeout"
+        description: "Default timeout for command execution in seconds"
+        minimum: 1
+        maximum: 3600
+        default: 120.0
+  commandFunction: |-
+    (config) => {
+      const args = [];
+      
+      // Always add workspace path as primary allowed path
+      if (config.workspace_path) {
+        args.push('--allow-path', config.workspace_path);
+      }
+      
+      // Add additional allowed paths
+      if (config.additional_paths && config.additional_paths.length > 0) {
+        config.additional_paths.forEach(path => {
+          args.push('--allow-path', path);
+        });
+      }
+      
+      // Add agent configuration if provided
+      if (config.agent_model) {
+        args.push('--agent-model', config.agent_model);
+      }
+      
+      if (config.agent_max_tokens) {
+        args.push('--agent-max-tokens', config.agent_max_tokens.toString());
+      }
+      
+      if (config.agent_api_key) {
+        args.push('--agent-api-key', config.agent_api_key);
+      }
+      
+      if (config.agent_base_url) {
+        args.push('--agent-base-url', config.agent_base_url);
+      }
+      
+      if (config.agent_max_iterations !== undefined) {
+        args.push('--agent-max-iterations', config.agent_max_iterations.toString());
+      }
+      
+      if (config.agent_max_tool_uses !== undefined) {
+        args.push('--agent-max-tool-uses', config.agent_max_tool_uses.toString());
+      }
+      
+      if (config.enable_agent_tool) {
+        args.push('--enable-agent-tool');
+      }
+      
+      if (config.command_timeout !== undefined) {
+        args.push('--command-timeout', config.command_timeout.toString());
+      }
+      
+      return {
+        command: 'claudecode',
+        args: args,
+        env: {}
+      };
+    }
