@@ -12,7 +12,6 @@ from mcp_claude_code.tools.common.permissions import PermissionManager
 from mcp_claude_code.tools.filesystem.content_replace import ContentReplaceTool
 from mcp_claude_code.tools.filesystem.directory_tree import DirectoryTreeTool
 from mcp_claude_code.tools.filesystem.edit import Edit
-from mcp_claude_code.tools.filesystem.get_file_info import GetFileInfoTool
 from mcp_claude_code.tools.filesystem.grep import Grep
 from mcp_claude_code.tools.filesystem.grep_ast_tool import GrepAstTool
 from mcp_claude_code.tools.filesystem.multi_edit import MultiEdit
@@ -26,7 +25,6 @@ __all__ = [
     "Edit",
     "MultiEdit",
     "DirectoryTreeTool",
-    "GetFileInfoTool",
     "Grep",
     "ContentReplaceTool",
     "GrepAstTool",
@@ -50,7 +48,6 @@ def get_read_only_filesystem_tools(
     return [
         ReadTool(document_context, permission_manager),
         DirectoryTreeTool(document_context, permission_manager),
-        GetFileInfoTool(document_context, permission_manager),
         Grep(document_context, permission_manager),
         GrepAstTool(document_context, permission_manager),
     ]
@@ -74,7 +71,6 @@ def get_filesystem_tools(
         Edit(document_context, permission_manager),
         MultiEdit(document_context, permission_manager),
         DirectoryTreeTool(document_context, permission_manager),
-        GetFileInfoTool(document_context, permission_manager),
         Grep(document_context, permission_manager),
         ContentReplaceTool(document_context, permission_manager),
         GrepAstTool(document_context, permission_manager),

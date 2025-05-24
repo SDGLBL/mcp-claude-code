@@ -28,7 +28,6 @@ This project provides an MCP server that implements Claude Code-like functionali
 | `edit_file`       | Make line-based edits to text files                                                                                               |
 | `multi_edit`      | Make multiple precise text replacements in a single file operation with atomic transactions                                       |
 | `directory_tree`  | Get a recursive tree view of directories                                                                                          |
-| `get_file_info`   | Get metadata about a file or directory                                                                                            |
 | `grep`            | Fast pattern search in files with ripgrep integration for best performance ([docs](./doc/migration_SearchContentTool_to_Grep.md)) |
 | `content_replace` | Replace patterns in file contents                                                                                                 |
 | `grep_ast`        | Search code with AST context showing matches within functions, classes, and other structures                                      |

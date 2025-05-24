@@ -71,7 +71,7 @@ To make a batch call, provide the following:
 
 
 Available tools in batch call:
-Tool: dispatch_agent,read,directory_tree,grep,get_file_info,grep_ast,run_command,notebook_read
+Tool: dispatch_agent,read,directory_tree,grep,grep_ast,run_command,notebook_read
 Not available: think,write,edit,multi_edit,notebook_edit
 """
 
