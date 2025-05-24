@@ -35,54 +35,54 @@ def main() -> None:
         dest="allowed_paths",
         help="Add an allowed path (can be specified multiple times)",
     )
-    
+
     _ = parser.add_argument(
         "--agent-model",
         dest="agent_model",
-        help="Specify the model name in LiteLLM format (e.g., 'openai/gpt-4o', 'anthropic/claude-3-sonnet')"
+        help="Specify the model name in LiteLLM format (e.g., 'openai/gpt-4o', 'anthropic/claude-3-sonnet')",
     )
-    
+
     _ = parser.add_argument(
         "--agent-max-tokens",
         dest="agent_max_tokens",
         type=int,
-        help="Specify the maximum tokens for agent responses"
+        help="Specify the maximum tokens for agent responses",
     )
-    
+
     _ = parser.add_argument(
         "--agent-api-key",
         dest="agent_api_key",
-        help="Specify the API key for the LLM provider (for development/testing only)"
+        help="Specify the API key for the LLM provider (for development/testing only)",
     )
-    
+
     _ = parser.add_argument(
         "--agent-base-url",
         dest="agent_base_url",
-        help="Specify the base URL for the LLM provider API endpoint (e.g., 'http://localhost:1234/v1')"
+        help="Specify the base URL for the LLM provider API endpoint (e.g., 'http://localhost:1234/v1')",
     )
-    
+
     _ = parser.add_argument(
         "--agent-max-iterations",
         dest="agent_max_iterations",
         type=int,
         default=10,
-        help="Maximum number of iterations for agent (default: 10)"
+        help="Maximum number of iterations for agent (default: 10)",
     )
-    
+
     _ = parser.add_argument(
         "--agent-max-tool-uses",
         dest="agent_max_tool_uses",
         type=int,
         default=30,
-        help="Maximum number of total tool uses for agent (default: 30)"
+        help="Maximum number of total tool uses for agent (default: 30)",
     )
-    
+
     _ = parser.add_argument(
         "--enable-agent-tool",
         dest="enable_agent_tool",
         action="store_true",
         default=False,
-        help="Enable the agent tool (disabled by default)"
+        help="Enable the agent tool (disabled by default)",
     )
 
     _ = parser.add_argument(
@@ -90,7 +90,7 @@ def main() -> None:
         dest="command_timeout",
         type=float,
         default=120.0,
-        help="Default timeout for command execution in seconds (default: 120.0)"
+        help="Default timeout for command execution in seconds (default: 120.0)",
     )
 
     _ = parser.add_argument(
@@ -127,7 +127,7 @@ def main() -> None:
 
     # Run the server
     server = ClaudeCodeServer(
-        name=name, 
+        name=name,
         allowed_paths=allowed_paths,
         agent_model=agent_model,
         agent_max_tokens=agent_max_tokens,
@@ -136,7 +136,7 @@ def main() -> None:
         agent_max_iterations=agent_max_iterations,
         agent_max_tool_uses=agent_max_tool_uses,
         enable_agent_tool=enable_agent_tool,
-        command_timeout=command_timeout
+        command_timeout=command_timeout,
     )
     # Transport will be automatically cast to Literal['stdio', 'sse'] by the server
     server.run(transport=transport)

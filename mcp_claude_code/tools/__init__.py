@@ -21,6 +21,7 @@ from mcp_claude_code.tools.filesystem import register_filesystem_tools
 from mcp_claude_code.tools.jupyter import register_jupyter_tools
 from mcp_claude_code.tools.shell import register_shell_tools
 from mcp_claude_code.tools.shell.command_executor import CommandExecutor
+from mcp_claude_code.tools.todo import register_todo_tools
 
 
 def register_all_tools(
@@ -87,6 +88,11 @@ def register_all_tools(
         )
         for tool in agent_tools:
             all_tools[tool.name] = tool
+
+    # Register todo tools
+    todo_tools = register_todo_tools(mcp_server)
+    for tool in todo_tools:
+        all_tools[tool.name] = tool
 
     # Initialize and register thinking tool
     thinking_tool = register_thinking_tool(mcp_server)
