@@ -37,6 +37,8 @@ This project provides an MCP server that implements Claude Code-like functionali
 | `think`           | Structured space for complex reasoning and analysis without making changes                                                        |
 | `dispatch_agent`  | Launch one or more agents that can perform tasks using read-only tools concurrently                                               |
 | `batch`           | Execute multiple tool invocations in parallel or serially in a single request                                                     |
+| `todo_write`      | Create and manage a structured task list                                                                                          |
+| `todo_read`       | Read a structured task list                                                                                                       |
 
 ## Getting Started
 
