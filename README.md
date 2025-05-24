@@ -25,7 +25,7 @@ This project provides an MCP server that implements Claude Code-like functionali
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `read`            | Read file contents with line numbers, offset, and limit capabilities                                                              |
 | `write`           | Create or overwrite files                                                                                                         |
-| `edit_file`       | Make line-based edits to text files                                                                                               |
+| `edit`            | Make line-based edits to text files                                                                                               |
 | `multi_edit`      | Make multiple precise text replacements in a single file operation with atomic transactions                                       |
 | `directory_tree`  | Get a recursive tree view of directories                                                                                          |
 | `grep`            | Fast pattern search in files with ripgrep integration for best performance ([docs](./doc/migration_SearchContentTool_to_Grep.md)) |
