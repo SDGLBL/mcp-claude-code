@@ -34,14 +34,13 @@ class Write(FilesystemBaseTool):
         Returns:
             Tool description
         """
-        return """Write a file to the local filesystem. Overwrites the existing file if there is one.
+        return """Writes a file to the local filesystem.
 
-Before using this tool:
-
-1. Use the ReadFile tool to understand the file's contents and context
-
-2. Directory Verification (only applicable when creating new files):
-   - Use the directory_tree tool to verify the parent directory exists and is the correct location"""
+Usage:
+- This tool will overwrite the existing file if there is one at the provided path.
+- If this is an existing file, you MUST use the Read tool first to read the file's contents. This tool will fail if you did not read the file first.
+- ALWAYS prefer editing existing files in the codebase. NEVER write new files unless explicitly required.
+- NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User."""
 
     @property
     @override
