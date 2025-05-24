@@ -10,15 +10,6 @@ repo: {repo name}
 owner: {git user name}
 </project_info>
 
-<standard_flow>
-1. Plan: Propose a solution strategy with rationale and expected outcomes
-2. Confirm: Describe your plan to the user and obtain permission before executing any tool
-3. Implement: Execute the plan with appropriate tooling
-4. Validate: Verify changes achieve the intended outcome
-5. Learn: Document insights for future reference in artifact
-</standard_flow>
-
-
 <best_practice>
 - When doing file search, architecture research or large-scale dive operations, prefer to use the **dispatch_agent** tool in order to reduce context usage and speed up.
 - For understanding code structure within files, prefer **grep_ast** over standard text search tools to get AST context.
