@@ -20,15 +20,16 @@ __all__ = [
     "register_jupyter_tools",
 ]
 
+
 def get_read_only_jupyter_tools(
     document_context: DocumentContext, permission_manager: PermissionManager
 ) -> list[BaseTool]:
     """Create instances of read only Jupyter notebook tools.
-    
+
     Args:
         document_context: Document context for tracking file contents
         permission_manager: Permission manager for access control
-        
+
     Returns:
         List of Jupyter notebook tool instances
     """
@@ -41,11 +42,11 @@ def get_jupyter_tools(
     document_context: DocumentContext, permission_manager: PermissionManager
 ) -> list[BaseTool]:
     """Create instances of all Jupyter notebook tools.
-    
+
     Args:
         document_context: Document context for tracking file contents
         permission_manager: Permission manager for access control
-        
+
     Returns:
         List of Jupyter notebook tool instances
     """
@@ -61,12 +62,12 @@ def register_jupyter_tools(
     permission_manager: PermissionManager,
 ) -> list[BaseTool]:
     """Register all Jupyter notebook tools with the MCP server.
-    
+
     Args:
         mcp_server: The FastMCP server instance
         document_context: Document context for tracking file contents
         permission_manager: Permission manager for access control
-        
+
     Returns:
         List of registered tools
     """

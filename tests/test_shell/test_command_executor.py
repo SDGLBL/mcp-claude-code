@@ -126,9 +126,7 @@ class TestCommandExecutor:
             command = f"cat {test_file}"
 
         # Execute a command
-        result: CommandResult = await executor.execute_command(
-            command, cwd=temp_dir
-        )
+        result: CommandResult = await executor.execute_command(command, cwd=temp_dir)
 
         # Verify result
         assert result.is_success
@@ -168,7 +166,7 @@ class TestCommandExecutor:
             command = "ping -n 10 127.0.0.1"
         else:
             command = "sleep 5"
-        
+
         result = await executor.execute_command(command, timeout=0.1)
         print(f"Result attributes: {vars(result)}")
 
@@ -300,8 +298,9 @@ class TestCommandExecutor:
     ) -> None:
         """Test executing a command with environment variables."""
         import logging
+
         logger = logging.getLogger(__name__)
-        
+
         # Use platform-specific commands and expectations
         if sys.platform == "win32":
             # On Windows, use %PATH% syntax and expect semicolons
@@ -320,7 +319,9 @@ class TestCommandExecutor:
         # Verify result - PATH should be expanded
         assert result.is_success
         # PATH should contain directories separated by the platform-specific separator
-        assert path_separator in result.stdout, f"Expected '{path_separator}' in PATH, got: {result.stdout}"
+        assert path_separator in result.stdout, (
+            f"Expected '{path_separator}' in PATH, got: {result.stdout}"
+        )
         # The output should not just be the literal string "$PATH" or "%PATH%"
         assert result.stdout.strip() != literal_var
 

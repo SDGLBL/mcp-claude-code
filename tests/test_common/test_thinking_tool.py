@@ -22,7 +22,9 @@ class TestThinkingTool:
         assert thinking_tool.required == ["thought"]
 
     @pytest.mark.asyncio
-    async def test_valid_thought(self, thinking_tool: ThinkingTool, mcp_context: MagicMock):
+    async def test_valid_thought(
+        self, thinking_tool: ThinkingTool, mcp_context: MagicMock
+    ):
         """Test the thinking tool with a valid thought."""
         # Mock context calls
         tool_ctx = AsyncMock()
@@ -39,7 +41,9 @@ class TestThinkingTool:
             tool_ctx.info.assert_called_with("Thinking process recorded")
 
     @pytest.mark.asyncio
-    async def test_empty_thought(self, thinking_tool: ThinkingTool, mcp_context: MagicMock):
+    async def test_empty_thought(
+        self, thinking_tool: ThinkingTool, mcp_context: MagicMock
+    ):
         """Test the thinking tool with an empty thought."""
         # Mock context calls
         tool_ctx = AsyncMock()
@@ -51,5 +55,7 @@ class TestThinkingTool:
             result = await thinking_tool.call(ctx=mcp_context, thought="")
 
             # Verify result
-            assert "Error: Parameter 'thought' is required but was None or empty" in result
+            assert (
+                "Error: Parameter 'thought' is required but was None or empty" in result
+            )
             tool_ctx.error.assert_called()

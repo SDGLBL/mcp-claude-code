@@ -81,64 +81,64 @@ class CommandResult:
 
 class ShellBaseTool(BaseTool, ABC):
     """Base class for shell-related tools.
-    
+
     Provides common functionality for executing commands and scripts,
     including permissions checking.
     """
-    
+
     def __init__(self, permission_manager: PermissionManager) -> None:
         """Initialize the shell base tool.
-        
+
         Args:
             permission_manager: Permission manager for access control
         """
         self.permission_manager: PermissionManager = permission_manager
-        
+
     def is_path_allowed(self, path: str) -> bool:
         """Check if a path is allowed according to permission settings.
-        
+
         Args:
             path: Path to check
-            
+
         Returns:
             True if the path is allowed, False otherwise
         """
         return self.permission_manager.is_path_allowed(path)
-    
+
     @abstractmethod
     async def prepare_tool_context(self, ctx: MCPContext) -> Any:
         """Create and prepare the tool context.
-        
+
         Args:
             ctx: MCP context
-            
+
         Returns:
             Prepared tool context
         """
         pass
-        
-    @override 
+
+    @override
     def register(self, mcp_server: FastMCP) -> None:
         """Register this shell tool with the MCP server.
-        
+
         This provides a default implementation that derived classes should override
         with more specific parameter definitions. This implementation uses generic
         **kwargs which doesn't provide proper parameter definitions to MCP.
-        
+
         Args:
             mcp_server: The FastMCP server instance
         """
         tool_self = self  # Create a reference to self for use in the closure
-        
+
         # Each derived class should override this with a more specific signature
         # that explicitly defines the parameters expected by the tool
         @mcp_server.tool(name=self.name, description=self.mcp_description)
         async def generic_wrapper(**kwargs: Any) -> str:
             """Generic wrapper for shell tool.
-            
+
             This wrapper should be overridden by derived classes to provide
             explicit parameter definitions.
-            
+
             Returns:
                 Tool execution result
             """

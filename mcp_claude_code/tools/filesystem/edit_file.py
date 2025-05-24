@@ -16,22 +16,22 @@ from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
 @final
 class EditFileTool(FilesystemBaseTool):
     """Tool for making line-based edits to files."""
-    
+
     @property
     @override
     def name(self) -> str:
         """Get the tool name.
-        
+
         Returns:
             Tool name
         """
         return "edit_file"
-        
+
     @property
     @override
     def description(self) -> str:
         """Get the tool description.
-        
+
         Returns:
             Tool description
         """
@@ -40,12 +40,12 @@ class EditFileTool(FilesystemBaseTool):
 Each edit replaces exact line sequences with new content.
 Returns a git-style diff showing the changes made.
 Only works within allowed directories."""
-        
+
     @property
     @override
     def parameters(self) -> dict[str, Any]:
         """Get the parameter specifications for the tool.
-        
+
         Returns:
             Parameter specifications
         """
@@ -61,60 +61,58 @@ Only works within allowed directories."""
                             "oldText": {
                                 "type": "string",
                                 "description": "The text to replace (must be unique within the file, and must match the file contents exactly, including all whitespace and indentation)",
-                                },
+                            },
                             "newText": {
                                 "type": "string",
                                 "description": "The edited text to replace the old_string",
-                                },
                             },
-                        "additionalProperties": {
-                            "type": "string"
                         },
-                        "type": "object"
+                        "additionalProperties": {"type": "string"},
+                        "type": "object",
                     },
-                    "description":"List of edit operations [{\"oldText\": \"...\", \"newText\": \"...\"}]",
-                    "type": "array"
+                    "description": 'List of edit operations [{"oldText": "...", "newText": "..."}]',
+                    "type": "array",
                 },
                 "dry_run": {
                     "default": False,
                     "type": "boolean",
-                    "description": "If true, do not write changes to the file"
-                }
+                    "description": "If true, do not write changes to the file",
+                },
             },
             "required": ["path", "edits"],
             "title": "edit_fileArguments",
-            "type": "object"
+            "type": "object",
         }
-        
+
     @property
     @override
     def required(self) -> list[str]:
         """Get the list of required parameter names.
-        
+
         Returns:
             List of required parameter names
         """
         return ["path", "edits"]
-        
+
     @override
     async def call(self, ctx: MCPContext, **params: Any) -> str:
         """Execute the tool with the given parameters.
-        
+
         Args:
             ctx: MCP context
             **params: Tool parameters
-            
+
         Returns:
             Tool result
         """
         tool_ctx = self.create_tool_context(ctx)
         self.set_tool_context_info(tool_ctx)
-        
+
         # Extract parameters
         path = params.get("path")
         edits = params.get("edits")
         dry_run = params.get("dry_run", False)  # Default to False if not provided
-        
+
         if not path:
             await tool_ctx.error("Parameter 'path' is required but was None")
             return "Error: Parameter 'path' is required but was None"
@@ -165,7 +163,7 @@ Only works within allowed directories."""
             exists, error_msg = await self.check_path_exists(path, tool_ctx)
             if not exists:
                 return error_msg
-                
+
             # Check is a file
             is_file, error_msg = await self.check_is_file(path, tool_ctx)
             if not is_file:
@@ -185,9 +183,7 @@ Only works within allowed directories."""
                     new_text = edit.get("newText", "")
 
                     if old_text in modified_content:
-                        modified_content = modified_content.replace(
-                            old_text, new_text
-                        )
+                        modified_content = modified_content.replace(old_text, new_text)
                         edits_applied += 1
                     else:
                         # Try line-by-line matching for whitespace flexibility
@@ -269,19 +265,24 @@ Only works within allowed directories."""
         except Exception as e:
             await tool_ctx.error(f"Error editing file: {str(e)}")
             return f"Error editing file: {str(e)}"
-            
+
     @override
     def register(self, mcp_server: FastMCP) -> None:
         """Register this edit file tool with the MCP server.
-        
+
         Creates a wrapper function with explicitly defined parameters that match
         the tool's parameter schema and registers it with the MCP server.
-        
+
         Args:
             mcp_server: The FastMCP server instance
         """
         tool_self = self  # Create a reference to self for use in the closure
-        
+
         @mcp_server.tool(name=self.name, description=self.mcp_description)
-        async def edit_file(ctx: MCPContext, path: str, edits: list[dict[str, str]], dry_run: bool = False) -> str:
+        async def edit_file(
+            ctx: MCPContext,
+            path: str,
+            edits: list[dict[str, str]],
+            dry_run: bool = False,
+        ) -> str:
             return await tool_self.call(ctx, path=path, edits=edits, dry_run=dry_run)

@@ -18,19 +18,20 @@ from mcp_claude_code.tools.common.validation import validate_path_parameter
 
 
 # Pattern to match ANSI escape sequences
-ANSI_ESCAPE_PATTERN = re.compile(r'\x1B\[[0-9;]*[a-zA-Z]')
+ANSI_ESCAPE_PATTERN = re.compile(r"\x1B\[[0-9;]*[a-zA-Z]")
+
 
 # Function to clean ANSI escape codes from text
 def clean_ansi_escapes(text: str) -> str:
     """Remove ANSI escape sequences from text.
-    
+
     Args:
         text: Text containing ANSI escape sequences
-        
+
     Returns:
         Text with ANSI escape sequences removed
     """
-    return ANSI_ESCAPE_PATTERN.sub('', text)
+    return ANSI_ESCAPE_PATTERN.sub("", text)
 
 
 # Type definitions for Jupyter notebooks based on the nbformat spec
@@ -38,14 +39,15 @@ CellType = Literal["code", "markdown"]
 OutputType = Literal["stream", "display_data", "execute_result", "error"]
 EditMode = Literal["replace", "insert", "delete"]
 
+
 # Define a structure for notebook cell outputs
 @final
 class NotebookOutputImage:
     """Representation of an image output in a notebook cell."""
-    
+
     def __init__(self, image_data: str, media_type: str):
         """Initialize a notebook output image.
-        
+
         Args:
             image_data: Base64-encoded image data
             media_type: Media type of the image (e.g., "image/png")
@@ -57,15 +59,15 @@ class NotebookOutputImage:
 @final
 class NotebookCellOutput:
     """Representation of an output from a notebook cell."""
-    
+
     def __init__(
-        self, 
+        self,
         output_type: OutputType,
         text: str | None = None,
-        image: NotebookOutputImage | None = None
+        image: NotebookOutputImage | None = None,
     ):
         """Initialize a notebook cell output.
-        
+
         Args:
             output_type: Type of output
             text: Text output (if any)
@@ -79,7 +81,7 @@ class NotebookCellOutput:
 @final
 class NotebookCellSource:
     """Representation of a source cell from a notebook."""
-    
+
     def __init__(
         self,
         cell_index: int,
@@ -87,10 +89,10 @@ class NotebookCellSource:
         source: str,
         language: str,
         execution_count: int | None = None,
-        outputs: list[NotebookCellOutput] | None = None
+        outputs: list[NotebookCellOutput] | None = None,
     ):
         """Initialize a notebook cell source.
-        
+
         Args:
             cell_index: Index of the cell in the notebook
             cell_type: Type of cell (code or markdown)
@@ -134,9 +136,9 @@ class JupyterNotebookTools:
         async def read_notebook(path: str, ctx: MCPContext) -> str:
             """Extract and read source code from all cells in a Jupyter notebook.
 
-            Reads a Jupyter notebook (.ipynb file) and returns all of the cells with 
-            their outputs. Jupyter notebooks are interactive documents that combine 
-            code, text, and visualizations, commonly used for data analysis and 
+            Reads a Jupyter notebook (.ipynb file) and returns all of the cells with
+            their outputs. Jupyter notebooks are interactive documents that combine
+            code, text, and visualizations, commonly used for data analysis and
             scientific computing.
 
             Args:
@@ -161,7 +163,9 @@ class JupyterNotebookTools:
                 await tool_ctx.error(
                     f"Access denied - path outside allowed directories: {path}"
                 )
-                return f"Error: Access denied - path outside allowed directories: {path}"
+                return (
+                    f"Error: Access denied - path outside allowed directories: {path}"
+                )
 
             try:
                 file_path = Path(path)
@@ -196,40 +200,46 @@ class JupyterNotebookTools:
 
                 # Process notebook cells
                 # Get notebook language
-                language = notebook.get("metadata", {}).get("language_info", {}).get("name", "python")
+                language = (
+                    notebook.get("metadata", {})
+                    .get("language_info", {})
+                    .get("name", "python")
+                )
                 cells = notebook.get("cells", [])
                 processed_cells = []
 
                 for i, cell in enumerate(cells):
                     cell_type = cell.get("cell_type", "code")
-                    
+
                     # Skip if not code or markdown
                     if cell_type not in ["code", "markdown"]:
                         continue
-                        
+
                     # Get source
                     source = cell.get("source", "")
                     if isinstance(source, list):
                         source = "".join(source)
-                    
+
                     # Get execution count for code cells
                     execution_count = None
                     if cell_type == "code":
                         execution_count = cell.get("execution_count")
-                    
+
                     # Process outputs for code cells
                     outputs = []
                     if cell_type == "code" and "outputs" in cell:
                         for output in cell["outputs"]:
                             output_type = output.get("output_type", "")
-                            
+
                             # Process different output types
                             if output_type == "stream":
                                 text = output.get("text", "")
                                 if isinstance(text, list):
                                     text = "".join(text)
-                                outputs.append(NotebookCellOutput(output_type="stream", text=text))
-                                
+                                outputs.append(
+                                    NotebookCellOutput(output_type="stream", text=text)
+                                )
+
                             elif output_type in ["execute_result", "display_data"]:
                                 # Process text output
                                 text = None
@@ -239,46 +249,50 @@ class JupyterNotebookTools:
                                         text = "".join(text_data)
                                     else:
                                         text = text_data
-                                
+
                                 # Process image output
                                 image = None
                                 if "data" in output:
                                     if "image/png" in output["data"]:
                                         image = NotebookOutputImage(
                                             image_data=output["data"]["image/png"],
-                                            media_type="image/png"
+                                            media_type="image/png",
                                         )
                                     elif "image/jpeg" in output["data"]:
                                         image = NotebookOutputImage(
                                             image_data=output["data"]["image/jpeg"],
-                                            media_type="image/jpeg"
+                                            media_type="image/jpeg",
                                         )
-                                
+
                                 outputs.append(
                                     NotebookCellOutput(
-                                        output_type=output_type, 
-                                        text=text,
-                                        image=image
+                                        output_type=output_type, text=text, image=image
                                     )
                                 )
-                                
+
                             elif output_type == "error":
                                 # Format error traceback
                                 ename = output.get("ename", "")
                                 evalue = output.get("evalue", "")
                                 traceback = output.get("traceback", [])
-                                
+
                                 # Handle raw text strings and lists of strings
                                 if isinstance(traceback, list):
                                     # Clean ANSI escape codes and join the list but preserve the formatting
-                                    clean_traceback = [clean_ansi_escapes(line) for line in traceback]
+                                    clean_traceback = [
+                                        clean_ansi_escapes(line) for line in traceback
+                                    ]
                                     traceback_text = "\n".join(clean_traceback)
                                 else:
                                     traceback_text = clean_ansi_escapes(str(traceback))
-                                
+
                                 error_text = f"{ename}: {evalue}\n{traceback_text}"
-                                outputs.append(NotebookCellOutput(output_type="error", text=error_text))
-                    
+                                outputs.append(
+                                    NotebookCellOutput(
+                                        output_type="error", text=error_text
+                                    )
+                                )
+
                     # Create cell object
                     processed_cell = NotebookCellSource(
                         cell_index=i,
@@ -286,9 +300,9 @@ class JupyterNotebookTools:
                         source=source,
                         language=language,
                         execution_count=execution_count,
-                        outputs=outputs
+                        outputs=outputs,
                     )
-                    
+
                     processed_cells.append(processed_cell)
 
                 # Format the notebook content as a readable string
@@ -300,13 +314,15 @@ class JupyterNotebookTools:
                         cell_header += f" (execution_count: {cell.execution_count})"
                     if cell.cell_type == "code" and cell.language != "python":
                         cell_header += f" [{cell.language}]"
-                    
+
                     # Add cell to result
                     result.append(f"{cell_header}:")
-                    result.append(f"```{cell.language if cell.cell_type == 'code' else ''}")
+                    result.append(
+                        f"```{cell.language if cell.cell_type == 'code' else ''}"
+                    )
                     result.append(cell.source)
                     result.append("```")
-                    
+
                     # Add outputs if any
                     if cell.outputs:
                         result.append("Outputs:")
@@ -322,11 +338,15 @@ class JupyterNotebookTools:
                                 result.append(output.text)
                                 result.append("```")
                             if output.image:
-                                result.append(f"[Image output: {output.image.media_type}]")
-                        
+                                result.append(
+                                    f"[Image output: {output.image.media_type}]"
+                                )
+
                     result.append("")  # Empty line between cells
 
-                await tool_ctx.info(f"Successfully read notebook: {path} ({len(processed_cells)} cells)")
+                await tool_ctx.info(
+                    f"Successfully read notebook: {path} ({len(processed_cells)} cells)"
+                )
                 return "\n".join(result)
             except Exception as e:
                 await tool_ctx.error(f"Error reading notebook: {str(e)}")
@@ -334,12 +354,12 @@ class JupyterNotebookTools:
 
         @mcp_server.tool()
         async def edit_notebook(
-            path: str, 
-            cell_number: int, 
-            new_source: str, 
+            path: str,
+            cell_number: int,
+            new_source: str,
             ctx: MCPContext,
             cell_type: CellType | None = None,
-            edit_mode: EditMode = "replace"
+            edit_mode: EditMode = "replace",
         ) -> str:
             """Edit a specific cell in a Jupyter notebook.
 
@@ -384,17 +404,23 @@ class JupyterNotebookTools:
 
             # Don't validate new_source for delete mode
             if edit_mode != "delete" and not new_source:
-                await tool_ctx.error("New source is required for replace or insert operations")
+                await tool_ctx.error(
+                    "New source is required for replace or insert operations"
+                )
                 return "Error: New source is required for replace or insert operations"
 
-            await tool_ctx.info(f"Editing notebook: {path} (cell: {cell_number}, mode: {edit_mode})")
+            await tool_ctx.info(
+                f"Editing notebook: {path} (cell: {cell_number}, mode: {edit_mode})"
+            )
 
             # Check if path is allowed
             if not self.permission_manager.is_path_allowed(path):
                 await tool_ctx.error(
                     f"Access denied - path outside allowed directories: {path}"
                 )
-                return f"Error: Access denied - path outside allowed directories: {path}"
+                return (
+                    f"Error: Access denied - path outside allowed directories: {path}"
+                )
 
             try:
                 file_path = Path(path)
@@ -426,44 +452,52 @@ class JupyterNotebookTools:
 
                 # Check cell_number is valid
                 cells = notebook.get("cells", [])
-                
+
                 if edit_mode == "insert":
                     if cell_number > len(cells):
-                        await tool_ctx.error(f"Cell number {cell_number} is out of bounds for insert (max: {len(cells)})")
+                        await tool_ctx.error(
+                            f"Cell number {cell_number} is out of bounds for insert (max: {len(cells)})"
+                        )
                         return f"Error: Cell number {cell_number} is out of bounds for insert (max: {len(cells)})"
                 else:  # replace or delete
                     if cell_number >= len(cells):
-                        await tool_ctx.error(f"Cell number {cell_number} is out of bounds (max: {len(cells) - 1})")
+                        await tool_ctx.error(
+                            f"Cell number {cell_number} is out of bounds (max: {len(cells) - 1})"
+                        )
                         return f"Error: Cell number {cell_number} is out of bounds (max: {len(cells) - 1})"
 
                 # Get notebook language (needed for context but not directly used in this block)
-                _ = notebook.get("metadata", {}).get("language_info", {}).get("name", "python")
+                _ = (
+                    notebook.get("metadata", {})
+                    .get("language_info", {})
+                    .get("name", "python")
+                )
 
                 # Perform the requested operation
                 if edit_mode == "replace":
                     # Get the target cell
                     target_cell = cells[cell_number]
-                    
+
                     # Store previous contents for reporting
                     old_type = target_cell.get("cell_type", "code")
                     old_source = target_cell.get("source", "")
                     if isinstance(old_source, list):
                         old_source = "".join(old_source)
-                    
+
                     # Update source
                     target_cell["source"] = new_source
-                    
+
                     # Update type if specified
                     if cell_type is not None:
                         target_cell["cell_type"] = cell_type
-                        
+
                     # If changing to markdown, remove code-specific fields
                     if cell_type == "markdown":
                         if "outputs" in target_cell:
                             del target_cell["outputs"]
                         if "execution_count" in target_cell:
                             del target_cell["execution_count"]
-                    
+
                     # If code cell, reset execution
                     if target_cell["cell_type"] == "code":
                         target_cell["outputs"] = []
@@ -471,33 +505,39 @@ class JupyterNotebookTools:
 
                     change_description = f"Replaced cell {cell_number}"
                     if cell_type is not None and cell_type != old_type:
-                        change_description += f" (changed type from {old_type} to {cell_type})"
+                        change_description += (
+                            f" (changed type from {old_type} to {cell_type})"
+                        )
 
                 elif edit_mode == "insert":
                     # Create new cell
                     new_cell: dict[str, Any] = {
                         "cell_type": cell_type,
                         "source": new_source,
-                        "metadata": {}
+                        "metadata": {},
                     }
-                    
+
                     # Add code-specific fields
                     if cell_type == "code":
                         new_cell["outputs"] = []
                         new_cell["execution_count"] = None
-                    
+
                     # Insert the cell
                     cells.insert(cell_number, new_cell)
-                    change_description = f"Inserted new {cell_type} cell at position {cell_number}"
+                    change_description = (
+                        f"Inserted new {cell_type} cell at position {cell_number}"
+                    )
 
                 else:  # delete
                     # Store deleted cell info for reporting
                     deleted_cell = cells[cell_number]
                     deleted_type = deleted_cell.get("cell_type", "code")
-                    
+
                     # Remove the cell
                     del cells[cell_number]
-                    change_description = f"Deleted {deleted_type} cell at position {cell_number}"
+                    change_description = (
+                        f"Deleted {deleted_type} cell at position {cell_number}"
+                    )
 
                 # Write the updated notebook back to file
                 with open(file_path, "w", encoding="utf-8") as f:
@@ -507,7 +547,9 @@ class JupyterNotebookTools:
                 updated_content = json.dumps(notebook, indent=1)
                 self.document_context.update_document(path, updated_content)
 
-                await tool_ctx.info(f"Successfully edited notebook: {path} - {change_description}")
+                await tool_ctx.info(
+                    f"Successfully edited notebook: {path} - {change_description}"
+                )
                 return f"Successfully edited notebook: {path} - {change_description}"
             except Exception as e:
                 await tool_ctx.error(f"Error editing notebook: {str(e)}")

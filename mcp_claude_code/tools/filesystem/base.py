@@ -14,21 +14,23 @@ from mcp_claude_code.tools.common.base import FileSystemTool
 from mcp_claude_code.tools.common.context import ToolContext, create_tool_context
 
 
-class FilesystemBaseTool(FileSystemTool,ABC):
+class FilesystemBaseTool(FileSystemTool, ABC):
     """Enhanced base class for all filesystem tools.
-    
+
     Provides additional utilities specific to filesystem operations beyond
     the base functionality in FileSystemTool.
     """
-    
-    async def check_path_allowed(self, path: str, tool_ctx: Any, error_prefix: str = "Error") -> tuple[bool, str]:
+
+    async def check_path_allowed(
+        self, path: str, tool_ctx: Any, error_prefix: str = "Error"
+    ) -> tuple[bool, str]:
         """Check if a path is allowed and log an error if not.
-        
+
         Args:
             path: Path to check
             tool_ctx: Tool context for logging
             error_prefix: Prefix for error messages
-            
+
         Returns:
             tuple of (is_allowed, error_message)
         """
@@ -37,15 +39,17 @@ class FilesystemBaseTool(FileSystemTool,ABC):
             await tool_ctx.error(message)
             return False, f"{error_prefix}: {message}"
         return True, ""
-        
-    async def check_path_exists(self, path: str, tool_ctx: Any, error_prefix: str = "Error") -> tuple[bool, str]:
+
+    async def check_path_exists(
+        self, path: str, tool_ctx: Any, error_prefix: str = "Error"
+    ) -> tuple[bool, str]:
         """Check if a path exists and log an error if not.
-        
+
         Args:
             path: Path to check
             tool_ctx: Tool context for logging
             error_prefix: Prefix for error messages
-            
+
         Returns:
             tuple of (exists, error_message)
         """
@@ -55,15 +59,17 @@ class FilesystemBaseTool(FileSystemTool,ABC):
             await tool_ctx.error(message)
             return False, f"{error_prefix}: {message}"
         return True, ""
-        
-    async def check_is_file(self, path: str, tool_ctx: Any, error_prefix: str = "Error") -> tuple[bool, str]:
+
+    async def check_is_file(
+        self, path: str, tool_ctx: Any, error_prefix: str = "Error"
+    ) -> tuple[bool, str]:
         """Check if a path is a file and log an error if not.
-        
+
         Args:
             path: Path to check
             tool_ctx: Tool context for logging
             error_prefix: Prefix for error messages
-            
+
         Returns:
             tuple of (is_file, error_message)
         """
@@ -73,15 +79,17 @@ class FilesystemBaseTool(FileSystemTool,ABC):
             await tool_ctx.error(message)
             return False, f"{error_prefix}: {message}"
         return True, ""
-        
-    async def check_is_directory(self, path: str, tool_ctx: Any, error_prefix: str = "Error") -> tuple[bool, str]:
+
+    async def check_is_directory(
+        self, path: str, tool_ctx: Any, error_prefix: str = "Error"
+    ) -> tuple[bool, str]:
         """Check if a path is a directory and log an error if not.
-        
+
         Args:
             path: Path to check
             tool_ctx: Tool context for logging
             error_prefix: Prefix for error messages
-            
+
         Returns:
             tuple of (is_directory, error_message)
         """
@@ -91,22 +99,22 @@ class FilesystemBaseTool(FileSystemTool,ABC):
             await tool_ctx.error(message)
             return False, f"{error_prefix}: {message}"
         return True, ""
-        
+
     def create_tool_context(self, ctx: MCPContext) -> ToolContext:
         """Create a tool context with the tool name.
-        
+
         Args:
             ctx: MCP context
-            
+
         Returns:
             Tool context
         """
         tool_ctx = create_tool_context(ctx)
         return tool_ctx
-        
+
     def set_tool_context_info(self, tool_ctx: ToolContext) -> None:
         """Set the tool info on the context.
-        
+
         Args:
             tool_ctx: Tool context
         """

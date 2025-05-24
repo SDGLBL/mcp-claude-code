@@ -5,7 +5,6 @@ formats, making MCP tools available to the OpenAI API, and processing tool input
 and outputs for agent execution.
 """
 
-
 from openai.types import FunctionParameters
 from openai.types.chat import ChatCompletionToolParam
 import litellm
@@ -13,7 +12,9 @@ import litellm
 from mcp_claude_code.tools.common.base import BaseTool
 
 
-def convert_tools_to_openai_functions(tools: list[BaseTool]) -> list[ChatCompletionToolParam]:
+def convert_tools_to_openai_functions(
+    tools: list[BaseTool],
+) -> list[ChatCompletionToolParam]:
     """Convert MCP tools to OpenAI function format.
 
     Args:
@@ -22,9 +23,9 @@ def convert_tools_to_openai_functions(tools: list[BaseTool]) -> list[ChatComplet
     Returns:
         List of tools formatted for OpenAI API
     """
-    openai_tools:list[ChatCompletionToolParam] = []
+    openai_tools: list[ChatCompletionToolParam] = []
     for tool in tools:
-        openai_tool:ChatCompletionToolParam = {
+        openai_tool: ChatCompletionToolParam = {
             "type": "function",
             "function": {
                 "name": tool.name,
@@ -47,19 +48,18 @@ def convert_tool_parameters(tool: BaseTool) -> FunctionParameters:
     """
     # Start with a copy of the parameters
     params = tool.parameters.copy()
-    
+
     # Ensure the schema has the right format for OpenAI
     if "properties" not in params:
         params["properties"] = {}
-        
+
     if "type" not in params:
         params["type"] = "object"
-        
+
     if "required" not in params:
         params["required"] = tool.required
-        
-    return params
 
+    return params
 
 
 def supports_parallel_function_calling(model: str) -> bool:

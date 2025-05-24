@@ -320,4 +320,3 @@ class TestInstallClaudeDesktopConfig:
             assert "--allow-path" in server_args
             home_path_index = server_args.index("--allow-path") + 1
             assert str(tmp_path) in server_args[home_path_index]
-

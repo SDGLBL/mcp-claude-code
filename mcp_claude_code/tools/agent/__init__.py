@@ -7,7 +7,7 @@ enabling concurrent execution of multiple operations and specialized processing.
 from mcp.server.fastmcp import FastMCP
 
 from mcp_claude_code.tools.agent.agent_tool import AgentTool
-from mcp_claude_code.tools.common.base import BaseTool, ToolRegistry 
+from mcp_claude_code.tools.common.base import BaseTool, ToolRegistry
 from mcp_claude_code.tools.common.context import DocumentContext
 from mcp_claude_code.tools.common.permissions import PermissionManager
 from mcp_claude_code.tools.shell.command_executor import CommandExecutor
@@ -44,7 +44,7 @@ def register_agent_tools(
     """
     # Create agent tool
     agent_tool = AgentTool(
-        document_context=document_context, 
+        document_context=document_context,
         permission_manager=permission_manager,
         command_executor=command_executor,
         model=agent_model,
@@ -52,7 +52,7 @@ def register_agent_tools(
         base_url=agent_base_url,
         max_tokens=agent_max_tokens,
         max_iterations=agent_max_iterations,
-        max_tool_uses=agent_max_tool_uses
+        max_tool_uses=agent_max_tool_uses,
     )
 
     # Register agent tool

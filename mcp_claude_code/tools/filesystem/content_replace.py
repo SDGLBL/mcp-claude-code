@@ -16,22 +16,22 @@ from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
 @final
 class ContentReplaceTool(FilesystemBaseTool):
     """Tool for replacing text patterns in files."""
-    
+
     @property
     @override
     def name(self) -> str:
         """Get the tool name.
-        
+
         Returns:
             Tool name
         """
         return "content_replace"
-        
+
     @property
     @override
     def description(self) -> str:
         """Get the tool description.
-        
+
         Returns:
             Tool description
         """
@@ -41,75 +41,62 @@ Searches for text patterns across all files in the specified directory
 that match the file pattern and replaces them with the specified text.
 Can be run in dry-run mode to preview changes without applying them.
 Only works within allowed directories."""
-        
+
     @property
     @override
     def parameters(self) -> dict[str, Any]:
         """Get the parameter specifications for the tool.
-        
+
         Returns:
             Parameter specifications
         """
         return {
             "properties": {
-                "pattern": {
-                    "title": "Pattern",
-                    "type": "string"
-                },
-                "replacement": {
-                    "title": "Replacement",
-                    "type": "string"
-                },
-                "path": {
-                    "title": "Path",
-                    "type": "string"
-                },
+                "pattern": {"title": "Pattern", "type": "string"},
+                "replacement": {"title": "Replacement", "type": "string"},
+                "path": {"title": "Path", "type": "string"},
                 "file_pattern": {
                     "default": "*",
                     "title": "File Pattern",
-                    "type": "string"
+                    "type": "string",
                 },
-                "dry_run": {
-                    "default": False,
-                    "title": "Dry Run",
-                    "type": "boolean"
-                }
+                "dry_run": {"default": False, "title": "Dry Run", "type": "boolean"},
             },
             "required": ["pattern", "replacement", "path"],
             "title": "content_replaceArguments",
-            "type": "object"
+            "type": "object",
         }
-        
+
     @property
     @override
     def required(self) -> list[str]:
         """Get the list of required parameter names.
-        
+
         Returns:
             List of required parameter names
         """
         return ["pattern", "replacement", "path"]
-        
+
     @override
     async def call(self, ctx: MCPContext, **params: Any) -> str:
         """Execute the tool with the given parameters.
-        
+
         Args:
             ctx: MCP context
             **params: Tool parameters
-            
+
         Returns:
             Tool result
         """
         tool_ctx = self.create_tool_context(ctx)
-        
+
         # Extract parameters
         pattern = params.get("pattern")
         replacement = params.get("replacement")
         path = params.get("path")
         file_pattern = params.get("file_pattern", "*")  # Default to all files
         dry_run = params.get("dry_run", False)  # Default to False
-        
+
         # Validate required parameters
         if not pattern:
             await tool_ctx.error("Parameter 'pattern' is required but was None")
@@ -168,32 +155,38 @@ Only works within allowed directories."""
             # Process based on whether path is a file or directory
             if input_path.is_file():
                 # Single file search
-                if file_pattern == "*" or fnmatch.fnmatch(input_path.name, file_pattern):
+                if file_pattern == "*" or fnmatch.fnmatch(
+                    input_path.name, file_pattern
+                ):
                     matching_files.append(input_path)
                     await tool_ctx.info(f"Searching single file: {path}")
                 else:
-                    await tool_ctx.info(f"File does not match pattern '{file_pattern}': {path}")
+                    await tool_ctx.info(
+                        f"File does not match pattern '{file_pattern}': {path}"
+                    )
                     return f"File does not match pattern '{file_pattern}': {path}"
             elif input_path.is_dir():
                 # Directory search - optimized file finding
                 await tool_ctx.info(f"Finding files in directory: {path}")
-                
+
                 # Keep track of allowed paths for filtering
                 allowed_paths: set[str] = set()
-                
+
                 # Collect all allowed paths first for faster filtering
                 for entry in input_path.rglob("*"):
                     entry_path = str(entry)
                     if self.is_path_allowed(entry_path):
                         allowed_paths.add(entry_path)
-                
+
                 # Find matching files efficiently
                 for entry in input_path.rglob("*"):
                     entry_path = str(entry)
                     if entry_path in allowed_paths and entry.is_file():
-                        if file_pattern == "*" or fnmatch.fnmatch(entry.name, file_pattern):
+                        if file_pattern == "*" or fnmatch.fnmatch(
+                            entry.name, file_pattern
+                        ):
                             matching_files.append(entry)
-                
+
                 await tool_ctx.info(f"Found {len(matching_files)} matching files")
             else:
                 # This shouldn't happen since we already checked for existence
@@ -244,9 +237,7 @@ Only works within allowed directories."""
                     # Skip binary files
                     continue
                 except Exception as e:
-                    await tool_ctx.warning(
-                        f"Error processing {file_path}: {str(e)}"
-                    )
+                    await tool_ctx.warning(f"Error processing {file_path}: {str(e)}")
 
             # Final progress report
             await tool_ctx.report_progress(total_files, total_files)
@@ -269,19 +260,33 @@ Only works within allowed directories."""
         except Exception as e:
             await tool_ctx.error(f"Error replacing content: {str(e)}")
             return f"Error replacing content: {str(e)}"
-            
+
     @override
     def register(self, mcp_server: FastMCP) -> None:
         """Register this content replace tool with the MCP server.
-        
+
         Creates a wrapper function with explicitly defined parameters that match
         the tool's parameter schema and registers it with the MCP server.
-        
+
         Args:
             mcp_server: The FastMCP server instance
         """
         tool_self = self  # Create a reference to self for use in the closure
-        
+
         @mcp_server.tool(name=self.name, description=self.mcp_description)
-        async def content_replace(ctx: MCPContext, pattern: str, replacement: str, path: str, file_pattern: str = "*", dry_run: bool = False) -> str:
-             return await tool_self.call(ctx, pattern=pattern, replacement=replacement, path=path, file_pattern=file_pattern, dry_run=dry_run)
+        async def content_replace(
+            ctx: MCPContext,
+            pattern: str,
+            replacement: str,
+            path: str,
+            file_pattern: str = "*",
+            dry_run: bool = False,
+        ) -> str:
+            return await tool_self.call(
+                ctx,
+                pattern=pattern,
+                replacement=replacement,
+                path=path,
+                file_pattern=file_pattern,
+                dry_run=dry_run,
+            )

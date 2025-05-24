@@ -27,32 +27,31 @@ class TestJupyterNotebookTools:
         return JupyterNotebookTools(document_context, permission_manager)
 
     @pytest.fixture
-    def sample_notebook_path(self, temp_dir: str, permission_manager: "PermissionManager"):
+    def sample_notebook_path(
+        self, temp_dir: str, permission_manager: "PermissionManager"
+    ):
         """Create a sample Jupyter notebook for testing."""
         # Add the temp directory to allowed paths
         permission_manager.add_allowed_path(temp_dir)
         notebook_path = os.path.join(temp_dir, "test_notebook.ipynb")
-        
+
         # Create a simple notebook structure
         notebook = {
             "metadata": {
                 "kernelspec": {
                     "display_name": "Python 3 (ipykernel)",
                     "language": "python",
-                    "name": "python3"
+                    "name": "python3",
                 },
                 "language_info": {
-                    "codemirror_mode": {
-                        "name": "ipython",
-                        "version": 3
-                    },
+                    "codemirror_mode": {"name": "ipython", "version": 3},
                     "file_extension": ".py",
                     "mimetype": "text/x-python",
                     "name": "python",
                     "nbconvert_exporter": "python",
                     "pygments_lexer": "ipython3",
-                    "version": "3.11.11"
-                }
+                    "version": "3.11.11",
+                },
             },
             "nbformat": 4,
             "nbformat_minor": 5,
@@ -61,7 +60,7 @@ class TestJupyterNotebookTools:
                     "cell_type": "markdown",
                     "id": "markdown-cell-id",
                     "metadata": {},
-                    "source": "# Test Notebook\n\nThis is a test markdown cell."
+                    "source": "# Test Notebook\n\nThis is a test markdown cell.",
                 },
                 {
                     "cell_type": "code",
@@ -73,9 +72,9 @@ class TestJupyterNotebookTools:
                         {
                             "name": "stdout",
                             "output_type": "stream",
-                            "text": "Hello, world!\n"
+                            "text": "Hello, world!\n",
                         }
-                    ]
+                    ],
                 },
                 {
                     "cell_type": "code",
@@ -92,10 +91,10 @@ class TestJupyterNotebookTools:
                                 "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
                                 "\u001b[0;31mZeroDivisionError\u001b[0m                         Traceback (most recent call last)",
                                 "Cell \u001b[0;32mIn[2], line 1\u001b[0m\n\u001b[0;32m----> 1\u001b[0m \u001b[38;5;241;43m1\u001b[39;49m\u001b[38;5;241;43m/\u001b[39;49m\u001b[38;5;241;43m0\u001b[39;49m\n",
-                                "\u001b[0;31mZeroDivisionError\u001b[0m: division by zero"
-                            ]
+                                "\u001b[0;31mZeroDivisionError\u001b[0m: division by zero",
+                            ],
                         }
-                    ]
+                    ],
                 },
                 {
                     "cell_type": "code",
@@ -103,15 +102,15 @@ class TestJupyterNotebookTools:
                     "id": "empty-cell-id",
                     "metadata": {},
                     "source": "",
-                    "outputs": []
-                }
-            ]
+                    "outputs": [],
+                },
+            ],
         }
-        
+
         # Write the notebook to file
         with open(notebook_path, "w") as f:
             json.dump(notebook, f, indent=2)
-            
+
         return notebook_path
 
     def test_initialization(
@@ -568,7 +567,12 @@ class TestJupyterNotebookTools:
 
             # Use the extracted edit_notebook function with an out-of-bounds cell number
             result = await tools["edit_notebook"](
-                sample_notebook_path, cell_count + 1, "Invalid cell", mcp_context, None, "replace"
+                sample_notebook_path,
+                cell_count + 1,
+                "Invalid cell",
+                mcp_context,
+                None,
+                "replace",
             )
 
             # Verify result
@@ -643,7 +647,12 @@ class TestJupyterNotebookTools:
 
             # Use the extracted edit_notebook function with an invalid edit mode
             result = await tools["edit_notebook"](
-                sample_notebook_path, 1, "New content", mcp_context, "code", "invalid_mode"
+                sample_notebook_path,
+                1,
+                "New content",
+                mcp_context,
+                "code",
+                "invalid_mode",
             )
 
             # Verify result
@@ -726,7 +735,12 @@ class TestJupyterNotebookTools:
 
             # Use the extracted edit_notebook function to append a cell
             result = await tools["edit_notebook"](
-                sample_notebook_path, original_cell_count, new_content, mcp_context, "code", "insert"
+                sample_notebook_path,
+                original_cell_count,
+                new_content,
+                mcp_context,
+                "code",
+                "insert",
             )
 
             # Verify result

@@ -76,7 +76,9 @@ class TestGrep:
         # Force using the fallback implementation
         with patch.object(Grep, "is_ripgrep_installed", return_value=False):
             with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-                with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+                with patch.object(
+                    FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+                ):
                     result = await grep_tool.call(
                         mcp_context,
                         pattern="searchable",
@@ -112,7 +114,9 @@ class TestGrep:
         # Force using the fallback implementation
         with patch.object(Grep, "is_ripgrep_installed", return_value=False):
             with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-                with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+                with patch.object(
+                    FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+                ):
                     result = await grep_tool.call(
                         mcp_context,
                         pattern="pattern",
@@ -162,7 +166,9 @@ class TestGrep:
         # Force using the fallback implementation
         with patch.object(Grep, "is_ripgrep_installed", return_value=False):
             with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-                with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+                with patch.object(
+                    FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+                ):
                     result = await grep_tool.call(
                         mcp_context, pattern="findable", path=test_dir
                     )
@@ -202,7 +208,9 @@ class TestGrep:
         # Force using the fallback implementation
         with patch.object(Grep, "is_ripgrep_installed", return_value=False):
             with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-                with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+                with patch.object(
+                    FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+                ):
                     result = await grep_tool.call(
                         mcp_context,
                         pattern="findable",
@@ -227,9 +235,9 @@ class TestGrep:
 {"type":"match","data":{"path":{"text":"/path/to/file2.py"},"lines":{"text":"def find_match():"},"line_number":5,"absolute_offset":120,"submatches":[{"match":{"text":"match"},"start":9,"end":14}]}}
 {"type":"end","data":{"path":{"text":"/path/to/file2.py"},"binary":false,"stats":{"matches":1,"searches":1}}}
 """
-        
+
         result = grep_tool.parse_ripgrep_json_output(sample_output)
-        
+
         # Check that the parsed output contains the expected elements
         assert "Found 3 matches in 2 file" in result
         assert "/path/to/file1.txt:1:" in result
@@ -256,7 +264,7 @@ class TestGrep:
         # Only run this test if ripgrep is actually installed
         if not shutil.which("rg"):
             pytest.skip("ripgrep not installed")
-            
+
         # Create a test file with searchable content
         test_file_path = os.path.join(setup_allowed_path, "ripgrep_test.txt")
         with open(test_file_path, "w") as f:
@@ -272,7 +280,9 @@ class TestGrep:
         tool_ctx.warning = AsyncMock()
 
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result = await grep_tool.call(
                     mcp_context,
                     pattern="ripgrep",
@@ -299,7 +309,9 @@ class TestGrep:
         tool_ctx.info = AsyncMock()
 
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result = await grep_tool.call(mcp_context)
 
         # Verify result
@@ -320,7 +332,9 @@ class TestGrep:
         tool_ctx.info = AsyncMock()
 
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch.object(
+                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+            ):
                 result = await grep_tool.call(mcp_context, pattern="  ")
 
         # Verify result
@@ -340,9 +354,15 @@ class TestGrep:
         tool_ctx.error = AsyncMock()
         tool_ctx.info = AsyncMock()
 
-        with patch.object(FilesystemBaseTool, "validate_path", return_value=MagicMock(is_error=True, error_message="Invalid path")):
+        with patch.object(
+            FilesystemBaseTool,
+            "validate_path",
+            return_value=MagicMock(is_error=True, error_message="Invalid path"),
+        ):
             with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-                with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+                with patch.object(
+                    FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+                ):
                     result = await grep_tool.call(
                         mcp_context, pattern="test", path="/invalid/path"
                     )
@@ -367,9 +387,16 @@ class TestGrep:
 
         # Patch ripgrep installation check and subprocess to simulate an error
         with patch.object(Grep, "is_ripgrep_installed", return_value=True):
-            with patch("asyncio.create_subprocess_exec", side_effect=Exception("Command execution error")):
-                with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-                    with patch.object(FilesystemBaseTool, "create_tool_context", return_value=tool_ctx):
+            with patch(
+                "asyncio.create_subprocess_exec",
+                side_effect=Exception("Command execution error"),
+            ):
+                with patch.object(
+                    FilesystemBaseTool, "set_tool_context_info", AsyncMock()
+                ):
+                    with patch.object(
+                        FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
+                    ):
                         result = await grep_tool.call(
                             mcp_context, pattern="test", path=setup_allowed_path
                         )
