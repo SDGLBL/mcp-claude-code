@@ -76,7 +76,7 @@ class TestAgentTool:
     def test_initialization(self, agent_tool):
         """Test agent tool initialization."""
         assert agent_tool.name == "dispatch_agent"
-        assert "Launch an agent" in agent_tool.description
+        assert "Launch an new agent" in agent_tool.description
         assert agent_tool.required == ["prompt"]
         assert agent_tool.model_override is None
         assert agent_tool.api_key_override is None

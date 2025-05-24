@@ -63,13 +63,23 @@ class AgentTool(BaseTool):
         Returns:
             Tool description
         """
-        return """Launch an agent that can perform tasks using read-only tools.
+        # TODO: Add glob when it is implemented
+        return """Launch a new agent that has access to the following tools: run_command, grep, directory_tree, read, edit, multi_edit, write, notebook_read, notebook_edit, todo_read, todo_write. When you are searching for a keyword or file and are not confident that you will find the right match in the first few tries, use the Agent tool to perform the search for you.
 
-This tool creates an agent for delegation of tasks such as multi-step searches, complex analyses, 
-or other operations that benefit from focused processing.
+When to use the Agent tool:
+- If you are searching for a keyword like \"config\" or \"logger\", or for questions like \"which file does X?\", the Agent tool is strongly recommended
 
-The agent works with its own context and provides a response containing the results of its work.
-"""
+When NOT to use the Agent tool:
+- If you want to read a specific file path, use the read or glob tool instead of the Agent tool, to find the match more quickly
+- If you are searching for a specific class definition like \"class Foo\", use the glob tool instead, to find the match more quickly
+- If you are searching for code within a specific file or set of 2-3 files, use the read tool instead of the Agent tool, to find the match more quickly
+
+Usage notes:
+1. Launch multiple agents concurrently whenever possible, to maximize performance; to do that, use a single message with multiple tool uses
+2. When the agent is done, it will return a single message back to you. The result returned by the agent is not visible to the user. To show the user the result, you should send a text message back to the user with a concise summary of the result.
+3. Each agent invocation is stateless. You will not be able to send additional messages to the agent, nor will the agent be able to communicate with you outside of its final report. Therefore, your prompt should contain a highly detailed task description for the agent to perform autonomously and you should specify exactly what information the agent should return back to you in its final and only message to you.
+4. The agent's outputs should generally be trusted
+5. Clearly tell the agent whether you expect it to write code or just to do research (search, file reads, web fetches, etc.), since it is not aware of the user's intent"""
 
     @property
     @override
