@@ -34,9 +34,40 @@ class ThinkingTool(BaseTool):
         Returns:
             Tool description
         """
-        return """Use the tool to think about something.
+        return """Use the tool to think about something. It will not obtain new information or make any changes to the repository, but just log the thought. Use it when complex reasoning or brainstorming is needed. 
+Ensure thinking content is concise and accurate, without needing to include code details
 
-It will not obtain new information or make any changes to the repository, but just log the thought. Use it when complex reasoning or brainstorming is needed. For example, if you explore the repo and discover the source of a bug, call this tool to brainstorm several unique ways of fixing the bug, and assess which change(s) are likely to be simplest and most effective. Alternatively, if you receive some test results, call this tool to brainstorm ways to fix the failing tests."""
+Common use cases:
+1. When exploring a repository and discovering the source of a bug, call this tool to brainstorm several unique ways of fixing the bug, and assess which change(s) are likely to be simplest and most effective
+2. After receiving test results, use this tool to brainstorm ways to fix failing tests
+3. When planning a complex refactoring, use this tool to outline different approaches and their tradeoffs
+4. When designing a new feature, use this tool to think through architecture decisions and implementation details
+5. When debugging a complex issue, use this tool to organize your thoughts and hypotheses
+6. When considering changes to the plan or shifts in thinking that the user has not previously mentioned, consider whether it is necessary to confirm with the user. 
+
+<think_example>
+Feature Implementation Planning
+- New code search feature requirements:
+* Search for code patterns across multiple files
+* Identify function usages and references
+* Analyze import relationships
+* Generate summary of matching patterns
+- Implementation considerations:
+* Need to leverage existing search mechanisms
+* Should use regex for pattern matching
+* Results need consistent format with other search methods
+* Must handle large codebases efficiently
+- Design approach:
+1. Create new CodeSearcher class that follows existing search patterns
+2. Implement core pattern matching algorithm
+3. Add result formatting methods
+4. Integrate with file traversal system
+5. Add caching for performance optimization
+- Testing strategy:
+* Unit tests for search accuracy
+* Integration tests with existing components
+* Performance tests with large codebases
+</think_example>"""
 
     @property
     @override
