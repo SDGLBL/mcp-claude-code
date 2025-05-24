@@ -21,32 +21,28 @@ This project provides an MCP server that implements Claude Code-like functionali
 
 ## Tools Implemented
 
-| Tool                   | Description                                                                                   |
-| ---------------------- | --------------------------------------------------------------------------------------------- |
-| `read`                | Read file contents with line numbers, offset, and limit capabilities                       |
-| `write`           | Create or overwrite files                                                                     |
-| `edit_file`            | Make line-based edits to text files                                                           |
-| `directory_tree`       | Get a recursive tree view of directories                                                      |
-| `get_file_info`        | Get metadata about a file or directory                                                        |
-| `grep`                | Fast pattern search in files with ripgrep integration for best performance ([docs](./doc/migration_SearchContentTool_to_Grep.md)) |
-| `content_replace`      | Replace patterns in file contents                                                             |
-| `grep_ast`             | Search code with AST context showing matches within functions, classes, and other structures  |
-| `run_command`          | Execute shell commands (also used for directory creation, file moving, and directory listing) |
-| `run_script`           | Execute scripts with specified interpreters                                                   |
-| `script_tool`          | Execute scripts in specific programming languages                                             |
-| `read_notebook`        | Extract and read source code from all cells in a Jupyter notebook with outputs                |
-| `edit_notebook`        | Edit, insert, or delete cells in a Jupyter notebook                                           |
-| `think`                | Structured space for complex reasoning and analysis without making changes                    |
-| `dispatch_agent`       | Launch one or more agents that can perform tasks using read-only tools concurrently           |
-| `batch`                | Execute multiple tool invocations in parallel or serially in a single request                 |
+| Tool              | Description                                                                                                                       |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `read`            | Read file contents with line numbers, offset, and limit capabilities                                                              |
+| `write`           | Create or overwrite files                                                                                                         |
+| `edit_file`       | Make line-based edits to text files                                                                                               |
+| `directory_tree`  | Get a recursive tree view of directories                                                                                          |
+| `get_file_info`   | Get metadata about a file or directory                                                                                            |
+| `grep`            | Fast pattern search in files with ripgrep integration for best performance ([docs](./doc/migration_SearchContentTool_to_Grep.md)) |
+| `content_replace` | Replace patterns in file contents                                                                                                 |
+| `grep_ast`        | Search code with AST context showing matches within functions, classes, and other structures                                      |
+| `run_command`     | Execute shell commands (also used for directory creation, file moving, and directory listing)                                     |
+| `run_script`      | Execute scripts with specified interpreters                                                                                       |
+| `script_tool`     | Execute scripts in specific programming languages                                                                                 |
+| `read_notebook`   | Extract and read source code from all cells in a Jupyter notebook with outputs                                                    |
+| `edit_notebook`   | Edit, insert, or delete cells in a Jupyter notebook                                                                               |
+| `think`           | Structured space for complex reasoning and analysis without making changes                                                        |
+| `dispatch_agent`  | Launch one or more agents that can perform tasks using read-only tools concurrently                                               |
+| `batch`           | Execute multiple tool invocations in parallel or serially in a single request                                                     |
 
 ## Getting Started
 
 For detailed installation and configuration instructions, please refer to [INSTALL.md](./doc/INSTALL.md).
-
-For optimal performance, we recommend installing [ripgrep](https://github.com/BurntSushi/ripgrep) to accelerate file content searches. See [Grep migration docs](./doc/migration_SearchContentTool_to_Grep.md) for details.
-
-Of course, you can also read [USEFUL_PROMPTS](./doc/USEFUL_PROMPTS.md) for some inspiration on how to use mcp-claude-code.
 
 ## Security
 
