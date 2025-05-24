@@ -44,10 +44,6 @@ This project provides an MCP server that implements Claude Code-like functionali
 
 For detailed installation and configuration instructions, please refer to [INSTALL.md](./doc/INSTALL.md).
 
-For optimal performance, we recommend installing [ripgrep](https://github.com/BurntSushi/ripgrep) to accelerate file content searches. See [Grep migration docs](./doc/migration_SearchContentTool_to_Grep.md) for details.
-
-Of course, you can also read [USEFUL_PROMPTS](./doc/USEFUL_PROMPTS.md) for some inspiration on how to use mcp-claude-code.
-
 ## Security
 
 This implementation follows best practices for securing access to your filesystem:
