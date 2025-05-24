@@ -1,0 +1,94 @@
+# Smithery configuration file: https://smithery.ai/docs/build/project-config
+
+startCommand:
+  type: stdio
+  commandFunction:
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
+    |-
+    (config) => {
+      const args = [
+        '--transport', 'stdio',
+        '--name', 'claude-code'
+      ];
+      if (config.allowedPaths) {
+        for (const p of config.allowedPaths) {
+          args.push('--allow-path', p);
+        }
+      }
+      if (config.agentModel) {
+        args.push('--agent-model', config.agentModel);
+      }
+      if (config.agentMaxTokens !== undefined) {
+        args.push('--agent-max-tokens', config.agentMaxTokens.toString());
+      }
+      if (config.agentApiKey) {
+        args.push('--agent-api-key', config.agentApiKey);
+      }
+      if (config.agentBaseUrl) {
+        args.push('--agent-base-url', config.agentBaseUrl);
+      }
+      if (config.agentMaxIterations !== undefined) {
+        args.push('--agent-max-iterations', config.agentMaxIterations.toString());
+      }
+      if (config.agentMaxToolUses !== undefined) {
+        args.push('--agent-max-tool-uses', config.agentMaxToolUses.toString());
+      }
+      if (config.enableAgentTool) {
+        args.push('--enable-agent-tool');
+      }
+      if (config.commandTimeout !== undefined) {
+        args.push('--command-timeout', config.commandTimeout.toString());
+      }
+      return { command: 'claudecode', args };
+    }
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    properties:
+      allowedPaths:
+        type: array
+        items:
+          type: string
+        default:
+          - /app
+        description: List of paths to allow file operations
+      agentModel:
+        type: string
+        description: LLM model name in LiteLLM format
+      agentMaxTokens:
+        type: number
+        default: null
+        description: Maximum tokens for agent responses
+      agentApiKey:
+        type: string
+        description: API key for the LLM provider
+      agentBaseUrl:
+        type: string
+        description: Base URL for the LLM provider API endpoint
+      agentMaxIterations:
+        type: number
+        default: 10
+        description: Maximum iterations for agent
+      agentMaxToolUses:
+        type: number
+        default: 30
+        description: Maximum total tool uses for agent
+      enableAgentTool:
+        type: boolean
+        default: false
+        description: Enable the agent tool
+      commandTimeout:
+        type: number
+        default: 120
+        description: Default timeout for command execution (seconds)
+  exampleConfig:
+    allowedPaths:
+      - /workspace
+    agentModel: openai/gpt-4o
+    agentMaxTokens: 1024
+    agentApiKey: sk-xxxxx
+    agentBaseUrl: https://api.openai.com/v1
+    agentMaxIterations: 5
+    agentMaxToolUses: 20
+    enableAgentTool: false
+    commandTimeout: 60
