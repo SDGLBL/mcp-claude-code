@@ -372,6 +372,3 @@ After installation:
 1. Restart Claude Desktop
 2. Verify the server appears in Claude Desktop's MCP servers list
 3. Test basic functionality by asking Claude to list files in your project
-4. Review [USEFUL_PROMPTS.md](./USEFUL_PROMPTS.md) for usage examples
-
-For more advanced usage and examples, see the main [README.md](../README.md).
