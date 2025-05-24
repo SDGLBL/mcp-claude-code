@@ -15,6 +15,7 @@ from mcp_claude_code.tools.filesystem.edit import Edit
 from mcp_claude_code.tools.filesystem.get_file_info import GetFileInfoTool
 from mcp_claude_code.tools.filesystem.grep import Grep
 from mcp_claude_code.tools.filesystem.grep_ast_tool import GrepAstTool
+from mcp_claude_code.tools.filesystem.multi_edit import MultiEdit
 from mcp_claude_code.tools.filesystem.read import ReadTool
 from mcp_claude_code.tools.filesystem.write import Write
 
@@ -23,6 +24,7 @@ __all__ = [
     "ReadTool",
     "Write",
     "Edit",
+    "MultiEdit",
     "DirectoryTreeTool",
     "GetFileInfoTool",
     "Grep",
@@ -70,6 +72,7 @@ def get_filesystem_tools(
         ReadTool(document_context, permission_manager),
         Write(document_context, permission_manager),
         Edit(document_context, permission_manager),
+        MultiEdit(document_context, permission_manager),
         DirectoryTreeTool(document_context, permission_manager),
         GetFileInfoTool(document_context, permission_manager),
         Grep(document_context, permission_manager),
