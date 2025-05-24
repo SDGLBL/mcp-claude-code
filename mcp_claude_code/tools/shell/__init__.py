@@ -9,14 +9,10 @@ from mcp_claude_code.tools.common.base import BaseTool, ToolRegistry
 from mcp_claude_code.tools.common.permissions import PermissionManager
 from mcp_claude_code.tools.shell.command_executor import CommandExecutor
 from mcp_claude_code.tools.shell.run_command import RunCommandTool
-from mcp_claude_code.tools.shell.run_script import RunScriptTool
-from mcp_claude_code.tools.shell.script_tool import ScriptTool
 
 # Export all tool classes
 __all__ = [
     "RunCommandTool",
-    "RunScriptTool",
-    "ScriptTool",
     "CommandExecutor",
     "get_shell_tools",
     "register_shell_tools",
@@ -39,8 +35,6 @@ def get_shell_tools(
 
     return [
         RunCommandTool(permission_manager, command_executor),
-        RunScriptTool(permission_manager, command_executor),
-        ScriptTool(permission_manager, command_executor),
     ]
 
 
