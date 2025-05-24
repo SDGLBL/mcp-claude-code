@@ -35,7 +35,7 @@ class Edit(FilesystemBaseTool):
         Returns:
             Tool description
         """
-        return """This is a tool for editing files. For moving or renaming files, you should generally use the run_command tool with the 'mv' command instead. For larger edits, use the Write tool to overwrite files. For Jupyter notebooks (.ipynb files), use the edit_notebook instead.
+        return """This is a tool for editing files. For moving or renaming files, you should generally use the run_command tool with the 'mv' command instead. For larger edits, use the Write tool to overwrite files. For Jupyter notebooks (.ipynb files), use the notebook_edit instead.
 
 Before using this tool:
 

@@ -9,13 +9,13 @@ from mcp.server.fastmcp import FastMCP
 from mcp_claude_code.tools.common.base import BaseTool, ToolRegistry
 from mcp_claude_code.tools.common.context import DocumentContext
 from mcp_claude_code.tools.common.permissions import PermissionManager
-from mcp_claude_code.tools.jupyter.edit_notebook import EditNotebookTool
-from mcp_claude_code.tools.jupyter.read_notebook import ReadNotebookTool
+from mcp_claude_code.tools.jupyter.notebook_edit import NoteBookEditTool
+from mcp_claude_code.tools.jupyter.notebook_read import NotebookReadTool
 
 # Export all tool classes
 __all__ = [
-    "ReadNotebookTool",
-    "EditNotebookTool",
+    "NotebookReadTool",
+    "NoteBookEditTool",
     "get_jupyter_tools",
     "register_jupyter_tools",
 ]
@@ -34,7 +34,7 @@ def get_read_only_jupyter_tools(
         List of Jupyter notebook tool instances
     """
     return [
-        ReadNotebookTool(document_context, permission_manager),
+        NotebookReadTool(document_context, permission_manager),
     ]
 
 
@@ -51,8 +51,8 @@ def get_jupyter_tools(
         List of Jupyter notebook tool instances
     """
     return [
-        ReadNotebookTool(document_context, permission_manager),
-        EditNotebookTool(document_context, permission_manager),
+        NotebookReadTool(document_context, permission_manager),
+        NoteBookEditTool(document_context, permission_manager),
     ]
 
 

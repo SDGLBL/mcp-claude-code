@@ -1,6 +1,6 @@
 """Read notebook tool implementation.
 
-This module provides the ReadNotebookTool for reading Jupyter notebook files.
+This module provides the NotebookReadTool for reading Jupyter notebook files.
 """
 
 import json
@@ -14,7 +14,7 @@ from mcp_claude_code.tools.jupyter.base import JupyterBaseTool
 
 
 @final
-class ReadNotebookTool(JupyterBaseTool):
+class NotebookReadTool(JupyterBaseTool):
     """Tool for reading Jupyter notebook files."""
 
     @property
@@ -25,7 +25,7 @@ class ReadNotebookTool(JupyterBaseTool):
         Returns:
             Tool name
         """
-        return "read_notebook"
+        return "notebook_read"
 
     @property
     @override
@@ -35,12 +35,7 @@ class ReadNotebookTool(JupyterBaseTool):
         Returns:
             Tool description
         """
-        return """Extract and read source code from all cells in a Jupyter notebook.
-
-Reads a Jupyter notebook (.ipynb file) and returns all of the cells with 
-their outputs. Jupyter notebooks are interactive documents that combine 
-code, text, and visualizations, commonly used for data analysis and 
-scientific computing."""
+        return "Reads a Jupyter notebook (.ipynb file) and returns all of the cells with their outputs. Jupyter notebooks are interactive documents that combine code, text, and visualizations, commonly used for data analysis and scientific computing. The notebook_path parameter must be an absolute path, not a relative path."
 
     @property
     @override
@@ -52,12 +47,12 @@ scientific computing."""
         """
         return {
             "properties": {
-                "path": {
+                "notebook_path": {
                     "type": "string",
-                    "description": "path to the Jupyter notebook file",
+                    "description": "The absolute path to the Jupyter notebook file to read (must be absolute, not relative)",
                 }
             },
-            "required": ["path"],
+            "required": ["notebook_path"],
             "type": "object",
         }
 
@@ -69,7 +64,7 @@ scientific computing."""
         Returns:
             List of required parameter names
         """
-        return ["path"]
+        return ["notebook_path"]
 
     @override
     async def call(self, ctx: MCPContext, **params: Any) -> str:
@@ -86,42 +81,42 @@ scientific computing."""
         self.set_tool_context_info(tool_ctx)
 
         # Extract parameters
-        path = params.get("path")
+        notebook_path = params.get("notebook_path")
 
-        if not path:
-            await tool_ctx.error("Missing required parameter: path")
-            return "Error: Missing required parameter: path"
+        if not notebook_path:
+            await tool_ctx.error("Missing required parameter: notebook_path")
+            return "Error: Missing required parameter: notebook_path"
 
         # Validate path parameter
-        path_validation = self.validate_path(path)
+        path_validation = self.validate_path(notebook_path)
         if path_validation.is_error:
             await tool_ctx.error(path_validation.error_message)
             return f"Error: {path_validation.error_message}"
 
-        await tool_ctx.info(f"Reading notebook: {path}")
+        await tool_ctx.info(f"Reading notebook: {notebook_path}")
 
         # Check if path is allowed
-        if not self.is_path_allowed(path):
+        if not self.is_path_allowed(notebook_path):
             await tool_ctx.error(
-                f"Access denied - path outside allowed directories: {path}"
+                f"Access denied - path outside allowed directories: {notebook_path}"
             )
-            return f"Error: Access denied - path outside allowed directories: {path}"
+            return f"Error: Access denied - path outside allowed directories: {notebook_path}"
 
         try:
-            file_path = Path(path)
+            file_path = Path(notebook_path)
 
             if not file_path.exists():
-                await tool_ctx.error(f"File does not exist: {path}")
-                return f"Error: File does not exist: {path}"
+                await tool_ctx.error(f"File does not exist: {notebook_path}")
+                return f"Error: File does not exist: {notebook_path}"
 
             if not file_path.is_file():
-                await tool_ctx.error(f"Path is not a file: {path}")
-                return f"Error: Path is not a file: {path}"
+                await tool_ctx.error(f"Path is not a file: {notebook_path}")
+                return f"Error: Path is not a file: {notebook_path}"
 
             # Check file extension
             if file_path.suffix.lower() != ".ipynb":
-                await tool_ctx.error(f"File is not a Jupyter notebook: {path}")
-                return f"Error: File is not a Jupyter notebook: {path}"
+                await tool_ctx.error(f"File is not a Jupyter notebook: {notebook_path}")
+                return f"Error: File is not a Jupyter notebook: {notebook_path}"
 
             # Read and parse the notebook
             try:
@@ -131,21 +126,21 @@ scientific computing."""
                 # Add to document context
                 with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read()
-                self.document_context.add_document(path, content)
+                self.document_context.add_document(notebook_path, content)
 
                 # Format the notebook content as a readable string
                 result = self.format_notebook_cells(processed_cells)
 
                 await tool_ctx.info(
-                    f"Successfully read notebook: {path} ({len(processed_cells)} cells)"
+                    f"Successfully read notebook: {notebook_path} ({len(processed_cells)} cells)"
                 )
                 return result
             except json.JSONDecodeError:
-                await tool_ctx.error(f"Invalid notebook format: {path}")
-                return f"Error: Invalid notebook format: {path}"
+                await tool_ctx.error(f"Invalid notebook format: {notebook_path}")
+                return f"Error: Invalid notebook format: {notebook_path}"
             except UnicodeDecodeError:
-                await tool_ctx.error(f"Cannot read notebook file: {path}")
-                return f"Error: Cannot read notebook file: {path}"
+                await tool_ctx.error(f"Cannot read notebook file: {notebook_path}")
+                return f"Error: Cannot read notebook file: {notebook_path}"
         except Exception as e:
             await tool_ctx.error(f"Error reading notebook: {str(e)}")
             return f"Error reading notebook: {str(e)}"
@@ -163,5 +158,5 @@ scientific computing."""
         tool_self = self  # Create a reference to self for use in the closure
 
         @mcp_server.tool(name=self.name, description=self.mcp_description)
-        async def read_notebook(path: str, ctx: MCPContext) -> str:
-            return await tool_self.call(ctx, path=path)
+        async def notebook_read(notebook_path: str, ctx: MCPContext) -> str:
+            return await tool_self.call(ctx, notebook_path=notebook_path)

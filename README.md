@@ -35,8 +35,8 @@ This project provides an MCP server that implements Claude Code-like functionali
 | `run_command`     | Execute shell commands (also used for directory creation, file moving, and directory listing)                                     |
 | `run_script`      | Execute scripts with specified interpreters                                                                                       |
 | `script_tool`     | Execute scripts in specific programming languages                                                                                 |
-| `read_notebook`   | Extract and read source code from all cells in a Jupyter notebook with outputs                                                    |
-| `edit_notebook`   | Edit, insert, or delete cells in a Jupyter notebook                                                                               |
+| `notebook_read`   | Extract and read source code from all cells in a Jupyter notebook with outputs                                                    |
+| `notebook_edit`   | Edit, insert, or delete cells in a Jupyter notebook                                                                               |
 | `think`           | Structured space for complex reasoning and analysis without making changes                                                        |
 | `dispatch_agent`  | Launch one or more agents that can perform tasks using read-only tools concurrently                                               |
 | `batch`           | Execute multiple tool invocations in parallel or serially in a single request                                                     |

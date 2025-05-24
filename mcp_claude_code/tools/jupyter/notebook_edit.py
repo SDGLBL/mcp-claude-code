@@ -1,6 +1,6 @@
 """Edit notebook tool implementation.
 
-This module provides the EditNotebookTool for editing Jupyter notebook files.
+This module provides the NoteBookEditTool for editing Jupyter notebook files.
 """
 
 import json
@@ -14,7 +14,7 @@ from mcp_claude_code.tools.jupyter.base import JupyterBaseTool
 
 
 @final
-class EditNotebookTool(JupyterBaseTool):
+class NoteBookEditTool(JupyterBaseTool):
     """Tool for editing Jupyter notebook files."""
 
     @property
@@ -25,7 +25,7 @@ class EditNotebookTool(JupyterBaseTool):
         Returns:
             Tool name
         """
-        return "edit_notebook"
+        return "notebook_edit"
 
     @property
     @override
@@ -35,12 +35,7 @@ class EditNotebookTool(JupyterBaseTool):
         Returns:
             Tool description
         """
-        return """Edit a specific cell in a Jupyter notebook.
-
-Enables editing, inserting, or deleting cells in a Jupyter notebook (.ipynb file).
-In replace mode, the specified cell's source is updated with the new content.
-In insert mode, a new cell is added at the specified index.
-In delete mode, the specified cell is removed."""
+        return "Completely replaces the contents of a specific cell in a Jupyter notebook (.ipynb file) with new source. Jupyter notebooks are interactive documents that combine code, text, and visualizations, commonly used for data analysis and scientific computing. The notebook_path parameter must be an absolute path, not a relative path. The cell_number is 0-indexed. Use edit_mode=insert to add a new cell at the index specified by cell_number. Use edit_mode=delete to delete the cell at the index specified by cell_number."
 
     @property
     @override
@@ -52,17 +47,17 @@ In delete mode, the specified cell is removed."""
         """
         return {
             "properties": {
-                "path": {
+                "notebook_path": {
                     "type": "string",
-                    "description": "path to the Jupyter notebook file",
+                    "description": "The absolute path to the Jupyter notebook file to edit (must be absolute, not relative)",
                 },
                 "cell_number": {
-                    "type": "integer",
-                    "description": "index of the cell to edit",
+                    "type": "number",
+                    "description": "The index of the cell to edit (0-based)",
                 },
                 "new_source": {
                     "type": "string",
-                    "description": "new source code or markdown content",
+                    "description": "The new source for the cell",
                 },
                 "cell_type": {
                     "anyOf": [
@@ -70,17 +65,17 @@ In delete mode, the specified cell is removed."""
                         {"type": "null"},
                     ],
                     "default": None,
-                    "description": "type of the new cell (code or markdown)",
+                    "description": "The type of the cell (code or markdown). If not specified, it defaults to the current cell type. If using edit_mode=insert, this is required.",
                 },
                 "edit_mode": {
                     "default": "replace",
                     "enum": ["replace", "insert", "delete"],
                     "type": "string",
-                    "description": "edit mode: replace, insert, or delete",
+                    "description": "The type of edit to make (replace, insert, delete). Defaults to replace.",
                 },
             },
-            "required": ["path", "cell_number", "new_source"],
-            "title": "edit_notebookArguments",
+            "required": ["notebook_path", "cell_number", "new_source"],
+            "title": "notebook_editArguments",
             "type": "object",
         }
 
@@ -92,7 +87,7 @@ In delete mode, the specified cell is removed."""
         Returns:
             List of required parameter names
         """
-        return ["path", "cell_number", "new_source"]
+        return ["notebook_path", "cell_number", "new_source"]
 
     @override
     async def call(self, ctx: MCPContext, **params: Any) -> str:
@@ -109,19 +104,19 @@ In delete mode, the specified cell is removed."""
         self.set_tool_context_info(tool_ctx)
 
         # Extract parameters
-        path = params.get("path")
+        notebook_path = params.get("notebook_path")
         cell_number = params.get("cell_number")
         new_source = params.get("new_source")
         cell_type = params.get("cell_type")
         edit_mode = params.get("edit_mode", "replace")
 
         # Validate path parameter - ensure it's not None and convert to string
-        if path is None:
-            await tool_ctx.error("Path parameter is required")
-            return "Error: Path parameter is required"
+        if notebook_path is None:
+            await tool_ctx.error("notebook_path parameter is required")
+            return "Error: notebook_path parameter is required"
 
-        path_str = str(path)
-        path_validation = self.validate_path(path_str)
+        notebook_path_str = str(notebook_path)
+        path_validation = self.validate_path(notebook_path_str)
         if path_validation.is_error:
             await tool_ctx.error(path_validation.error_message)
             return f"Error: {path_validation.error_message}"
@@ -149,33 +144,33 @@ In delete mode, the specified cell is removed."""
             return "Error: New source is required for replace or insert operations"
 
         await tool_ctx.info(
-            f"Editing notebook: {path_str} (cell: {cell_number}, mode: {edit_mode})"
+            f"Editing notebook: {notebook_path_str} (cell: {cell_number}, mode: {edit_mode})"
         )
 
         # Check if path is allowed
-        if not self.is_path_allowed(path_str):
+        if not self.is_path_allowed(notebook_path_str):
             await tool_ctx.error(
-                f"Access denied - path outside allowed directories: {path_str}"
+                f"Access denied - path outside allowed directories: {notebook_path_str}"
             )
-            return (
-                f"Error: Access denied - path outside allowed directories: {path_str}"
-            )
+            return f"Error: Access denied - path outside allowed directories: {notebook_path_str}"
 
         try:
-            file_path = Path(path_str)
+            file_path = Path(notebook_path_str)
 
             if not file_path.exists():
-                await tool_ctx.error(f"File does not exist: {path_str}")
-                return f"Error: File does not exist: {path_str}"
+                await tool_ctx.error(f"File does not exist: {notebook_path_str}")
+                return f"Error: File does not exist: {notebook_path_str}"
 
             if not file_path.is_file():
-                await tool_ctx.error(f"Path is not a file: {path_str}")
-                return f"Error: Path is not a file: {path_str}"
+                await tool_ctx.error(f"Path is not a file: {notebook_path_str}")
+                return f"Error: Path is not a file: {notebook_path_str}"
 
             # Check file extension
             if file_path.suffix.lower() != ".ipynb":
-                await tool_ctx.error(f"File is not a Jupyter notebook: {path_str}")
-                return f"Error: File is not a Jupyter notebook: {path_str}"
+                await tool_ctx.error(
+                    f"File is not a Jupyter notebook: {notebook_path_str}"
+                )
+                return f"Error: File is not a Jupyter notebook: {notebook_path_str}"
 
             # Read and parse the notebook
             try:
@@ -183,11 +178,11 @@ In delete mode, the specified cell is removed."""
                     content = f.read()
                     notebook = json.loads(content)
             except json.JSONDecodeError:
-                await tool_ctx.error(f"Invalid notebook format: {path_str}")
-                return f"Error: Invalid notebook format: {path_str}"
+                await tool_ctx.error(f"Invalid notebook format: {notebook_path_str}")
+                return f"Error: Invalid notebook format: {notebook_path_str}"
             except UnicodeDecodeError:
-                await tool_ctx.error(f"Cannot read notebook file: {path_str}")
-                return f"Error: Cannot read notebook file: {path_str}"
+                await tool_ctx.error(f"Cannot read notebook file: {notebook_path_str}")
+                return f"Error: Cannot read notebook file: {notebook_path_str}"
 
             # Check cell_number is valid
             cells = notebook.get("cells", [])
@@ -286,12 +281,12 @@ In delete mode, the specified cell is removed."""
 
             # Update document context
             updated_content = json.dumps(notebook, indent=1)
-            self.document_context.update_document(path_str, updated_content)
+            self.document_context.update_document(notebook_path_str, updated_content)
 
             await tool_ctx.info(
-                f"Successfully edited notebook: {path_str} - {change_description}"
+                f"Successfully edited notebook: {notebook_path_str} - {change_description}"
             )
-            return f"Successfully edited notebook: {path_str} - {change_description}"
+            return f"Successfully edited notebook: {notebook_path_str} - {change_description}"
         except Exception as e:
             await tool_ctx.error(f"Error editing notebook: {str(e)}")
             return f"Error editing notebook: {str(e)}"
@@ -309,9 +304,9 @@ In delete mode, the specified cell is removed."""
         tool_self = self  # Create a reference to self for use in the closure
 
         @mcp_server.tool(name=self.name, description=self.mcp_description)
-        async def edit_notebook(
+        async def notebook_edit(
             ctx: MCPContext,
-            path: str,
+            notebook_path: str,
             cell_number: int,
             new_source: str,
             cell_type: str | None = None,
@@ -319,7 +314,7 @@ In delete mode, the specified cell is removed."""
         ) -> str:
             return await tool_self.call(
                 ctx,
-                path=path,
+                notebook_path=notebook_path,
                 cell_number=cell_number,
                 new_source=new_source,
                 cell_type=cell_type,
