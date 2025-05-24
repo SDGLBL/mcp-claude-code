@@ -37,12 +37,29 @@ class GrepAstTool(FilesystemBaseTool):
         Returns:
             Tool description
         """
-        return """Search through source code files and see matching lines with useful context.
+        return """Search through source code files and see matching lines with useful AST (Abstract Syntax Tree) context. This tool helps you understand code structure by showing how matched lines fit into functions, classes, and other code blocks.
 
-Grep source code files and see matching lines with useful context that show how they fit 
-into the code structure. See the loops, functions, methods, classes, etc. that contain
-all the matching lines. Get a sense of what's inside a matched class or function definition.
-Only works within allowed directories."""
+Unlike traditional search tools like `search_content` that only show matching lines, `grep_ast` leverages the AST to reveal the structural context around matches, making it easier to understand the code organization.
+
+When to use this tool:
+1. When you need to understand where a pattern appears within larger code structures
+2. When searching for function or class definitions that match a pattern
+3. When you want to see not just the matching line but its surrounding context in the code
+4. When exploring unfamiliar codebases and need structural context
+5. When examining how a specific pattern is used across different parts of the codebase
+
+This tool is superior to regular grep/search_content when you need to understand code structure, not just find text matches.
+
+Example usage:
+```
+grep_ast(pattern="function_name", path="/path/to/file.py", ignore_case=False, line_number=True)
+```
+
+Parameters:
+- pattern: The regex pattern to search for in source code files
+- path: The path to search in (file or directory)
+- ignore_case: Whether to ignore case when matching (default: False)
+- line_number: Whether to display line numbers (default: False)"""
 
     @property
     @override
