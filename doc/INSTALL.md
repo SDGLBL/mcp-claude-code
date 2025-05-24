@@ -1,10 +1,26 @@
-## Getting Started
+# Installation Guide
 
-### Usage
+This guide covers different installation methods for mcp-claude-code and how to configure it with Claude Desktop.
 
-#### Configuring Claude Desktop
+## Requirements
 
-You can run it with `uvx run mcp-claude-code` without installation. Configure Claude Desktop to use this server by adding the following to your Claude Desktop configuration file:
+- Python 3.12 or later
+- Claude Desktop application
+- Optional: [ripgrep](https://github.com/BurntSushi/ripgrep) for enhanced search performance
+
+## Installation Methods
+
+### Method 1: Using uvx (Recommended)
+
+The simplest way to use mcp-claude-code is with `uvx`, which runs the package without permanent installation:
+
+```bash
+uvx --from mcp-claude-code claudecode --install
+```
+
+This command will automatically configure Claude Desktop for you.
+
+For manual configuration:
 
 ```json
 {
@@ -23,115 +39,339 @@ You can run it with `uvx run mcp-claude-code` without installation. Configure Cl
 }
 ```
 
-Make sure to replace `/path/to/your/project` with the actual path to the project you want Claude to access.
+### Method 2: Using pip/uv
 
-#### Advanced Configuration Options
+Install the package globally or in a virtual environment:
 
-You can customize the server using other options:
+```bash
+# Using pip
+pip install mcp-claude-code
+
+# Using uv (recommended)
+uv pip install mcp-claude-code
+```
+
+Then use the automatic installer:
+
+```bash
+claudecode --install --allow-path /path/to/your/project
+```
+
+Or configure Claude Desktop manually:
 
 ```json
 {
   "mcpServers": {
     "claude-code": {
-      "command": "uvx",
+      "command": "claudecode",
+      "args": ["--allow-path", "/path/to/your/project"]
+    }
+  }
+}
+```
+
+### Method 3: Development Installation
+
+For development or local modifications:
+
+```bash
+# Clone the repository
+git clone https://github.com/SDGLBL/mcp-claude-code.git
+cd mcp-claude-code
+
+# Create virtual environment and install
+make venv
+make install-dev
+
+# Activate virtual environment
+source .venv/bin/activate  # On macOS/Linux
+# .venv\Scripts\activate    # On Windows
+
+# Use the installer
+claudecode --install --allow-path /path/to/your/project
+```
+
+Or use Python module syntax:
+
+```json
+{
+  "mcpServers": {
+    "claude-code": {
+      "command": "python",
       "args": [
-        "--from",
-        "mcp-claude-code",
-        "claudecode",
+        "-m",
+        "mcp_claude_code.cli",
         "--allow-path",
-        "/path/to/project",
+        "/path/to/your/project"
+      ]
+    }
+  }
+}
+```
+
+## Configuration Options
+
+### Basic Configuration
+
+The minimum required configuration:
+
+```json
+{
+  "mcpServers": {
+    "claude-code": {
+      "command": "claudecode",
+      "args": ["--allow-path", "/path/to/your/project"]
+    }
+  }
+}
+```
+
+### Advanced Configuration
+
+Full configuration with all available options:
+
+```json
+{
+  "mcpServers": {
+    "claude-code": {
+      "command": "claudecode",
+      "args": [
+        "--allow-path",
+        "/path/to/project1",
+        "--allow-path",
+        "/path/to/project2",
         "--name",
         "custom-claude-code",
         "--transport",
-        "stdio"
+        "stdio",
+        "--command-timeout",
+        "180",
+        "--enable-agent-tool",
+        "--agent-model",
+        "openai/gpt-4o",
+        "--agent-max-tokens",
+        "100000",
+        "--agent-api-key",
+        "your-api-key-here",
+        "--agent-base-url",
+        "http://localhost:1234/v1",
+        "--agent-max-iterations",
+        "10",
+        "--agent-max-tool-uses",
+        "30"
       ]
     }
   }
 }
 ```
 
-#### LLM Model and Token Configuration
+### Configuration Parameters
 
-You can customize the agent behavior by specifying the LLM model and token limits:
+| Parameter                | Type    | Default           | Description                                                      |
+| ------------------------ | ------- | ----------------- | ---------------------------------------------------------------- |
+| `--allow-path`           | string  | current directory | Directory path to allow access (can be specified multiple times) |
+| `--name`                 | string  | "claude-code"     | Name of the MCP server                                           |
+| `--transport`            | choice  | "stdio"           | Transport protocol ("stdio" or "sse")                            |
+| `--command-timeout`      | float   | 120.0             | Default timeout for command execution in seconds                 |
+| `--enable-agent-tool`    | flag    | false             | Enable the agent tool functionality                              |
+| `--agent-model`          | string  | -                 | Model name in LiteLLM format (e.g., "openai/gpt-4o")             |
+| `--agent-max-tokens`     | integer | -                 | Maximum tokens for agent responses                               |
+| `--agent-api-key`        | string  | -                 | API key for the LLM provider                                     |
+| `--agent-base-url`       | string  | -                 | Base URL for the LLM provider API endpoint                       |
+| `--agent-max-iterations` | integer | 10                | Maximum number of iterations for agent                           |
+| `--agent-max-tool-uses`  | integer | 30                | Maximum number of total tool uses for agent                      |
+
+## Agent Tool Configuration
+
+The agent tool allows Claude to delegate tasks to specialized sub-agents. It's disabled by default and requires additional configuration.
+
+### Enabling Agent Tool
+
+To enable the agent tool, you need:
+
+1. Add `--enable-agent-tool` to your configuration
+2. Configure an LLM provider with API key
+
+### Supported LLM Providers
+
+The agent tool uses LiteLLM format for model specification:
+
+#### OpenAI Models
+
+```bash
+--agent-model "openai/gpt-4o"
+--agent-model "openai/gpt-4o-mini"
+--agent-api-key "your-openai-api-key"
+```
+
+#### Anthropic Models
+
+```bash
+--agent-model "anthropic/claude-3-5-sonnet-20241022"
+--agent-api-key "your-anthropic-api-key"
+```
+
+#### Google Models (via OpenRouter)
+
+```bash
+--agent-model "openrouter/google/gemini-2.0-flash-exp"
+--agent-api-key "your-openrouter-api-key"
+```
+
+#### Local/Custom Models
+
+```bash
+--agent-model "openai/gpt-4o"  # or any compatible model name
+--agent-base-url "http://localhost:1234/v1"
+--agent-api-key "local-key"  # often not needed for local
+```
+
+### Environment Variables
+
+Instead of command-line arguments, you can use environment variables:
+
+| Environment Variable | Description                          |
+| -------------------- | ------------------------------------ |
+| `AGENT_MODEL`        | Default model name                   |
+| `AGENT_PROVIDER`     | Default provider prefix              |
+| `AGENT_MAX_TOKENS`   | Maximum tokens for model responses   |
+| `OPENAI_API_KEY`     | OpenAI API key                       |
+| `ANTHROPIC_API_KEY`  | Anthropic API key                    |
+| `AGENT_TEMPERATURE`  | Model temperature (default: 0.7)     |
+| `AGENT_API_TIMEOUT`  | API timeout in seconds (default: 60) |
+
+## Claude Desktop Configuration Locations
+
+The configuration file locations vary by operating system:
+
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux**: `~/.config/claude/claude_desktop_config.json`
+
+## Automatic Installation
+
+Use the `--install` flag to automatically configure Claude Desktop:
+
+```bash
+# Basic installation
+claudecode --install
+
+# Installation with custom paths
+claudecode --install --allow-path /path/to/project1 --allow-path /path/to/project2
+
+# Installation with custom name
+claudecode --install --name my-claude-code --allow-path /path/to/project
+```
+
+This will automatically:
+
+- Create the configuration directory if it doesn't exist
+- Update or create the Claude Desktop configuration file
+- Preserve existing MCP server configurations
+- Show the configuration details
+
+## System Prompt Setup
+
+For optimal performance, add the system prompt to your Claude Desktop project:
+
+1. Locate the system prompt file: `doc/system_prompt`
+2. Open Claude Desktop and navigate to your project
+3. Go to "Project instructions" in the sidebar
+4. Copy and paste the contents of `doc/system_prompt`
+5. Replace `{project_path}` with your actual project path
+
+## Performance Optimization
+
+### Install ripgrep
+
+For faster file searches, install [ripgrep](https://github.com/BurntSushi/ripgrep):
+
+```bash
+# macOS
+brew install ripgrep
+
+# Ubuntu/Debian
+sudo apt install ripgrep
+
+# Windows (using Chocolatey)
+choco install ripgrep
+
+# Or download from: https://github.com/BurntSushi/ripgrep/releases
+```
+
+### Timeout Configuration
+
+Adjust command timeout for large operations:
 
 ```json
 {
   "mcpServers": {
     "claude-code": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "mcp-claude-code",
-        "claudecode",
-        "--allow-path",
-        "/path/to/project",
-        "--enable-agent-tool",
-        "--agent-model",
-        "{litellm-model-name}",
-        "--agent-max-tokens",
-        "100000",
-        "--agent-api-key",
-        "{your-api-key}",
-        "--agent-max-tool-uses"
-        "30",
-        "--agent-max-iterations",
-        "10"
-      ]
+      "command": "claudecode",
+      "args": ["--command-timeout", "300", "--allow-path", "/path/to/project"]
     }
   }
 }
 ```
 
-The available LLM configuration options are:
+## Troubleshooting
 
-- `--agent-model`: Specify the model name in LiteLLM format (e.g., 'openai/gpt-4o', 'anthropic/claude-3-sonnet')
-- `--agent-max-tokens`: Specify the maximum tokens for agent responses
-- `--agent-api-key`: Specify the API key for the LLM provider (for development/testing only)
-- `--agent-max-iterations`: Maximum number of iterations for agent (default: 10)
-- `--agent-max-tool-uses`: Maximum number of total tool uses for agent (default: 30)
-- `--enable-agent-tool`: Enable the agent tool (disabled by default)
+### Common Issues
 
-The model name uses the LiteLLM format with provider prefixes. Examples:
+1. **Permission Errors**: Ensure the specified paths in `--allow-path` exist and are accessible
+2. **Command Not Found**: Make sure the installation method puts `claudecode` in your PATH
+3. **Agent Tool Not Working**: Verify the API key and model name are correct
+4. **Claude Desktop Not Recognizing Server**: Restart Claude Desktop after configuration changes
 
-- OpenAI models: `openai/gpt-4o`, `openai/gpt-4o-mini`
-- Anthropic models: `anthropic/claude-3.7-sonnet`
-- Google models: `openrouter/google/gemini-2.5-flash-preview` (Recommended)
+### Verification
 
-If you don't specify these options, the agent will use the following environment variables:
+Test your installation:
 
-- `AGENT_MODEL`: Default model name (falls back to "openai/gpt-4o")
-- `AGENT_PROVIDER`: Default provider prefix
-- `AGENT_MAX_TOKENS`: Maximum tokens for model responses
-- `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`: API keys for respective providers
+```bash
+# Check if the command works
+claudecode --help
 
-#### Agent Tool Configuration
+# Test with a simple allowed path
+claudecode --allow-path /tmp
+```
 
-The agent tool allows Claude to delegate tasks to specialized sub-agents. By default, the agent tool is disabled. You can enable and configure it using these options:
+### Debug Mode
 
-- `--enable-agent-tool`: Enable the agent tool functionality
-- `--agent-max-iterations`: Control the maximum number of back-and-forth interactions an agent can have (default: 10)
-- `--agent-max-tool-uses`: Control the maximum number of tool calls an agent can make (default: 30)
+For troubleshooting, you can run the server directly:
 
-Enabling the agent tool can improve Claude's ability to handle complex tasks by allowing it to delegate to specialized sub-agents. However, it requires setting up an LLM provider with a valid API key.
+```bash
+# Run with verbose output
+python -m mcp_claude_code.cli --allow-path /path/to/project --transport stdio
+```
 
-### Configuring Claude Desktop System Prompt
+## Development and Testing
 
-To get the best experience with Claude Code, you need to add the provided system prompt to your Claude Desktop client. This system prompt guides Claude through a structured workflow for code modifications and project management.
+For development work:
 
-Follow these steps:
+```bash
+# Install development dependencies
+make install-dev
 
-1. Locate the system prompt file in this repository at `doc/system_prompt`
-2. Open your Claude Desktop client
-3. Create a new project or open an existing one
-4. Navigate to the "Project instructions" section in the Claude Desktop sidebar
-5. Copy the contents of `doc/system_prompt` and paste it into the "Project instructions" section
-6. Replace `{project_path}` with the actual absolute path to your project
+# Run tests
+make test
 
-The system prompt provides Claude with:
+# Run with coverage
+make test-cov
 
-- A structured workflow for analyzing and modifying code
-- Best practices for project exploration and analysis
-- Guidelines for development, refactoring, and quality assurance
-- Special formatting instructions for mathematical content
+# Lint code
+make lint
 
-This step is crucial as it enables Claude to follow a consistent approach when helping you with code modifications.
+# Format code
+make format
+```
+
+## Next Steps
+
+After installation:
+
+1. Restart Claude Desktop
+2. Verify the server appears in Claude Desktop's MCP servers list
+3. Test basic functionality by asking Claude to list files in your project
+4. Review [USEFUL_PROMPTS.md](./USEFUL_PROMPTS.md) for usage examples
+
+For more advanced usage and examples, see the main [README.md](../README.md).
