@@ -40,7 +40,40 @@ class BatchTool(BaseTool):
         Returns:
             Tool description
         """
-        return """Batch execution tool that runs multiple tool invocations in a single request."""
+        return """Batch execution tool that runs multiple tool invocations in a single request.
+
+Tools are executed in parallel when possible, and otherwise serially.
+Takes a list of tool invocations (tool_name and input pairs).
+Returns the collected results from all invocations.
+Use this tool when you need to run multiple independent tool operations at once -- it is awesome for speeding up your workflow, reducing both context usage and latency.
+Each tool will respect its own permissions and validation rules.
+The tool's outputs are NOT shown to the user; to answer the user's query, you MUST send a message with the results after the tool call completes, otherwise the user will not see the results.
+
+<batch_example>
+When dispatching multiple agents to find necessary information.
+batch(
+  description="Update import statements across modules",
+  invocations=[
+    {tool_name: "dispatch_agent", input: {prompt: "Search for all instances of 'logger' configuration in /app/config directory"}},
+    {tool_name: "dispatch_agent", input: {prompt: "Find all test files that reference 'UserService' in /app/tests"}},
+  ]
+)
+
+Common scenarios for effective batching:
+1. Reading multiple related files in one operation
+2. Performing a series of simple mechanical changes
+3. Running multiple diagnostic commands
+4. Dispatch multiple agents to complete the task
+
+To make a batch call, provide the following:
+1. description: A short (3-5 word) description of the batch operation
+2. invocations: List of invocation [{"tool_name": "...", "input": "..."}], tool_name: The name of the tool to invoke,newText: The input to pass to the tool
+
+
+Available tools in batch call:
+Tool: dispatch_agent,read,directory_tree,grep,get_file_info,grep_ast,run_command,notebook_read
+Not available: think,write,edit,multi_edit,notebook_edit
+"""
 
     @property
     @override
