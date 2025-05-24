@@ -35,14 +35,11 @@ class Edit(FilesystemBaseTool):
         Returns:
             Tool description
         """
-        return """This is a tool for editing files. For moving or renaming files, you should generally use the run_command tool with the 'mv' command instead. For larger edits, use the Write tool to overwrite files. For Jupyter notebooks (.ipynb files), use the notebook_edit instead.
+        return """Performs exact string replacements in files with strict occurrence count validation.
 
-Before using this tool:
-
-1. Use the read tool to understand the file's contents and context
-
-2. Verify the directory path is correct (only applicable when creating new files):
-   - Use the directory_tree tool to verify the parent directory exists and is the correct location"""
+Usage:
+- When editing text from Read tool output, ensure you preserve the exact indentation (tabs/spaces) as it appears AFTER the line number prefix. The line number prefix format is: spaces + line number + tab. Everything after that tab is the actual file content to match. Never include any part of the line number prefix in the old_string or new_string.
+- ALWAYS prefer editing existing files in the codebase. NEVER write new files unless explicitly required."""
 
     @property
     @override
