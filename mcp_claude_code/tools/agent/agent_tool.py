@@ -64,7 +64,9 @@ class AgentTool(BaseTool):
             Tool description
         """
         # TODO: Add glob when it is implemented
-        return """Launch a new agent that has access to the following tools: run_command, grep, directory_tree, read, edit, multi_edit, write, notebook_read, notebook_edit, todo_read, todo_write. When you are searching for a keyword or file and are not confident that you will find the right match in the first few tries, use the Agent tool to perform the search for you.
+        at = [t.name for t in self.available_tools]
+
+        return f"""Launch a new agent that has access to the following tools: {at} When you are searching for a keyword or file and are not confident that you will find the right match in the first few tries, use the Agent tool to perform the search for you.
 
 When to use the Agent tool:
 - If you are searching for a keyword like \"config\" or \"logger\", or for questions like \"which file does X?\", the Agent tool is strongly recommended
@@ -79,7 +81,7 @@ Usage notes:
 2. When the agent is done, it will return a single message back to you. The result returned by the agent is not visible to the user. To show the user the result, you should send a text message back to the user with a concise summary of the result.
 3. Each agent invocation is stateless. You will not be able to send additional messages to the agent, nor will the agent be able to communicate with you outside of its final report. Therefore, your prompt should contain a highly detailed task description for the agent to perform autonomously and you should specify exactly what information the agent should return back to you in its final and only message to you.
 4. The agent's outputs should generally be trusted
-5. Clearly tell the agent whether you expect it to write code or just to do research (search, file reads, web fetches, etc.), since it is not aware of the user's intent"""
+5.IMPORTANT: The Agent has no awareness of your context, so you must explicitly specify absolute project/file/directory paths and detailed background information about the current task. """
 
     @property
     @override
