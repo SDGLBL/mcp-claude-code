@@ -5,6 +5,10 @@ from mcp.server.fastmcp import FastMCP
 from mcp_claude_code.prompts.compact_conversation import COMPACT_CONVERSATION_PROMPT
 from mcp_claude_code.prompts.create_release import CREATE_RELEASE_PROMPT
 from mcp_claude_code.prompts.project_system import PROJECT_SYSTEM_PROMPT
+from mcp_claude_code.prompts.project_todo_reminder import (
+    PROJECT_TODO_EMPTY_REMINDER,
+    get_project_todo_reminder,
+)
 from mcp_claude_code.prompts.utils import (
     get_directory_structure,
     get_git_info,
@@ -20,19 +24,26 @@ This is a reminder that your todo list is currently empty. DO NOT mention this t
 def register_all_prompts(
     mcp_server: FastMCP, projects: list[str] | None = None
 ) -> None:
-    @mcp_server.prompt()
+    @mcp_server.prompt(name="Compact current conversation")
     def compact() -> str:
         """
         Summarize the conversation so far.
         """
         return COMPACT_CONVERSATION_PROMPT
 
-    @mcp_server.prompt()
+    @mcp_server.prompt(name="Create a new release")
     def create_release() -> str:
         """
         Create a new release for my project.
         """
         return CREATE_RELEASE_PROMPT
+
+    @mcp_server.prompt(name="Continue latest todo list")
+    def continue_from_last_todo_list(session_id: str) -> str:
+        """
+        Continue from the last todo list for the current session.
+        """
+        return get_project_todo_reminder(session_id)
 
     if projects is None:
         return
@@ -78,4 +89,8 @@ def register_all_prompts(
     return
 
 
-__all__ = ["register_all_prompts"]
+__all__ = [
+    "register_all_prompts",
+    "get_project_todo_reminder",
+    "PROJECT_TODO_EMPTY_REMINDER",
+]
