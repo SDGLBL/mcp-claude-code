@@ -164,9 +164,12 @@ class TodoBaseTool(BaseTool, ABC):
         """
         normalized = dict(todo)  # Create a copy
 
-        # Auto-generate ID if missing
+        # Auto-generate ID if missing or normalize existing ID to string
         if "id" not in normalized or not str(normalized.get("id")).strip():
             normalized["id"] = f"todo-{index + 1}"
+        else:
+            # Ensure ID is stored as a string for consistency
+            normalized["id"] = str(normalized["id"]).strip()
 
         # Auto-generate priority if missing (but don't fix invalid values)
         if "priority" not in normalized:
@@ -276,8 +279,17 @@ class TodoBaseTool(BaseTool, ABC):
 
         # Validate ID
         todo_id = todo.get("id")
-        if todo_id is None or not isinstance(todo_id, str) or not str(todo_id).strip():
-            return False, "Todo id must be a non-empty string"
+        if todo_id is None:
+            return False, "Todo id is required"
+
+        # Accept string, int, or float IDs
+        if not isinstance(todo_id, (str, int, float)):
+            return False, "Todo id must be a string, integer, or number"
+
+        # Convert to string and check if it's non-empty after stripping
+        todo_id_str = str(todo_id).strip()
+        if not todo_id_str:
+            return False, "Todo id must not be empty"
 
         return True, ""
 

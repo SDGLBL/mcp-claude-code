@@ -132,6 +132,19 @@ class TestTodoValidation:
                 "status": "pending",
                 "priority": "high",
             },
+            # Test numeric IDs (should be valid now)
+            {
+                "id": 123,
+                "content": "Task with integer ID",
+                "status": "pending",
+                "priority": "medium",
+            },
+            {
+                "id": 45.6,
+                "content": "Task with float ID",
+                "status": "in_progress",
+                "priority": "low",
+            },
         ]
 
         for todo in valid_todos:
@@ -269,7 +282,7 @@ class TestTodoValidation:
             # Invalid ID
             (
                 {"id": "", "content": "Test", "status": "pending", "priority": "high"},
-                "Todo id must be a non-empty string",
+                "Todo id must not be empty",
             ),
             (
                 {
@@ -278,7 +291,7 @@ class TestTodoValidation:
                     "status": "pending",
                     "priority": "high",
                 },
-                "Todo id must be a non-empty string",
+                "Todo id must not be empty",
             ),
             (
                 {
@@ -287,12 +300,9 @@ class TestTodoValidation:
                     "status": "pending",
                     "priority": "high",
                 },
-                "Todo id must be a non-empty string",
+                "Todo id is required",
             ),
-            (
-                {"id": 123, "content": "Test", "status": "pending", "priority": "high"},
-                "Todo id must be a non-empty string",
-            ),
+            # Note: Integer IDs like 123 are now valid, so that test case is removed
         ]
 
         for todo, expected_error_part in invalid_cases:
