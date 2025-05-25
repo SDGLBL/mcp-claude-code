@@ -108,7 +108,70 @@ class TodoBaseTool(BaseTool, ABC):
         """
         tool_ctx.set_tool_info(self.name)
 
-    def validate_session_id(self, session_id: str) -> tuple[bool, str]:
+    def normalize_todo_item(self, todo: dict[str, Any], index: int) -> dict[str, Any]:
+        """Normalize a single todo item by auto-generating missing required fields.
+
+        Args:
+            todo: Todo item to normalize
+            index: Index of the todo item for generating unique IDs
+
+        Returns:
+            Normalized todo item with all required fields
+        """
+        normalized = dict(todo)  # Create a copy
+
+        # Auto-generate ID if missing
+        if "id" not in normalized or not str(normalized.get("id")).strip():
+            normalized["id"] = f"todo-{index + 1}"
+
+        # Auto-generate priority if missing
+        if "priority" not in normalized:
+            normalized["priority"] = "medium"
+        elif normalized["priority"] not in ["high", "medium", "low"]:
+            normalized["priority"] = "medium"
+
+        # Ensure status defaults to pending if missing or invalid
+        if "status" not in normalized:
+            normalized["status"] = "pending"
+        elif normalized["status"] not in ["pending", "in_progress", "completed"]:
+            normalized["status"] = "pending"
+
+        return normalized
+
+    def normalize_todos_list(self, todos: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Normalize a list of todo items by auto-generating missing fields.
+
+        Args:
+            todos: List of todo items to normalize
+
+        Returns:
+            Normalized list of todo items with all required fields
+        """
+        if not isinstance(todos, list):
+            return []  # Return empty list for invalid input
+
+        normalized_todos = []
+        used_ids = set()
+
+        for i, todo in enumerate(todos):
+            if not isinstance(todo, dict):
+                continue  # Skip invalid items
+
+            normalized = self.normalize_todo_item(todo, i)
+
+            # Ensure unique IDs by appending a suffix if needed
+            original_id = normalized["id"]
+            counter = 1
+            while normalized["id"] in used_ids:
+                normalized["id"] = f"{original_id}-{counter}"
+                counter += 1
+
+            used_ids.add(normalized["id"])
+            normalized_todos.append(normalized)
+
+        return normalized_todos
+
+    def validate_session_id(self, session_id: str | None) -> tuple[bool, str]:
         """Validate session ID format and security.
 
         Args:
@@ -121,6 +184,7 @@ class TodoBaseTool(BaseTool, ABC):
         if session_id is None or session_id == "":
             return False, "Session ID is required but was empty"
 
+        # Check if it's a string
         if not isinstance(session_id, str):
             return False, "Session ID must be a string"
 
@@ -177,8 +241,8 @@ class TodoBaseTool(BaseTool, ABC):
             return False, f"Todo priority must be one of: {', '.join(valid_priorities)}"
 
         # Validate ID
-        todo_id = todo.get("id")
-        if not isinstance(todo_id, str) or not todo_id.strip():
+        todo_id = str(todo.get("id"))
+        if not todo_id.strip():
             return False, "Todo id must be a non-empty string"
 
         return True, ""

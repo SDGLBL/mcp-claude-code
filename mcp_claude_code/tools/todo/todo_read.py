@@ -101,6 +101,8 @@ Usage:
             await tool_ctx.error("Parameter 'session_id' is required but was None")
             return "Error: Parameter 'session_id' is required but was None"
 
+        session_id = str(session_id)
+
         # Validate session ID
         is_valid, error_msg = self.validate_session_id(session_id)
         if not is_valid:
@@ -145,5 +147,5 @@ Usage:
         tool_self = self  # Create a reference to self for use in the closure
 
         @mcp_server.tool(name=self.name, description=self.mcp_description)
-        async def todo_read(ctx: MCPContext, session_id: str) -> str:
+        async def todo_read(ctx: MCPContext, session_id: str | int | float) -> str:
             return await tool_self.call(ctx, session_id=session_id)

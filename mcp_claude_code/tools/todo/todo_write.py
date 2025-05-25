@@ -91,7 +91,7 @@ When in doubt, use this tool. Being proactive with task management demonstrates 
             "properties": {
                 "session_id": {
                     "type": "string",
-                    "description": "Unique identifier for the Claude Desktop session (generate using timestamp command)",
+                    "description": "Unique identifier for the Claude Desktop session (generate using timestamp command in seconds)",
                 },
                 "todos": {
                     "type": "array",
@@ -165,11 +165,16 @@ When in doubt, use this tool. Being proactive with task management demonstrates 
             await tool_ctx.error("Parameter 'todos' is required but was None")
             return "Error: Parameter 'todos' is required but was None"
 
+        session_id = str(session_id)
+
         # Validate session ID
         is_valid, error_msg = self.validate_session_id(session_id)
         if not is_valid:
             await tool_ctx.error(f"Invalid session_id: {error_msg}")
             return f"Error: Invalid session_id: {error_msg}"
+
+        # Normalize todos list (auto-generate missing fields)
+        todos = self.normalize_todos_list(todos)
 
         # Validate todos list
         is_valid, error_msg = self.validate_todos_list(todos)
@@ -245,6 +250,6 @@ When in doubt, use this tool. Being proactive with task management demonstrates 
 
         @mcp_server.tool(name=self.name, description=self.mcp_description)
         async def todo_write(
-            ctx: MCPContext, session_id: str, todos: list[dict[str, Any]]
+            ctx: MCPContext, session_id: str | int | float, todos: list[dict[str, Any]]
         ) -> str:
             return await tool_self.call(ctx, session_id=session_id, todos=todos)
