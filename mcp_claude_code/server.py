@@ -19,6 +19,7 @@ class ClaudeCodeServer:
         self,
         name: str = "claude-code",
         allowed_paths: list[str] | None = None,
+        project_paths: list[str] | None = None,
         mcp_instance: FastMCP | None = None,
         agent_model: str | None = None,
         agent_max_tokens: int | None = None,
@@ -34,6 +35,7 @@ class ClaudeCodeServer:
         Args:
             name: The name of the server
             allowed_paths: list of paths that the server is allowed to access
+            project_paths: list of project paths to generate prompts for
             mcp_instance: Optional FastMCP instance for testing
             agent_model: Optional model name for agent tool in LiteLLM format
             agent_max_tokens: Optional maximum tokens for agent responses
@@ -62,6 +64,9 @@ class ClaudeCodeServer:
                 self.permission_manager.add_allowed_path(path)
                 self.document_context.add_allowed_path(path)
 
+        # Store project paths
+        self.project_paths = project_paths
+
         # Store agent options
         self.agent_model = agent_model
         self.agent_max_tokens = agent_max_tokens
@@ -86,7 +91,7 @@ class ClaudeCodeServer:
             enable_agent_tool=self.enable_agent_tool,
         )
 
-        register_all_prompts(mcp_server=self.mcp)
+        register_all_prompts(mcp_server=self.mcp, projects=self.project_paths)
 
     def run(self, transport: str = "stdio", allowed_paths: list[str] | None = None):
         """Run the MCP server.
@@ -134,15 +139,25 @@ def main():
         help="Add an allowed path (can be specified multiple times)",
     )
 
+    _ = parser.add_argument(
+        "--project",
+        action="append",
+        dest="project_paths",
+        help="Add a project path for prompt generation (can be specified multiple times)",
+    )
+
     args = parser.parse_args()
 
     # Type annotations for args to avoid Any warnings
     name: str = args.name
     transport: str = args.transport
     allowed_paths: list[str] | None = args.allowed_paths
+    project_paths: list[str] | None = args.project_paths
 
     # Create and run the server
-    server = ClaudeCodeServer(name=name, allowed_paths=allowed_paths)
+    server = ClaudeCodeServer(
+        name=name, allowed_paths=allowed_paths, project_paths=project_paths
+    )
     server.run(transport=transport, allowed_paths=allowed_paths or [])
 
 

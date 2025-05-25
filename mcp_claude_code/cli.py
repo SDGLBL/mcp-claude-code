@@ -37,6 +37,13 @@ def main() -> None:
     )
 
     _ = parser.add_argument(
+        "--project",
+        action="append",
+        dest="project_paths",
+        help="Add a project path for prompt generation (can be specified multiple times)",
+    )
+
+    _ = parser.add_argument(
         "--agent-model",
         dest="agent_model",
         help="Specify the model name in LiteLLM format (e.g., 'openai/gpt-4o', 'anthropic/claude-3-sonnet')",
@@ -116,9 +123,12 @@ def main() -> None:
     allowed_paths: list[str] = (
         cast(list[str], args.allowed_paths) if args.allowed_paths else []
     )
+    project_paths: list[str] = (
+        cast(list[str], args.project_paths) if args.project_paths else []
+    )
 
     if install:
-        install_claude_desktop_config(name, allowed_paths)
+        install_claude_desktop_config(name, allowed_paths, project_paths)
         return
 
     # If no allowed paths are specified, use the current directory
@@ -129,6 +139,7 @@ def main() -> None:
     server = ClaudeCodeServer(
         name=name,
         allowed_paths=allowed_paths,
+        project_paths=project_paths,
         agent_model=agent_model,
         agent_max_tokens=agent_max_tokens,
         agent_api_key=agent_api_key,
@@ -143,13 +154,16 @@ def main() -> None:
 
 
 def install_claude_desktop_config(
-    name: str = "claude-code", allowed_paths: list[str] | None = None
+    name: str = "claude-code",
+    allowed_paths: list[str] | None = None,
+    project_paths: list[str] | None = None,
 ) -> None:
     """Install the server configuration in Claude Desktop.
 
     Args:
         name: The name to use for the server in the config
         allowed_paths: Optional list of paths to allow
+        project_paths: Optional list of project paths for prompt generation
     """
     # Find the Claude Desktop config directory
     home: Path = Path.home()
@@ -179,6 +193,11 @@ def install_claude_desktop_config(
     else:
         # Allow home directory by default
         args.extend(["--allow-path", str(home)])
+
+    # Add project paths if specified
+    if project_paths:
+        for path in project_paths:
+            args.extend(["--project", path])
 
     # Create config object
     config: dict[str, Any] = {
@@ -214,7 +233,15 @@ def install_claude_desktop_config(
             print(f"- {path}")
     else:
         print(f"\nDefault allowed path: {home}")
-    print("\nYou can modify allowed paths in the config file directly.")
+
+    if project_paths:
+        print("\nProject paths:")
+        for path in project_paths:
+            print(f"- {path}")
+
+    print(
+        "\nYou can modify allowed paths and project paths in the config file directly."
+    )
     print("Restart Claude Desktop for changes to take effect.")
 
 

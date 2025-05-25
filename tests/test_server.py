@@ -153,6 +153,7 @@ def test_main() -> None:
         mock_args.name = "test-server"
         mock_args.transport = "stdio"
         mock_args.allowed_paths = ["/test/path"]
+        mock_args.project_paths = ["/test/project"]
         mock_parse_args.return_value = mock_args
 
         # Mock server instance
@@ -166,7 +167,9 @@ def test_main() -> None:
 
         # Verify server was created and run
         mock_server_class.assert_called_once_with(
-            name="test-server", allowed_paths=["/test/path"]
+            name="test-server",
+            allowed_paths=["/test/path"],
+            project_paths=["/test/project"],
         )
         mock_server.run.assert_called_once_with(
             transport="stdio", allowed_paths=["/test/path"]

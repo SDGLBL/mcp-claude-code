@@ -25,6 +25,7 @@ class TestCLI:
             mock_args.name = "test-server"
             mock_args.transport = "stdio"
             mock_args.allowed_paths = ["/test/path"]
+            mock_args.project_paths = ["/test/project"]
             # project_dir argument removed
             mock_args.install = False
             mock_args.agent_model = "anthropic/claude-3-sonnet"
@@ -46,9 +47,11 @@ class TestCLI:
 
             # Verify server was created with correct arguments
             expected_paths = ["/test/path"]
+            expected_project_paths = ["/test/project"]
             mock_server_class.assert_called_once_with(
                 name="test-server",
                 allowed_paths=expected_paths,
+                project_paths=expected_project_paths,
                 agent_model="anthropic/claude-3-sonnet",
                 agent_max_tokens=2000,
                 agent_api_key="test_api_key",
@@ -71,13 +74,16 @@ class TestCLI:
             mock_args.name = "test-server"
             mock_args.install = True
             mock_args.allowed_paths = ["/test/path"]
+            mock_args.project_paths = ["/test/project"]
             mock_parse_args.return_value = mock_args
 
             # Call main
             main()
 
             # Verify install function was called
-            mock_install.assert_called_once_with("test-server", ["/test/path"])
+            mock_install.assert_called_once_with(
+                "test-server", ["/test/path"], ["/test/project"]
+            )
 
     def test_main_without_allowed_paths(self) -> None:
         """Test the main function without specified allowed paths."""
@@ -91,6 +97,7 @@ class TestCLI:
             mock_args.name = "test-server"
             mock_args.transport = "stdio"
             mock_args.allowed_paths = None
+            mock_args.project_paths = None
             mock_args.install = False
             mock_args.agent_model = None
             mock_args.agent_max_tokens = None
@@ -113,6 +120,7 @@ class TestCLI:
             mock_server_class.assert_called_once_with(
                 name="test-server",
                 allowed_paths=["/current/dir"],
+                project_paths=[],
                 agent_model=None,
                 agent_max_tokens=None,
                 agent_api_key=None,
