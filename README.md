@@ -1,5 +1,7 @@
 # MCP Claude Code
 
+[![smithery badge](https://smithery.ai/badge/@SDGLBL/claude-code)](https://smithery.ai/server/@SDGLBL/claude-code)
+
 An implementation of Claude Code capabilities using the Model Context Protocol (MCP).
 
 ## Overview
@@ -43,6 +45,14 @@ This project provides an MCP server that implements Claude Code-like functionali
 ## Getting Started
 
 For detailed installation and configuration instructions, please refer to [INSTALL.md](./doc/INSTALL.md).
+
+### Installing via Smithery
+
+To install MCP Claude Code for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@SDGLBL/claude-code):
+
+```bash
+npx -y @smithery/cli install @SDGLBL/claude-code --client claude
+```
 
 ## Security
 
