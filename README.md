@@ -6,7 +6,7 @@ An implementation of Claude Code capabilities using the Model Context Protocol (
 
 This project provides an MCP server that implements Claude Code-like functionality, allowing Claude to directly execute instructions for modifying and improving project files. By leveraging the Model Context Protocol, this implementation enables seamless integration with various MCP clients including Claude Desktop.
 
-![example](./doc/example.gif)
+![example](./doc/example2.gif)
 
 ## Features
 
@@ -43,6 +43,8 @@ This project provides an MCP server that implements Claude Code-like functionali
 ## Getting Started
 
 For detailed installation and configuration instructions, please refer to [INSTALL.md](./doc/INSTALL.md).
+
+For detailed tutorial of 0.3 version, please refer to [TUTORIAL.md](./doc/TUTORIAL.md)
 
 ## Security
 
