@@ -18,6 +18,8 @@ The simplest way to use mcp-claude-code is with `uvx`, which runs the package wi
 uvx --from mcp-claude-code claudecode --install
 ```
 
+> I highly recommend that you set projects one by one to gain more efficient system prompt generation experience.
+
 This command will automatically configure Claude Desktop for you.
 
 For manual configuration:
@@ -32,7 +34,11 @@ For manual configuration:
         "mcp-claude-code",
         "claudecode",
         "--allow-path",
-        "/path/to/your/project"
+        "/path/allow",
+        "--project",
+        "/path/project1",
+        "--project",
+        "/path/project2"
       ]
     }
   }
@@ -54,7 +60,7 @@ uv pip install mcp-claude-code
 Then use the automatic installer:
 
 ```bash
-claudecode --install --allow-path /path/to/your/project
+claudecode --install --allow-path /path/allow
 ```
 
 Or configure Claude Desktop manually:
@@ -64,7 +70,7 @@ Or configure Claude Desktop manually:
   "mcpServers": {
     "claude-code": {
       "command": "claudecode",
-      "args": ["--allow-path", "/path/to/your/project"]
+      "args": ["--allow-path", "/path/allow"]
     }
   }
 }
@@ -88,7 +94,7 @@ source .venv/bin/activate  # On macOS/Linux
 # .venv\Scripts\activate    # On Windows
 
 # Use the installer
-claudecode --install --allow-path /path/to/your/project
+claudecode --install --allow-path /path/allow
 ```
 
 Or use Python module syntax:
@@ -98,12 +104,7 @@ Or use Python module syntax:
   "mcpServers": {
     "claude-code": {
       "command": "python",
-      "args": [
-        "-m",
-        "mcp_claude_code.cli",
-        "--allow-path",
-        "/path/to/your/project"
-      ]
+      "args": ["-m", "mcp_claude_code.cli", "--allow-path", "/path/allow"]
     }
   }
 }
@@ -120,7 +121,7 @@ The minimum required configuration:
   "mcpServers": {
     "claude-code": {
       "command": "claudecode",
-      "args": ["--allow-path", "/path/to/your/project"]
+      "args": ["--allow-path", "/path/allow"]
     }
   }
 }
@@ -171,20 +172,20 @@ Full configuration with all available options:
 
 ### Configuration Parameters
 
-| Parameter                | Type    | Default           | Description                                                      |
-| ------------------------ | ------- | ----------------- | ---------------------------------------------------------------- |
-| `--allow-path`           | string  | current directory | Directory path to allow access (can be specified multiple times) |
-| `--project`              | string  | -                 | Project path for prompt generation (can be specified multiple times) |
-| `--name`                 | string  | "claude-code"     | Name of the MCP server                                           |
-| `--transport`            | choice  | "stdio"           | Transport protocol ("stdio" or "sse")                            |
-| `--command-timeout`      | float   | 120.0             | Default timeout for command execution in seconds                 |
-| `--enable-agent-tool`    | flag    | false             | Enable the agent tool functionality                              |
-| `--agent-model`          | string  | -                 | Model name in LiteLLM format (e.g., "openai/gpt-4o")             |
-| `--agent-max-tokens`     | integer | -                 | Maximum tokens for agent responses                               |
-| `--agent-api-key`        | string  | -                 | API key for the LLM provider                                     |
-| `--agent-base-url`       | string  | -                 | Base URL for the LLM provider API endpoint                       |
-| `--agent-max-iterations` | integer | 10                | Maximum number of iterations for agent                           |
-| `--agent-max-tool-uses`  | integer | 30                | Maximum number of total tool uses for agent                      |
+| Parameter                | Type    | Default           | Description                                                                               |
+| ------------------------ | ------- | ----------------- | ----------------------------------------------------------------------------------------- |
+| `--allow-path`           | string  | current directory | Directory path to allow access (can be specified multiple times)                          |
+| `--project`              | string  | -                 | Project path for prompt generation (can be specified multiple times **Highly Recommend**) |
+| `--name`                 | string  | "claude-code"     | Name of the MCP server                                                                    |
+| `--transport`            | choice  | "stdio"           | Transport protocol ("stdio" or "sse")                                                     |
+| `--command-timeout`      | float   | 120.0             | Default timeout for command execution in seconds                                          |
+| `--enable-agent-tool`    | flag    | false             | Enable the agent tool functionality                                                       |
+| `--agent-model`          | string  | -                 | Model name in LiteLLM format (e.g., "openai/gpt-4o")                                      |
+| `--agent-max-tokens`     | integer | -                 | Maximum tokens for agent responses                                                        |
+| `--agent-api-key`        | string  | -                 | API key for the LLM provider                                                              |
+| `--agent-base-url`       | string  | -                 | Base URL for the LLM provider API endpoint                                                |
+| `--agent-max-iterations` | integer | 10                | Maximum number of iterations for agent                                                    |
+| `--agent-max-tool-uses`  | integer | 30                | Maximum number of total tool uses for agent                                               |
 
 ### Project Paths vs Allow Paths
 
@@ -192,6 +193,7 @@ Full configuration with all available options:
 - **`--project`**: Generates project-specific prompts with git info, directory structure, and environment details
 
 The `--project` argument enables automatic generation of comprehensive system prompts that include:
+
 - Git repository information (current branch, recent commits, status)
 - Directory structure overview
 - Operating system details
@@ -265,38 +267,6 @@ The configuration file locations vary by operating system:
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 - **Linux**: `~/.config/claude/claude_desktop_config.json`
-
-## Automatic Installation
-
-Use the `--install` flag to automatically configure Claude Desktop:
-
-```bash
-# Basic installation
-claudecode --install
-
-# Installation with custom paths
-claudecode --install --allow-path /path/to/project1 --allow-path /path/to/project2
-
-# Installation with custom name
-claudecode --install --name my-claude-code --allow-path /path/to/project
-```
-
-This will automatically:
-
-- Create the configuration directory if it doesn't exist
-- Update or create the Claude Desktop configuration file
-- Preserve existing MCP server configurations
-- Show the configuration details
-
-## System Prompt Setup
-
-For optimal performance, add the system prompt to your Claude Desktop project:
-
-1. Locate the system prompt file: `doc/system_prompt`
-2. Open Claude Desktop and navigate to your project
-3. Go to "Project instructions" in the sidebar
-4. Copy and paste the contents of `doc/system_prompt`
-5. Replace `{project_path}` with your actual project path
 
 ## Performance Optimization
 
