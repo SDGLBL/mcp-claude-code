@@ -140,6 +140,10 @@ Full configuration with all available options:
         "/path/to/project1",
         "--allow-path",
         "/path/to/project2",
+        "--project",
+        "/path/to/project1",
+        "--project",
+        "/path/to/project2",
         "--name",
         "custom-claude-code",
         "--transport",
@@ -170,6 +174,7 @@ Full configuration with all available options:
 | Parameter                | Type    | Default           | Description                                                      |
 | ------------------------ | ------- | ----------------- | ---------------------------------------------------------------- |
 | `--allow-path`           | string  | current directory | Directory path to allow access (can be specified multiple times) |
+| `--project`              | string  | -                 | Project path for prompt generation (can be specified multiple times) |
 | `--name`                 | string  | "claude-code"     | Name of the MCP server                                           |
 | `--transport`            | choice  | "stdio"           | Transport protocol ("stdio" or "sse")                            |
 | `--command-timeout`      | float   | 120.0             | Default timeout for command execution in seconds                 |
@@ -180,6 +185,19 @@ Full configuration with all available options:
 | `--agent-base-url`       | string  | -                 | Base URL for the LLM provider API endpoint                       |
 | `--agent-max-iterations` | integer | 10                | Maximum number of iterations for agent                           |
 | `--agent-max-tool-uses`  | integer | 30                | Maximum number of total tool uses for agent                      |
+
+### Project Paths vs Allow Paths
+
+- **`--allow-path`**: Controls which directories the server can access for file operations
+- **`--project`**: Generates project-specific prompts with git info, directory structure, and environment details
+
+The `--project` argument enables automatic generation of comprehensive system prompts that include:
+- Git repository information (current branch, recent commits, status)
+- Directory structure overview
+- Operating system details
+- Project-specific context for better assistance
+
+You can specify multiple projects to generate prompts for each one.
 
 ## Agent Tool Configuration
 
