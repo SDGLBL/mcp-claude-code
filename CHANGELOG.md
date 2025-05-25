@@ -5,6 +5,25 @@ All notable changes to the MCP Claude Code project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2025-05-25
+
+### Fixed
+- **Todo ID Validation Compatibility** (da8295d)
+  - Fixed todo ID validation to accept numeric IDs (integers and floats) in addition to strings
+  - Resolves JSON parsing compatibility issue where numeric strings are automatically converted to integers
+  - All IDs are now normalized to strings for consistent internal storage
+  - Improved validation error messages for better debugging experience
+
+### Maintenance
+- **Code Quality Improvements** (626ebec)
+  - Removed unused imports and functions across multiple modules
+  - Simplified validation.py by removing deprecated functions
+  - Fixed linting issues including f-string formatting
+  - Updated dependencies in uv.lock file
+- **Documentation Updates** (fc688ec)
+  - Updated example documentation with latest functionality demonstrations
+  - Added cross-references to tutorial documentation for version 0.3 features
+
 ## [0.3.0] - 2025-05-25
 
 ### Added
