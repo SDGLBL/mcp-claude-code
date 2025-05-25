@@ -5,6 +5,101 @@ All notable changes to the MCP Claude Code project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-05-25
+
+### Added
+- **TODO Management System** (3f146ed)
+  - Added TodoReadTool and TodoWriteTool for session-based task tracking
+  - Implemented TodoStorage class for in-memory session-based storage
+  - Support for todo items with status (pending/in_progress/completed) and priority (high/medium/low)
+  - Session ID validation and isolation for secure multi-session support
+  - Comprehensive test suite covering unit, integration, and validation scenarios
+- **Project Path Support and Prompt System** (2833d07)
+  - Added new `--project` CLI argument to specify project paths for prompt generation
+  - Refactored prompts into separate modules under `mcp_claude_code/prompts/`
+  - Added PROJECT_SYSTEM_PROMPT for project-specific system prompt generation
+  - Added utility functions for directory structure and git information extraction
+  - Enhanced GitPython dependency for improved git integration
+- **MultiEdit Tool for Atomic Multi-File Operations** (2cd71bb)
+  - Implemented atomic multi-edit operations with transaction semantics
+  - Sequential edit application where each edit operates on previous results
+  - Strict validation including exact string matching and expected replacement counts
+  - File creation capability when first edit has empty old_string
+  - Comprehensive diff generation and error handling
+- **Comprehensive Tutorial Documentation** (d71aea7)
+  - Added new TUTORIAL.md with detailed instructions for advanced features
+  - Project-specific system prompt application via Claude Desktop UI
+  - Automated commands for context management and task continuity
+  - Practical workflow scenarios and TODO management integration
+
+### Enhanced
+- **TODO System Improvements** (f5c2766)
+  - Added latest session tracking and auto-continue functionality
+  - Renamed `continue_from_last_todo_list` to `continue_todo_by_session_id` for clarity
+  - Added `continue_latest_todo` function for automatic session detection
+  - Enhanced TodoStorage with timestamp tracking for session management
+  - Added `find_latest_active_session` method for locating recent sessions
+- **Project TODO Reminder System** (ab3438d)
+  - Implemented formatted todo list reminders for active sessions
+  - Added empty state handling with PROJECT_TODO_EMPTY_REMINDER
+  - Status indicators ([ ], [~], [✓]) and priority indicators (🔴, 🟡, 🟢)
+  - Session isolation and comprehensive test coverage (569 lines)
+- **Tool Documentation and Usability** (Multiple commits)
+  - Enhanced agent tool description with detailed usage guidelines (a989b39, 223c9d1)
+  - Improved batch tool description with usage examples and scenarios (70266ff)
+  - Enhanced grep_ast tool description with AST context examples (81b6658)
+  - Updated thinking tool description with detailed use cases (c829dbf)
+  - Clarified filesystem tool documentation for better user experience (ce6b09f, 9d5f144)
+
+### Changed
+- **Tool Renaming and Consistency** (Multiple commits)
+  - Renamed Jupyter notebook tools: 'read_notebook' → 'notebook_read', 'edit_notebook' → 'notebook_edit' (1be13ea)
+  - Renamed 'edit_file' tool to 'edit' for consistency (8404eee)
+  - Updated all references and documentation to reflect new naming conventions
+- **Installation and Documentation Improvements** (Multiple commits)
+  - Completely rewrote installation guide with detailed instructions (56f28c3)
+  - Updated INSTALL.md with improved project path configuration instructions (d71aea7, 8053705)
+  - Added recommendation for setting projects individually for better system prompt generation
+  - Simplified path parameter documentation and emphasized project path importance
+
+### Removed
+- **Deprecated Tools and Features** (a1ee681)
+  - **BREAKING CHANGE**: Removed `run_script` and `script_tool` functionality
+  - Deleted implementation files and removed tool registration
+  - Functionality consolidated into core `run_command` tool
+- **Deprecated File Operations** (d893f8b)
+  - Removed GetFileInfoTool and all related references
+  - Cleaned up batch tool and filesystem tool integrations
+- **Outdated Documentation** (Multiple commits)
+  - Removed deprecated documentation files (USEFUL_PROMPTS.md, debug.md, migration guides) (8163f08)
+  - Removed outdated system prompt documentation file (4eb866a)
+  - Cleaned up redundant installation steps and outdated recommendations (42e7a69, 8be1a90)
+
+### Refactoring
+- **Code Quality and Formatting** (49b4013)
+  - Applied consistent code formatting and style improvements across codebase
+  - Normalized whitespace, standardized quote usage, improved parameter alignment
+  - Enhanced docstring formatting and removed unnecessary code complexity
+- **Configuration and Structure** (155992d)
+  - Reorganized pyproject.toml configuration sections for better organization
+  - Moved pytest.ini_options section and removed redundant configurations
+- **Tool Parameter Clarity** (6a14807)
+  - Clarified session_id description to specify timestamp in seconds
+  - Updated tool descriptions for better developer guidance
+
+### Documentation
+- **Enhanced Installation and Configuration** (d71aea7, 56f28c3)
+  - Multiple installation methods (uvx, pip/uv, development)
+  - Detailed configuration options with practical examples
+  - Agent tool setup instructions and performance optimization tips
+  - Troubleshooting section and development procedures
+- **README Updates** (8ca5e04)
+  - Added todo_write and todo_read commands to feature table
+  - Updated tool references and removed outdated recommendations
+- **Cross-Reference Integration**
+  - Added cross-references between installation and tutorial documents
+  - Improved parameter table formatting and descriptions
+
 ## [0.2.2] - 2025-05-23
 
 ### Added

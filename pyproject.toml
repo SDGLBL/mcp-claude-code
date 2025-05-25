@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mcp-claude-code"
-version = "0.2.2"
+version = "0.3.0"
 description = "MCP implementation of Claude Code capabilities"
 readme = "README.md"
 requires-python = ">=3.12"
