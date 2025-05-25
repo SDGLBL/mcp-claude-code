@@ -1,7 +1,6 @@
 """Tests for new continue_latest_todo functionality."""
 
 import time
-import pytest
 
 from mcp_claude_code.prompts.project_todo_reminder import (
     PROJECT_TODO_EMPTY_REMINDER,

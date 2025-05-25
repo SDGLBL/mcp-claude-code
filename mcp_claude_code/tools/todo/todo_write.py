@@ -3,7 +3,6 @@
 This module provides the TodoWrite tool for creating and managing a structured task list for a session.
 """
 
-import json
 from typing import Any, final, override
 
 from mcp.server.fastmcp import Context as MCPContext

@@ -1,6 +1,5 @@
 """Tests for TodoStorage class."""
 
-import pytest
 
 from mcp_claude_code.tools.todo.base import TodoStorage
 

@@ -5,7 +5,6 @@ for all tools used in MCP Claude Code. These abstractions help ensure consistent
 behavior and provide a foundation for tool registration and management.
 """
 
-import asyncio
 import functools
 from abc import ABC, abstractmethod
 from typing import Any, Awaitable, Callable, final

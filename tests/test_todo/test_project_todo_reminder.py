@@ -1,10 +1,8 @@
 """Tests for project todo reminder functionality."""
 
-import pytest
 
 from mcp_claude_code.prompts.project_todo_reminder import (
     PROJECT_TODO_EMPTY_REMINDER,
-    PROJECT_TODO_REMINDER,
     format_todo_list_concise,
     get_project_todo_reminder,
     has_unfinished_todos,

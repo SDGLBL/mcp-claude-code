@@ -15,11 +15,7 @@ import tempfile
 from collections.abc import Awaitable, Callable
 from typing import final
 
-from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
 
-from mcp_claude_code.tools.common.base import handle_connection_errors
-from mcp_claude_code.tools.common.context import create_tool_context
 from mcp_claude_code.tools.common.permissions import PermissionManager
 from mcp_claude_code.tools.shell.base import CommandResult
 

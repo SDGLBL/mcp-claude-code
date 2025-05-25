@@ -233,7 +233,7 @@ When you are doing an open ended search that may require multiple rounds of glob
         Returns:
             The search results as formatted string
         """
-        await tool_ctx.info(f"Using fallback Python implementation for grep")
+        await tool_ctx.info("Using fallback Python implementation for grep")
 
         try:
             input_path = Path(path)

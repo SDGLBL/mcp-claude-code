@@ -1,7 +1,6 @@
 """Tests for the multi_edit tool."""
 
 import pytest
-from pathlib import Path
 from unittest.mock import AsyncMock
 
 from mcp_claude_code.tools.common.context import DocumentContext

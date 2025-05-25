@@ -1,9 +1,7 @@
 """Tests for the grep tool implementation."""
 
-import json
 import os
 import shutil
-import subprocess
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 

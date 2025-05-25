@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from mcp_claude_code.tools.todo import get_todo_tools, register_todo_tools
+from mcp_claude_code.tools.todo import get_todo_tools
 from mcp_claude_code.tools.todo.base import TodoBaseTool, TodoStorage
 from mcp_claude_code.tools.todo.todo_read import TodoReadTool
 from mcp_claude_code.tools.todo.todo_write import TodoWriteTool
