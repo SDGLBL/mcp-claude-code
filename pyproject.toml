@@ -47,11 +47,6 @@ include = ["mcp_claude_code*"]
 [tool.basedpyright]
 include = ["mcp_claude_code"]
 
-[tool.pytest.ini_options]
-asyncio_mode = "strict"
-asyncio_default_fixture_loop_scope = "function"
-
-[tool.basedpyright.ignores]
 exclude = [
   "**/node_modules",
   "**/__pycache__",
@@ -59,7 +54,6 @@ exclude = [
   "src/typestubs",
 ]
 
-[tool.basedpyright.flags]
 pythonVersion = "3.13"
 reportUnknownVariableType = false
 reportUnknownMemberType = false
@@ -72,3 +66,7 @@ reportRedeclaration = false
 reportMissingTypeArgument = false
 reportExplicitAny = false
 reportUnusedFunction = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
