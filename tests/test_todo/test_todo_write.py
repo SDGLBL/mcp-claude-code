@@ -255,15 +255,17 @@ class TestTodoWriteTool:
         with patch.object(TodoBaseTool, "create_tool_context", return_value=tool_ctx):
             session_id = "test-session"
 
-            # Test missing required field
-            invalid_todos = [
+            # Test that missing fields are auto-generated (normalization feature)
+            todos_with_missing_fields = [
                 {"id": "task-1", "content": "Test", "status": "pending"}
-            ]  # Missing priority
+            ]  # Missing priority - should be auto-generated as "medium"
             result = await todo_write_tool.call(
-                ctx=mcp_context, session_id=session_id, todos=invalid_todos
+                ctx=mcp_context, session_id=session_id, todos=todos_with_missing_fields
             )
-            assert "Error: Invalid todos" in result
-            assert "missing required field: priority" in result
+            assert "Successfully stored" in result
+            assert (
+                "Priority: 1 medium" in result
+            )  # Should auto-generate medium priority
 
             # Test invalid status
             invalid_todos = [

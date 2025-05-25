@@ -38,12 +38,19 @@ def register_all_prompts(
         """
         return CREATE_RELEASE_PROMPT
 
-    @mcp_server.prompt(name="Continue latest todo list")
-    def continue_from_last_todo_list(session_id: str) -> str:
+    @mcp_server.prompt(name="Continue todo by session id")
+    def continue_todo_by_session_id(session_id: str) -> str:
         """
         Continue from the last todo list for the current session.
         """
         return get_project_todo_reminder(session_id)
+
+    @mcp_server.prompt(name="Continue latest todo")
+    def continue_latest_todo() -> str:
+        """
+        Continue from the last todo list for the current session.
+        """
+        return get_project_todo_reminder()
 
     if projects is None:
         return

@@ -81,15 +81,22 @@ def has_unfinished_todos(todos: list[dict[str, Any]]) -> bool:
     return False
 
 
-def get_project_todo_reminder(session_id: str) -> str:
+def get_project_todo_reminder(session_id: str | None = None) -> str:
     """Get the appropriate todo reminder for a session.
 
     Args:
-        session_id: Session ID to check todos for
+        session_id: Session ID to check todos for. If None, finds the latest active session.
 
     Returns:
         Either PROJECT_TODO_EMPTY_REMINDER or PROJECT_TODO_REMINDER with formatted content
     """
+    # If no session_id provided, try to find the latest active session
+    if session_id is None:
+        session_id = TodoStorage.find_latest_active_session()
+        if session_id is None:
+            # No active sessions found
+            return PROJECT_TODO_EMPTY_REMINDER
+
     # Get todos for the session
     todos = TodoStorage.get_todos(session_id)
 

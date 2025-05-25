@@ -5,6 +5,7 @@ for managing todo lists across different Claude Desktop sessions.
 """
 
 import re
+import time
 from abc import ABC
 from typing import Any, final
 
@@ -20,10 +21,12 @@ class TodoStorage:
 
     This class provides persistent storage for the lifetime of the MCP server process,
     allowing different Claude Desktop conversations to maintain separate todo lists.
+    Each session stores both the todo list and a timestamp of when it was last updated.
     """
 
     # Class-level storage shared across all tool instances
-    _sessions: dict[str, list[dict[str, Any]]] = {}
+    # Structure: {session_id: {"todos": [...], "last_updated": timestamp}}
+    _sessions: dict[str, dict[str, Any]] = {}
 
     @classmethod
     def get_todos(cls, session_id: str) -> list[dict[str, Any]]:
@@ -35,7 +38,8 @@ class TodoStorage:
         Returns:
             List of todo items for the session, empty list if session doesn't exist
         """
-        return cls._sessions.get(session_id, [])
+        session_data = cls._sessions.get(session_id, {})
+        return session_data.get("todos", [])
 
     @classmethod
     def set_todos(cls, session_id: str, todos: list[dict[str, Any]]) -> None:
@@ -45,7 +49,7 @@ class TodoStorage:
             session_id: Unique identifier for the Claude Desktop session
             todos: Complete list of todo items to store
         """
-        cls._sessions[session_id] = todos
+        cls._sessions[session_id] = {"todos": todos, "last_updated": time.time()}
 
     @classmethod
     def get_session_count(cls) -> int:
@@ -79,6 +83,46 @@ class TodoStorage:
             del cls._sessions[session_id]
             return True
         return False
+
+    @classmethod
+    def get_session_last_updated(cls, session_id: str) -> float | None:
+        """Get the last updated timestamp for a session.
+
+        Args:
+            session_id: Session ID to check
+
+        Returns:
+            Timestamp when session was last updated, or None if session doesn't exist
+        """
+        session_data = cls._sessions.get(session_id)
+        if session_data:
+            return session_data.get("last_updated")
+        return None
+
+    @classmethod
+    def find_latest_active_session(cls) -> str | None:
+        """Find the chronologically latest session with unfinished todos.
+
+        Returns the session ID of the most recently updated session that has unfinished todos.
+        Returns None if no sessions have unfinished todos.
+
+        Returns:
+            Session ID with unfinished todos that was most recently updated, or None if none found
+        """
+        from mcp_claude_code.prompts.project_todo_reminder import has_unfinished_todos
+
+        latest_session = None
+        latest_timestamp = 0
+
+        for session_id, session_data in cls._sessions.items():
+            todos = session_data.get("todos", [])
+            if has_unfinished_todos(todos):
+                last_updated = session_data.get("last_updated", 0)
+                if last_updated > latest_timestamp:
+                    latest_timestamp = last_updated
+                    latest_session = session_id
+
+        return latest_session
 
 
 class TodoBaseTool(BaseTool, ABC):
@@ -124,16 +168,12 @@ class TodoBaseTool(BaseTool, ABC):
         if "id" not in normalized or not str(normalized.get("id")).strip():
             normalized["id"] = f"todo-{index + 1}"
 
-        # Auto-generate priority if missing
+        # Auto-generate priority if missing (but don't fix invalid values)
         if "priority" not in normalized:
             normalized["priority"] = "medium"
-        elif normalized["priority"] not in ["high", "medium", "low"]:
-            normalized["priority"] = "medium"
 
-        # Ensure status defaults to pending if missing or invalid
+        # Ensure status defaults to pending if missing (but don't fix invalid values)
         if "status" not in normalized:
-            normalized["status"] = "pending"
-        elif normalized["status"] not in ["pending", "in_progress", "completed"]:
             normalized["status"] = "pending"
 
         return normalized
@@ -159,13 +199,7 @@ class TodoBaseTool(BaseTool, ABC):
 
             normalized = self.normalize_todo_item(todo, i)
 
-            # Ensure unique IDs by appending a suffix if needed
-            original_id = normalized["id"]
-            counter = 1
-            while normalized["id"] in used_ids:
-                normalized["id"] = f"{original_id}-{counter}"
-                counter += 1
-
+            # Don't auto-fix duplicate IDs - let validation catch them
             used_ids.add(normalized["id"])
             normalized_todos.append(normalized)
 
@@ -241,8 +275,8 @@ class TodoBaseTool(BaseTool, ABC):
             return False, f"Todo priority must be one of: {', '.join(valid_priorities)}"
 
         # Validate ID
-        todo_id = str(todo.get("id"))
-        if not todo_id.strip():
+        todo_id = todo.get("id")
+        if todo_id is None or not isinstance(todo_id, str) or not str(todo_id).strip():
             return False, "Todo id must be a non-empty string"
 
         return True, ""
