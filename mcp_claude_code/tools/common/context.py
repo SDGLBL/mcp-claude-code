@@ -11,7 +11,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, ClassVar, final
 
-from mcp.server.fastmcp import Context as MCPContext
+from fastmcp import Context as MCPContext
 from mcp.server.lowlevel.helper_types import ReadResourceContents
 
 

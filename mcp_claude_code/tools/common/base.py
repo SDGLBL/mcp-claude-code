@@ -3,14 +3,17 @@
 This module provides abstract base classes that define interfaces and common functionality
 for all tools used in MCP Claude Code. These abstractions help ensure consistent tool
 behavior and provide a foundation for tool registration and management.
+
+This module supports both FastMCP v1 (legacy class-based) and v2 (function-based) patterns
+during the migration period.
 """
 
 import functools
 from abc import ABC, abstractmethod
 from typing import Any, Awaitable, Callable, final
 
-from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from fastmcp import Context as MCPContext
+from fastmcp import FastMCP
 
 from mcp_claude_code.tools.common.context import DocumentContext
 from mcp_claude_code.tools.common.permissions import PermissionManager
@@ -263,3 +266,152 @@ class ToolRegistry:
         """
         for tool in tools:
             ToolRegistry.register_tool(mcp_server, tool)
+
+
+# FastMCP v2 style helper functions and utilities
+
+
+def create_simple_tool_wrapper(
+    tool_func: Callable[..., Awaitable[str]], context_required: bool = True
+) -> Callable[..., Awaitable[str]]:
+    """Create a simple wrapper for tool functions.
+
+    This helper creates wrappers for FastMCP v2 style tool functions,
+    ensuring proper context handling and error management.
+
+    Args:
+        tool_func: The tool function to wrap
+        context_required: Whether the function requires context injection
+
+    Returns:
+        Wrapped function ready for FastMCP v2 registration
+    """
+
+    @handle_connection_errors
+    @functools.wraps(tool_func)
+    async def wrapper(*args: Any, **kwargs: Any) -> str:
+        # For FastMCP v2, context is automatically injected
+        return await tool_func(*args, **kwargs)
+
+    return wrapper
+
+
+class SimpleFileSystemTool:
+    """Simplified base for filesystem tools using FastMCP v2 pattern.
+
+    This class provides utility methods for filesystem tools without requiring
+    complex inheritance patterns. Tools can use this as a mixin or utility.
+    """
+
+    def __init__(
+        self, document_context: DocumentContext, permission_manager: PermissionManager
+    ) -> None:
+        """Initialize filesystem tool utilities.
+
+        Args:
+            document_context: Document context for tracking file contents
+            permission_manager: Permission manager for access control
+        """
+        self.document_context: DocumentContext = document_context
+        self.permission_manager: PermissionManager = permission_manager
+
+    def validate_path(self, path: str, param_name: str = "path") -> ValidationResult:
+        """Validate a path parameter.
+
+        Args:
+            path: Path to validate
+            param_name: Name of the parameter (for error messages)
+
+        Returns:
+            Validation result containing validation status and error message if any
+        """
+        return validate_path_parameter(path, param_name)
+
+    def is_path_allowed(self, path: str) -> bool:
+        """Check if a path is allowed according to permission settings.
+
+        Args:
+            path: Path to check
+
+        Returns:
+            True if the path is allowed, False otherwise
+        """
+        return self.permission_manager.is_path_allowed(path)
+
+
+# Global instances for simplified filesystem tools
+# These will be initialized by the tool registration system
+_document_context: DocumentContext | None = None
+_permission_manager: PermissionManager | None = None
+
+
+def initialize_global_tool_context(
+    document_context: DocumentContext, permission_manager: PermissionManager
+) -> None:
+    """Initialize global context for simplified tools.
+
+    Args:
+        document_context: Document context for tracking file contents
+        permission_manager: Permission manager for access control
+    """
+    global _document_context, _permission_manager
+    _document_context = document_context
+    _permission_manager = permission_manager
+
+
+def get_document_context() -> DocumentContext:
+    """Get the global document context.
+
+    Returns:
+        Document context instance
+
+    Raises:
+        RuntimeError: If context not initialized
+    """
+    if _document_context is None:
+        raise RuntimeError(
+            "Document context not initialized. Call initialize_global_tool_context first."
+        )
+    return _document_context
+
+
+def get_permission_manager() -> PermissionManager:
+    """Get the global permission manager.
+
+    Returns:
+        Permission manager instance
+
+    Raises:
+        RuntimeError: If permission manager not initialized
+    """
+    if _permission_manager is None:
+        raise RuntimeError(
+            "Permission manager not initialized. Call initialize_global_tool_context first."
+        )
+    return _permission_manager
+
+
+def validate_path(path: str, param_name: str = "path") -> ValidationResult:
+    """Validate a path parameter using global context.
+
+    Args:
+        path: Path to validate
+        param_name: Name of the parameter (for error messages)
+
+    Returns:
+        Validation result containing validation status and error message if any
+    """
+    return validate_path_parameter(path, param_name)
+
+
+def is_path_allowed(path: str) -> bool:
+    """Check if a path is allowed using global permission manager.
+
+    Args:
+        path: Path to check
+
+    Returns:
+        True if the path is allowed, False otherwise
+    """
+    permission_manager = get_permission_manager()
+    return permission_manager.is_path_allowed(path)

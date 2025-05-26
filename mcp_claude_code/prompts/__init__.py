@@ -1,6 +1,6 @@
 import os
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from mcp_claude_code.prompts.compact_conversation import COMPACT_CONVERSATION_PROMPT
 from mcp_claude_code.prompts.create_release import CREATE_RELEASE_PROMPT

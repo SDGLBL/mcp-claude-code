@@ -11,8 +11,8 @@ from collections.abc import Iterable
 from typing import Any, final, override
 
 import litellm
-from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from fastmcp import Context as MCPContext
+from fastmcp import FastMCP
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam
 
 from mcp_claude_code.tools.agent.prompt import (

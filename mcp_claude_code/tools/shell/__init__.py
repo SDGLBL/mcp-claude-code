@@ -3,16 +3,15 @@
 This package provides tools for executing shell commands and scripts.
 """
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
-from mcp_claude_code.tools.common.base import BaseTool, ToolRegistry
+from mcp_claude_code.tools.common.base import BaseTool
 from mcp_claude_code.tools.common.permissions import PermissionManager
 from mcp_claude_code.tools.shell.command_executor import CommandExecutor
-from mcp_claude_code.tools.shell.run_command import RunCommandTool
+from mcp_claude_code.tools.shell.run_command import register_run_command_tool
 
 # Export all tool classes
 __all__ = [
-    "RunCommandTool",
     "CommandExecutor",
     "get_shell_tools",
     "register_shell_tools",
@@ -24,18 +23,17 @@ def get_shell_tools(
 ) -> list[BaseTool]:
     """Create instances of all shell tools.
 
+    Note: All shell tools have been converted to function-based tools,
+    so this returns an empty list. Function-based tools are registered
+    separately and not included in this list.
+
     Args:
         permission_manager: Permission manager for access control
 
     Returns:
-        List of shell tool instances
+        Empty list (all tools are now function-based)
     """
-    # Initialize the command executor
-    command_executor = CommandExecutor(permission_manager)
-
-    return [
-        RunCommandTool(permission_manager, command_executor),
-    ]
+    return []
 
 
 def register_shell_tools(
@@ -49,8 +47,13 @@ def register_shell_tools(
         permission_manager: Permission manager for access control
 
     Returns:
-        List of registered tools
+        Empty list (all tools are now function-based)
     """
-    tools = get_shell_tools(permission_manager)
-    ToolRegistry.register_tools(mcp_server, tools)
-    return tools
+    # Initialize the command executor
+    command_executor = CommandExecutor(permission_manager)
+
+    # Register function-based tools (FastMCP v2 style)
+    register_run_command_tool(mcp_server, command_executor)
+
+    # Return empty list since all tools are now function-based
+    return []

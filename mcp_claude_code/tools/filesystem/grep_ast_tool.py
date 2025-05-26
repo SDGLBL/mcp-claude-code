@@ -1,247 +1,153 @@
 """Grep AST tool implementation.
 
-This module provides the GrepAstTool for searching through source code files with AST context,
+This module provides the grep_ast tool for searching through source code files with AST context,
 seeing matching lines with useful context showing how they fit into the code structure.
+Converted to FastMCP v2 function-based pattern.
 """
 
-import os
 from pathlib import Path
-from typing import Any, final, override
 
 from grep_ast.grep_ast import TreeContext
-from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from fastmcp import Context as MCPContext
+from fastmcp import FastMCP
 
-from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
+from mcp_claude_code.tools.common.base import (
+    is_path_allowed,
+    validate_path,
+)
+from mcp_claude_code.tools.common.context import create_tool_context
 
 
-@final
-class GrepAstTool(FilesystemBaseTool):
-    """Tool for searching through source code files with AST context."""
+async def grep_ast(
+    pattern: str,
+    path: str,
+    ctx: MCPContext,
+    ignore_case: bool = False,
+    line_number: bool = False,
+) -> str:
+    """Search through source code files and see matching lines with useful AST (Abstract Syntax Tree) context. This tool helps you understand code structure by showing how matched lines fit into functions, classes, and other code blocks.
 
-    @property
-    @override
-    def name(self) -> str:
-        """Get the tool name.
+    Unlike traditional search tools like `search_content` that only show matching lines, `grep_ast` leverages the AST to reveal the structural context around matches, making it easier to understand the code organization.
 
-        Returns:
-            Tool name
-        """
-        return "grep_ast"
+    When to use this tool:
+    1. When you need to understand where a pattern appears within larger code structures
+    2. When searching for function or class definitions that match a pattern
+    3. When you want to see not just the matching line but its surrounding context in the code
+    4. When exploring unfamiliar codebases and need structural context
+    5. When examining how a specific pattern is used across different parts of the codebase
 
-    @property
-    @override
-    def description(self) -> str:
-        """Get the tool description.
+    This tool is superior to regular grep/search_content when you need to understand code structure, not just find text matches.
 
-        Returns:
-            Tool description
-        """
-        return """Search through source code files and see matching lines with useful AST (Abstract Syntax Tree) context. This tool helps you understand code structure by showing how matched lines fit into functions, classes, and other code blocks.
+    Example usage:
+    ```
+    grep_ast(pattern="function_name", path="/path/to/file.py", ignore_case=False, line_number=True)
+    ```
 
-Unlike traditional search tools like `search_content` that only show matching lines, `grep_ast` leverages the AST to reveal the structural context around matches, making it easier to understand the code organization.
+    Args:
+        pattern: The regex pattern to search for in source code files
+        path: The path to search in (file or directory)
+        ctx: MCP context for the tool call
+        ignore_case: Whether to ignore case when matching
+        line_number: Whether to display line numbers
 
-When to use this tool:
-1. When you need to understand where a pattern appears within larger code structures
-2. When searching for function or class definitions that match a pattern
-3. When you want to see not just the matching line but its surrounding context in the code
-4. When exploring unfamiliar codebases and need structural context
-5. When examining how a specific pattern is used across different parts of the codebase
+    Returns:
+        Tool execution results
+    """
+    tool_ctx = create_tool_context(ctx)
+    tool_ctx.set_tool_info("grep_ast")
 
-This tool is superior to regular grep/search_content when you need to understand code structure, not just find text matches.
+    # Validate required parameters
+    if pattern is None:
+        await tool_ctx.error("Parameter 'pattern' is required but was None")
+        return "Error: Parameter 'pattern' is required but was None"
 
-Example usage:
-```
-grep_ast(pattern="function_name", path="/path/to/file.py", ignore_case=False, line_number=True)
-```"""
+    if isinstance(pattern, str) and pattern.strip() == "":
+        await tool_ctx.error("Parameter 'pattern' cannot be empty")
+        return "Error: Parameter 'pattern' cannot be empty"
 
-    @property
-    @override
-    def parameters(self) -> dict[str, Any]:
-        """Get the parameter specifications for the tool.
+    if path is None:
+        await tool_ctx.error("Parameter 'path' is required but was None")
+        return "Error: Parameter 'path' is required but was None"
 
-        Returns:
-            Parameter specifications
-        """
-        return {
-            "properties": {
-                "pattern": {
-                    "type": "string",
-                    "description": "The regex pattern to search for in source code files",
-                },
-                "path": {
-                    "type": "string",
-                    "description": "The path to search in (file or directory)",
-                },
-                "ignore_case": {
-                    "type": "boolean",
-                    "description": "Whether to ignore case when matching",
-                    "default": False,
-                },
-                "line_number": {
-                    "type": "boolean",
-                    "description": "Whether to display line numbers",
-                    "default": False,
-                },
-            },
-            "required": ["pattern", "path"],
-            "type": "object",
-        }
+    if isinstance(path, str) and path.strip() == "":
+        await tool_ctx.error("Parameter 'path' cannot be empty")
+        return "Error: Parameter 'path' cannot be empty"
 
-    @property
-    @override
-    def required(self) -> list[str]:
-        """Get the list of required parameter names.
+    # Validate path parameter
+    path_validation = validate_path(path)
+    if path_validation.is_error:
+        await tool_ctx.error(path_validation.error_message)
+        return f"Error: {path_validation.error_message}"
 
-        Returns:
-            List of required parameter names
-        """
-        return ["pattern", "path"]
+    await tool_ctx.info(
+        f"Searching AST for pattern '{pattern}' in path: {path} (ignore_case: {ignore_case}, line_number: {line_number})"
+    )
 
-    @override
-    async def call(self, ctx: MCPContext, **params: Any) -> str:
-        """Execute the tool with the given parameters.
+    # Check if path is allowed
+    if not is_path_allowed(path):
+        await tool_ctx.error(
+            f"Access denied - path outside allowed directories: {path}"
+        )
+        return f"Error: Access denied - path outside allowed directories: {path}"
 
-        Args:
-            ctx: MCP context
-            **params: Tool parameters
-
-        Returns:
-            Tool result
-        """
-        tool_ctx = self.create_tool_context(ctx)
-        self.set_tool_context_info(tool_ctx)
-
-        # Extract parameters
-        pattern = params.get("pattern")
-        path = params.get("path")
-        ignore_case = params.get("ignore_case", False)
-        line_number = params.get("line_number", False)
-
-        # Validate parameters
-        if not pattern:
-            await tool_ctx.error("Parameter 'pattern' is required but was None")
-            return "Error: Parameter 'pattern' is required but was None"
-
-        if not path:
-            await tool_ctx.error("Parameter 'path' is required but was None")
-            return "Error: Parameter 'path' is required but was None"
-
-        # Validate the path
-        path_validation = self.validate_path(path)
-        if not path_validation.is_valid:
-            await tool_ctx.error(f"Invalid path: {path_validation.error}")
-            return f"Error: Invalid path: {path_validation.error}"
-
-        # Check if path is allowed
-        is_allowed, error_message = await self.check_path_allowed(path, tool_ctx)
-        if not is_allowed:
-            return error_message
+    try:
+        path_obj = Path(path)
 
         # Check if path exists
-        is_exists, error_message = await self.check_path_exists(path, tool_ctx)
-        if not is_exists:
-            return error_message
+        if not path_obj.exists():
+            await tool_ctx.error(f"Path does not exist: {path}")
+            return f"Error: Path does not exist: {path}"
 
-        await tool_ctx.info(f"Searching for '{pattern}' in {path}")
+        await tool_ctx.info(f"Analyzing code structure for pattern: {pattern}")
 
-        # Get the files to process
-        path_obj = Path(path)
-        files_to_process = []
+        # Use TreeContext to get AST-based search results
+        tree_context = TreeContext()
 
-        if path_obj.is_file():
-            files_to_process.append(str(path_obj))
-        elif path_obj.is_dir():
-            for root, _, files in os.walk(path_obj):
-                for file in files:
-                    file_path = Path(root) / file
-                    if self.is_path_allowed(str(file_path)):
-                        files_to_process.append(str(file_path))
+        # Prepare arguments for TreeContext.run
+        args = type(
+            "Args",
+            (),
+            {
+                "pattern": pattern,
+                "path": str(path_obj),
+                "ignore_case": ignore_case,
+                "line_number": line_number,
+                "no_line_number": not line_number,  # TreeContext expects this inverse flag
+            },
+        )()
 
-        if not files_to_process:
-            await tool_ctx.warning(f"No source code files found in {path}")
-            return f"No source code files found in {path}"
+        # Capture output by temporarily redirecting stdout
+        import io
+        import sys
 
-        # Process each file
-        results = []
-        processed_count = 0
+        old_stdout = sys.stdout
+        sys.stdout = captured_output = io.StringIO()
 
-        await tool_ctx.info(f"Found {len(files_to_process)} file(s) to process")
+        try:
+            # Run the TreeContext analysis
+            tree_context.run(args)
 
-        for file_path in files_to_process:
-            await tool_ctx.report_progress(processed_count, len(files_to_process))
+            # Get the captured output
+            result = captured_output.getvalue()
+        finally:
+            # Restore stdout
+            sys.stdout = old_stdout
 
-            try:
-                # Read the file
-                with open(file_path, "r", encoding="utf-8") as f:
-                    code = f.read()
+        if not result or result.strip() == "":
+            return f"No matches found for pattern '{pattern}' in {path}"
 
-                # Process the file with grep-ast
-                try:
-                    tc = TreeContext(
-                        file_path,
-                        code,
-                        color=False,
-                        verbose=False,
-                        line_number=line_number,
-                    )
+        await tool_ctx.info(f"Found AST matches for pattern '{pattern}'")
+        return result.strip()
 
-                    # Find matches
-                    loi = tc.grep(pattern, ignore_case)
+    except Exception as e:
+        await tool_ctx.error(f"Error searching AST: {str(e)}")
+        return f"Error searching AST: {str(e)}"
 
-                    if loi:
-                        tc.add_lines_of_interest(loi)
-                        tc.add_context()
-                        output = tc.format()
 
-                        # Add the result to our list
-                        results.append(f"\n{file_path}:\n{output}\n")
-                except Exception as e:
-                    # Skip files that can't be parsed by tree-sitter
-                    await tool_ctx.warning(f"Could not parse {file_path}: {str(e)}")
-            except UnicodeDecodeError:
-                await tool_ctx.warning(f"Could not read {file_path} as text")
-            except Exception as e:
-                await tool_ctx.error(f"Error processing {file_path}: {str(e)}")
+def register_grep_ast_tool(mcp_server: FastMCP) -> None:
+    """Register the grep_ast tool with the MCP server.
 
-            processed_count += 1
-
-        # Final progress report
-        await tool_ctx.report_progress(len(files_to_process), len(files_to_process))
-
-        if not results:
-            await tool_ctx.warning(f"No matches found for '{pattern}' in {path}")
-            return f"No matches found for '{pattern}' in {path}"
-
-        await tool_ctx.info(f"Found matches in {len(results)} file(s)")
-
-        # Join the results
-        return "\n".join(results)
-
-    @override
-    def register(self, mcp_server: FastMCP) -> None:
-        """Register this tool with the MCP server.
-
-        Creates a wrapper function with explicitly defined parameters that match
-        the tool's parameter schema and registers it with the MCP server.
-
-        Args:
-            mcp_server: The FastMCP server instance
-        """
-        tool_self = self  # Create a reference to self for use in the closure
-
-        @mcp_server.tool(name=self.name, description=self.mcp_description)
-        async def grep_ast(
-            ctx: MCPContext,
-            pattern: str,
-            path: str,
-            ignore_case: bool = False,
-            line_number: bool = False,
-        ) -> str:
-            return await tool_self.call(
-                ctx,
-                pattern=pattern,
-                path=path,
-                ignore_case=ignore_case,
-                line_number=line_number,
-            )
+    Args:
+        mcp_server: The FastMCP server instance
+    """
+    mcp_server.tool()(grep_ast)

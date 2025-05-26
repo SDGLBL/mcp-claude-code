@@ -7,16 +7,21 @@ This includes a "think" tool implementation based on Anthropic's research showin
 improved performance for complex tool-based interactions when Claude has a dedicated
 space for structured thinking. It also includes an "agent" tool that enables Claude
 to delegate tasks to sub-agents for concurrent execution and specialized processing.
+
+Updated for FastMCP v2 with both legacy class-based and modern function-based tools.
 """
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from mcp_claude_code.tools.agent import register_agent_tools
-from mcp_claude_code.tools.common import register_batch_tool, register_thinking_tool
-from mcp_claude_code.tools.common.base import BaseTool, ToolRegistry
+from mcp_claude_code.tools.common import register_batch_tool
+from mcp_claude_code.tools.common.base import (
+    BaseTool,
+    initialize_global_tool_context,
+)
 from mcp_claude_code.tools.common.context import DocumentContext
 from mcp_claude_code.tools.common.permissions import PermissionManager
-from mcp_claude_code.tools.common.thinking_tool import ThinkingTool
+from mcp_claude_code.tools.common.thinking_tool import register_thinking_tool
 from mcp_claude_code.tools.filesystem import register_filesystem_tools
 from mcp_claude_code.tools.jupyter import register_jupyter_tools
 from mcp_claude_code.tools.shell import register_shell_tools
@@ -50,29 +55,26 @@ def register_all_tools(
         agent_max_tool_uses: Maximum number of total tool uses for agent (default: 30)
         enable_agent_tool: Whether to enable the agent tool (default: False)
     """
-    # Dictionary to store all registered tools
+    # Initialize global context for simplified function-based tools
+    initialize_global_tool_context(document_context, permission_manager)
+
+    # Dictionary to store all registered tools (for batch tool)
     all_tools: dict[str, BaseTool] = {}
 
-    # Register all filesystem tools
+    # Register all filesystem tools (mixed class-based and function-based)
     filesystem_tools = register_filesystem_tools(
         mcp_server, document_context, permission_manager
     )
     for tool in filesystem_tools:
         all_tools[tool.name] = tool
 
-    # Register all jupyter tools
-    jupyter_tools = register_jupyter_tools(
-        mcp_server, document_context, permission_manager
-    )
-    for tool in jupyter_tools:
-        all_tools[tool.name] = tool
+    # Register jupyter tools (now function-based - FastMCP v2)
+    register_jupyter_tools(mcp_server)
 
-    # Register shell tools
-    shell_tools = register_shell_tools(mcp_server, permission_manager)
-    for tool in shell_tools:
-        all_tools[tool.name] = tool
+    # Register shell tools (now function-based - FastMCP v2)
+    register_shell_tools(mcp_server, permission_manager)
 
-    # Register agent tools only if enabled
+    # Register agent tools only if enabled (still class-based for now)
     if enable_agent_tool:
         agent_tools = register_agent_tools(
             mcp_server,
@@ -89,15 +91,11 @@ def register_all_tools(
         for tool in agent_tools:
             all_tools[tool.name] = tool
 
-    # Register todo tools
-    todo_tools = register_todo_tools(mcp_server)
-    for tool in todo_tools:
-        all_tools[tool.name] = tool
+    # Register todo tools (now function-based - FastMCP v2)
+    register_todo_tools(mcp_server)
 
-    # Initialize and register thinking tool
-    thinking_tool = register_thinking_tool(mcp_server)
-    for tool in thinking_tool:
-        all_tools[tool.name] = tool
+    # Register thinking tool (now function-based - FastMCP v2)
+    register_thinking_tool(mcp_server)
 
-    # Register batch tool
+    # Register batch tool (still class-based, but will work with both styles)
     register_batch_tool(mcp_server, all_tools)

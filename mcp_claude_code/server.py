@@ -2,7 +2,7 @@
 
 from typing import Literal, cast, final
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from mcp_claude_code.prompts import register_all_prompts
 from mcp_claude_code.tools import register_all_tools

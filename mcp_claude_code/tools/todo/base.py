@@ -9,7 +9,7 @@ import time
 from abc import ABC
 from typing import Any, final
 
-from mcp.server.fastmcp import Context as MCPContext
+from fastmcp import Context as MCPContext
 
 from mcp_claude_code.tools.common.base import BaseTool
 from mcp_claude_code.tools.common.context import ToolContext, create_tool_context

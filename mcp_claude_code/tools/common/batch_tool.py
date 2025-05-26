@@ -7,8 +7,8 @@ parallel or serial depending on their characteristics.
 import asyncio
 from typing import Any, final, override
 
-from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from fastmcp import Context as MCPContext
+from fastmcp import FastMCP
 
 from mcp_claude_code.tools.common.base import BaseTool
 from mcp_claude_code.tools.common.context import create_tool_context

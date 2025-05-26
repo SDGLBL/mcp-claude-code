@@ -1,162 +1,82 @@
 """Read notebook tool implementation.
 
-This module provides the NotebookReadTool for reading Jupyter notebook files.
+This module provides the notebook_read tool for reading Jupyter notebook files.
+Converted to FastMCP v2 function-based pattern.
 """
 
 import json
 from pathlib import Path
-from typing import Any, final, override
 
-from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from fastmcp import Context as MCPContext
 
-from mcp_claude_code.tools.jupyter.base import JupyterBaseTool
+from mcp_claude_code.tools.common.base import is_path_allowed
+from mcp_claude_code.tools.common.context import create_tool_context
+from mcp_claude_code.tools.jupyter.base import parse_notebook, format_notebook_cells
 
 
-@final
-class NotebookReadTool(JupyterBaseTool):
-    """Tool for reading Jupyter notebook files."""
+async def notebook_read(
+    notebook_path: str,
+    ctx: MCPContext,
+) -> str:
+    """Reads a Jupyter notebook (.ipynb file) and returns all of the cells with their outputs.
 
-    @property
-    @override
-    def name(self) -> str:
-        """Get the tool name.
+    Jupyter notebooks are interactive documents that combine code, text, and
+    visualizations, commonly used for data analysis and scientific computing.
+    The notebook_path parameter must be an absolute path, not a relative path.
 
-        Returns:
-            Tool name
-        """
-        return "notebook_read"
+    Args:
+        notebook_path: The absolute path to the Jupyter notebook file to read
+        ctx: MCP context
 
-    @property
-    @override
-    def description(self) -> str:
-        """Get the tool description.
+    Returns:
+        Formatted string representation of the notebook cells and outputs
 
-        Returns:
-            Tool description
-        """
-        return "Reads a Jupyter notebook (.ipynb file) and returns all of the cells with their outputs. Jupyter notebooks are interactive documents that combine code, text, and visualizations, commonly used for data analysis and scientific computing. The notebook_path parameter must be an absolute path, not a relative path."
+    Raises:
+        ValueError: If the path is invalid or the file is not a notebook
+        FileNotFoundError: If the notebook file does not exist
+        PermissionError: If access to the file is denied
+    """
+    # Create tool context
+    tool_ctx = create_tool_context(ctx)
+    tool_ctx.set_tool_info("notebook_read")
 
-    @property
-    @override
-    def parameters(self) -> dict[str, Any]:
-        """Get the parameter specifications for the tool.
+    # Validate and resolve path
+    path = Path(notebook_path).resolve()
 
-        Returns:
-            Parameter specifications
-        """
-        return {
-            "properties": {
-                "notebook_path": {
-                    "type": "string",
-                    "description": "The absolute path to the Jupyter notebook file to read (must be absolute, not relative)",
-                }
-            },
-            "required": ["notebook_path"],
-            "type": "object",
-        }
+    # Check permissions
+    if not is_path_allowed(path, tool_ctx):
+        raise PermissionError(f"Access denied to path: {path}")
 
-    @property
-    @override
-    def required(self) -> list[str]:
-        """Get the list of required parameter names.
+    # Check if file exists
+    if not path.exists():
+        raise FileNotFoundError(f"Notebook file not found: {path}")
 
-        Returns:
-            List of required parameter names
-        """
-        return ["notebook_path"]
+    # Check if it's a file (not directory)
+    if not path.is_file():
+        raise ValueError(f"Path is not a file: {path}")
 
-    @override
-    async def call(self, ctx: MCPContext, **params: Any) -> str:
-        """Execute the tool with the given parameters.
+    # Ensure it's a notebook file
+    if path.suffix != ".ipynb":
+        raise ValueError(f"File must be a Jupyter notebook (.ipynb): {path}")
 
-        Args:
-            ctx: MCP context
-            **params: Tool parameters
+    try:
+        # Parse the notebook using standalone functions
+        notebook_data, cells = await parse_notebook(path)
 
-        Returns:
-            Tool result
-        """
-        tool_ctx = self.create_tool_context(ctx)
-        self.set_tool_context_info(tool_ctx)
+        # Format the cells as readable output
+        formatted_cells = format_notebook_cells(cells)
 
-        # Extract parameters
-        notebook_path = params.get("notebook_path")
+        # Update context with file read
+        tool_ctx.document_context.update_file_content(str(path), formatted_cells)
 
-        if not notebook_path:
-            await tool_ctx.error("Missing required parameter: notebook_path")
-            return "Error: Missing required parameter: notebook_path"
+        await tool_ctx.info(
+            f"Successfully read notebook: {notebook_path} ({len(cells)} cells)"
+        )
+        return formatted_cells
 
-        # Validate path parameter
-        path_validation = self.validate_path(notebook_path)
-        if path_validation.is_error:
-            await tool_ctx.error(path_validation.error_message)
-            return f"Error: {path_validation.error_message}"
-
-        await tool_ctx.info(f"Reading notebook: {notebook_path}")
-
-        # Check if path is allowed
-        if not self.is_path_allowed(notebook_path):
-            await tool_ctx.error(
-                f"Access denied - path outside allowed directories: {notebook_path}"
-            )
-            return f"Error: Access denied - path outside allowed directories: {notebook_path}"
-
-        try:
-            file_path = Path(notebook_path)
-
-            if not file_path.exists():
-                await tool_ctx.error(f"File does not exist: {notebook_path}")
-                return f"Error: File does not exist: {notebook_path}"
-
-            if not file_path.is_file():
-                await tool_ctx.error(f"Path is not a file: {notebook_path}")
-                return f"Error: Path is not a file: {notebook_path}"
-
-            # Check file extension
-            if file_path.suffix.lower() != ".ipynb":
-                await tool_ctx.error(f"File is not a Jupyter notebook: {notebook_path}")
-                return f"Error: File is not a Jupyter notebook: {notebook_path}"
-
-            # Read and parse the notebook
-            try:
-                # This will read the file, so we don't need to read it separately
-                _, processed_cells = await self.parse_notebook(file_path)
-
-                # Add to document context
-                with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-                self.document_context.add_document(notebook_path, content)
-
-                # Format the notebook content as a readable string
-                result = self.format_notebook_cells(processed_cells)
-
-                await tool_ctx.info(
-                    f"Successfully read notebook: {notebook_path} ({len(processed_cells)} cells)"
-                )
-                return result
-            except json.JSONDecodeError:
-                await tool_ctx.error(f"Invalid notebook format: {notebook_path}")
-                return f"Error: Invalid notebook format: {notebook_path}"
-            except UnicodeDecodeError:
-                await tool_ctx.error(f"Cannot read notebook file: {notebook_path}")
-                return f"Error: Cannot read notebook file: {notebook_path}"
-        except Exception as e:
-            await tool_ctx.error(f"Error reading notebook: {str(e)}")
-            return f"Error reading notebook: {str(e)}"
-
-    @override
-    def register(self, mcp_server: FastMCP) -> None:
-        """Register this read notebook tool with the MCP server.
-
-        Creates a wrapper function with explicitly defined parameters that match
-        the tool's parameter schema and registers it with the MCP server.
-
-        Args:
-            mcp_server: The FastMCP server instance
-        """
-        tool_self = self  # Create a reference to self for use in the closure
-
-        @mcp_server.tool(name=self.name, description=self.mcp_description)
-        async def notebook_read(notebook_path: str, ctx: MCPContext) -> str:
-            return await tool_self.call(ctx, notebook_path=notebook_path)
+    except json.JSONDecodeError as e:
+        await tool_ctx.log_error(f"Invalid JSON in notebook file: {e}")
+        raise ValueError(f"Invalid JSON in notebook file: {e}")
+    except Exception as e:
+        await tool_ctx.log_error(f"Failed to read notebook: {e}")
+        raise

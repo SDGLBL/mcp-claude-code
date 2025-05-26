@@ -4,19 +4,19 @@ This package provides tools for working with Jupyter notebooks (.ipynb files),
 including reading and editing notebook cells.
 """
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
-from mcp_claude_code.tools.common.base import BaseTool, ToolRegistry
+from mcp_claude_code.tools.common.base import BaseTool
 from mcp_claude_code.tools.common.context import DocumentContext
 from mcp_claude_code.tools.common.permissions import PermissionManager
-from mcp_claude_code.tools.jupyter.notebook_edit import NoteBookEditTool
-from mcp_claude_code.tools.jupyter.notebook_read import NotebookReadTool
+from mcp_claude_code.tools.jupyter.notebook_edit import notebook_edit
+from mcp_claude_code.tools.jupyter.notebook_read import notebook_read
 
-# Export all tool classes
+# Export all tool functions
 __all__ = [
-    "NotebookReadTool",
-    "NoteBookEditTool",
-    "get_jupyter_tools",
+    "notebook_read",
+    "notebook_edit",
+    "get_read_only_jupyter_tools",
     "register_jupyter_tools",
 ]
 
@@ -24,53 +24,35 @@ __all__ = [
 def get_read_only_jupyter_tools(
     document_context: DocumentContext, permission_manager: PermissionManager
 ) -> list[BaseTool]:
-    """Create instances of read only Jupyter notebook tools.
+    """Create instances of read-only Jupyter notebook tools.
+
+    Note: All Jupyter tools have been converted to function-based tools,
+    so this returns an empty list. Function-based tools are registered
+    separately and not included in this list.
 
     Args:
         document_context: Document context for tracking file contents
         permission_manager: Permission manager for access control
 
     Returns:
-        List of Jupyter notebook tool instances
+        Empty list (all tools are now function-based)
     """
-    return [
-        NotebookReadTool(document_context, permission_manager),
-    ]
+    return []
 
 
-def get_jupyter_tools(
-    document_context: DocumentContext, permission_manager: PermissionManager
-) -> list[BaseTool]:
-    """Create instances of all Jupyter notebook tools.
-
-    Args:
-        document_context: Document context for tracking file contents
-        permission_manager: Permission manager for access control
-
-    Returns:
-        List of Jupyter notebook tool instances
-    """
-    return [
-        NotebookReadTool(document_context, permission_manager),
-        NoteBookEditTool(document_context, permission_manager),
-    ]
-
-
-def register_jupyter_tools(
-    mcp_server: FastMCP,
-    document_context: DocumentContext,
-    permission_manager: PermissionManager,
-) -> list[BaseTool]:
+def register_jupyter_tools(mcp_server: FastMCP) -> list[str]:
     """Register all Jupyter notebook tools with the MCP server.
 
     Args:
         mcp_server: The FastMCP server instance
-        document_context: Document context for tracking file contents
-        permission_manager: Permission manager for access control
 
     Returns:
-        List of registered tools
+        List of registered tool names
     """
-    tools = get_jupyter_tools(document_context, permission_manager)
-    ToolRegistry.register_tools(mcp_server, tools)
-    return tools
+    # Register notebook read tool
+    mcp_server.tool(name="notebook_read")(notebook_read)
+
+    # Register notebook edit tool
+    mcp_server.tool(name="notebook_edit")(notebook_edit)
+
+    return ["notebook_read", "notebook_edit"]
