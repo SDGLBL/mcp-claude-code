@@ -57,41 +57,48 @@ def register_all_prompts(
 
     for project in projects:
 
-        @mcp_server.prompt(
+        def create_project_system_prompt(project_path: str):
+            """Factory function to create a project system prompt function."""
+
+            def project_system_prompt() -> str:
+                """
+                Summarize the conversation so far for a specific project.
+                """
+                working_directory = project_path
+                is_git_repo = os.path.isdir(os.path.join(working_directory, ".git"))
+                platform, _, os_version = get_os_info()
+
+                # Get directory structure
+                directory_structure = get_directory_structure(
+                    working_directory, max_depth=3, include_filtered=False
+                )
+
+                # Get git information
+                git_info = get_git_info(working_directory)
+                current_branch = git_info.get("current_branch", "")
+                main_branch = git_info.get("main_branch", "")
+                git_status = git_info.get("git_status", "")
+                recent_commits = git_info.get("recent_commits", "")
+
+                return PROJECT_SYSTEM_PROMPT.format(
+                    working_directory=working_directory,
+                    is_git_repo=is_git_repo,
+                    platform=platform,
+                    os_version=os_version,
+                    directory_structure=directory_structure,
+                    current_branch=current_branch,
+                    main_branch=main_branch,
+                    git_status=git_status,
+                    recent_commits=recent_commits,
+                )
+
+            return project_system_prompt
+
+        # Register the prompt with the factory function
+        mcp_server.prompt(
             name=f"System prompt for {os.path.basename(project)}",
             description=f"Detailed system prompt include env,git etc information about {project}",
-        )
-        def project_system_prompt() -> str:
-            """
-            Summarize the conversation so far for a specific project.
-            """
-            working_directory = project
-            is_git_repo = os.path.isdir(os.path.join(working_directory, ".git"))
-            platform, _, os_version = get_os_info()
-
-            # Get directory structure
-            directory_structure = get_directory_structure(
-                working_directory, max_depth=3, include_filtered=False
-            )
-
-            # Get git information
-            git_info = get_git_info(working_directory)
-            current_branch = git_info.get("current_branch", "")
-            main_branch = git_info.get("main_branch", "")
-            git_status = git_info.get("git_status", "")
-            recent_commits = git_info.get("recent_commits", "")
-
-            return PROJECT_SYSTEM_PROMPT.format(
-                working_directory=working_directory,
-                is_git_repo=is_git_repo,
-                platform=platform,
-                os_version=os_version,
-                directory_structure=directory_structure,
-                current_branch=current_branch,
-                main_branch=main_branch,
-                git_status=git_status,
-                recent_commits=recent_commits,
-            )
+        )(create_project_system_prompt(project))
 
     return
 

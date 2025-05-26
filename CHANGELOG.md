@@ -5,6 +5,22 @@ All notable changes to the MCP Claude Code project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2025-05-26
+
+### Fixed
+- **Project System Prompt Closure Bug** 
+  - Fixed critical closure bug in project system prompt registration where all prompts incorrectly used the last project path instead of their respective project paths
+  - Multiple projects configured in MCP settings now correctly generate unique system prompts for each project
+  - Replaced problematic closure with factory function pattern to ensure proper variable capture
+  - Resolves issue where system prompts for all projects would reference 'claude-code-provider-proxy' regardless of the actual project being used
+
+### Added
+- **Comprehensive Test Suite for Project System Prompts**
+  - Added `tests/test_prompts.py` with 4 comprehensive test cases to prevent regression
+  - Tests cover multiple project registration, single project registration, no projects scenario, and project basename handling
+  - Includes specific test case that detects the closure bug to prevent future regressions
+  - Mock-based testing approach ensures reliable verification of prompt generation functionality
+
 ## [0.3.1] - 2025-05-25
 
 ### Fixed

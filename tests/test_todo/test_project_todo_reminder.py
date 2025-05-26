@@ -1,6 +1,5 @@
 """Tests for project todo reminder functionality."""
 
-
 from mcp_claude_code.prompts.project_todo_reminder import (
     PROJECT_TODO_EMPTY_REMINDER,
     format_todo_list_concise,
