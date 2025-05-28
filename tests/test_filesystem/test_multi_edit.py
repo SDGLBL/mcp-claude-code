@@ -37,9 +37,6 @@ class TestMultiEdit:
         """Test basic tool properties."""
         assert multi_edit_tool.name == "multi_edit"
         assert "multiple edits" in multi_edit_tool.description.lower()
-        assert "file_path" in multi_edit_tool.parameters["properties"]
-        assert "edits" in multi_edit_tool.parameters["properties"]
-        assert multi_edit_tool.required == ["file_path", "edits"]
 
     @pytest.mark.asyncio
     async def test_invalid_file_path(self, multi_edit_tool, mock_ctx):

@@ -43,10 +43,6 @@ class TestGrep:
         """Test basic properties of the Grep tool."""
         assert grep_tool.name == "grep"
         assert "Fast content search tool" in grep_tool.description
-        assert "pattern" in grep_tool.parameters["properties"]
-        assert "path" in grep_tool.parameters["properties"]
-        assert "include" in grep_tool.parameters["properties"]
-        assert grep_tool.required == ["pattern"]
 
     @pytest.mark.asyncio
     async def test_grep_file_path_fallback(

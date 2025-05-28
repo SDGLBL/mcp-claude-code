@@ -3,7 +3,7 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from mcp.server.fastmcp import Context as MCPContext
+from fastmcp import Context as MCPContext
 
 from mcp_claude_code.tools.common.base import BaseTool
 from mcp_claude_code.tools.common.batch_tool import BatchTool

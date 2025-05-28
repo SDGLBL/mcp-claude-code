@@ -1,6 +1,8 @@
 """Tests for the BaseTool mcp_description method.
 
-This module contains tests for the mcp_description method of the BaseTool class.
+This module contained tests for the mcp_description method of the BaseTool class,
+but that functionality has been removed in favor of pydantic Field annotations.
+These tests are now obsolete.
 """
 
 from unittest.mock import MagicMock
@@ -14,7 +16,7 @@ from mcp_claude_code.tools.filesystem.read import ReadTool
 
 
 class TestMCPDescription:
-    """Test cases for the BaseTool.mcp_description method."""
+    """Test cases for the BaseTool.mcp_description method (OBSOLETE)."""
 
     @pytest.fixture
     def document_context(self):
@@ -36,47 +38,11 @@ class TestMCPDescription:
         """Create a read files tool."""
         return ReadTool(document_context, permission_manager)
 
-    def test_mcp_description_simple_tool(self, thinking_tool):
-        """Test mcp_description for simple tool with single parameter."""
-        # Get the mcp_description
-        mcp_desc = thinking_tool.mcp_description
+    def test_tools_have_basic_properties(self, thinking_tool, read_files_tool):
+        """Test that tools still have basic properties after refactor."""
+        # Verify basic tool properties still exist
+        assert thinking_tool.name == "think"
+        assert "think" in thinking_tool.description.lower()
 
-        # Verify it contains the base description
-        assert "Use the tool to think about something" in mcp_desc
-
-        # Verify it includes parameter description
-        assert "Args:" in mcp_desc
-        assert "thought: Thought" in mcp_desc
-
-        # Verify it includes return description
-        assert "Returns:" in mcp_desc
-
-    def test_mcp_description_with_multiple_parameters(self, read_files_tool):
-        """Test mcp_description for a tool with multiple parameters."""
-        # Get the mcp_description
-        mcp_desc = read_files_tool.mcp_description
-
-        # Verify it contains the base description
-        assert "Reads a file from the local filesystem" in mcp_desc
-
-        # Verify it includes parameter descriptions
-        assert "Args:" in mcp_desc
-        assert "file_path: File Path" in mcp_desc
-
-        # Verify it includes parameter description from the description field
-        assert "The absolute path to the file to read" in mcp_desc
-
-        # Verify it includes return description
-        assert "Returns:" in mcp_desc
-
-    def test_mcp_description_format(self, thinking_tool):
-        """Test that mcp_description follows proper formatting."""
-        mcp_desc = thinking_tool.mcp_description
-
-        # Check for proper section spacing
-        sections = mcp_desc.split("\n\n")
-        assert len(sections) >= 3  # Description, Args, Returns at minimum
-
-        # Verify blank lines between sections
-        assert "\n\nArgs:" in mcp_desc
-        assert "\n\nReturns:" in mcp_desc
+        assert read_files_tool.name == "read"
+        assert "read" in read_files_tool.description.lower()

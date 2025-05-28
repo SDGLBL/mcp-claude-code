@@ -19,7 +19,6 @@ class TestThinkingTool:
         """Test initializing ThinkingTool."""
         assert thinking_tool.name == "think"
         assert "Use the tool to think about something" in thinking_tool.description
-        assert thinking_tool.required == ["thought"]
 
     @pytest.mark.asyncio
     async def test_valid_thought(

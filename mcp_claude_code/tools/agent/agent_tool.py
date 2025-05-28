@@ -12,8 +12,9 @@ from typing import Annotated, Any, final, override
 
 import litellm
 from fastmcp import FastMCP
-from mcp.server.fastmcp import Context as MCPContext
+from fastmcp import Context as MCPContext
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam
+from pydantic import Field
 
 from mcp_claude_code.tools.agent.prompt import (
     get_allowed_agent_tools,
@@ -445,7 +446,7 @@ AGENT RESPONSE:
             ctx: MCPContext,
             prompt: Annotated[
                 str,
-                litellm.Field(
+                Field(
                     description="Task for the agent to perform (must include absolute paths starting with /)",
                     min_length=1,
                 ),

@@ -12,7 +12,7 @@ from typing import Any, Callable, final
 from warnings import deprecated
 
 from fastmcp import FastMCP
-from mcp.server.fastmcp import Context as MCPContext
+from fastmcp import Context as MCPContext
 
 from mcp_claude_code.tools.common.context import DocumentContext
 from mcp_claude_code.tools.common.permissions import PermissionManager

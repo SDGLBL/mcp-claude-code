@@ -10,7 +10,7 @@ from typing import Annotated, Any, final, override
 
 from fastmcp import FastMCP
 from grep_ast.grep_ast import TreeContext
-from mcp.server.fastmcp import Context as MCPContext
+from fastmcp import Context as MCPContext
 from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool

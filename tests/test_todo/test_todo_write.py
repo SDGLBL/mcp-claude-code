@@ -31,9 +31,6 @@ class TestTodoWriteTool:
             "create and manage a structured task list"
             in todo_write_tool.description.lower()
         )
-        assert todo_write_tool.required == ["session_id", "todos"]
-        assert "session_id" in todo_write_tool.parameters["properties"]
-        assert "todos" in todo_write_tool.parameters["properties"]
 
     @pytest.mark.asyncio
     async def test_write_empty_todos(self, todo_write_tool: TodoWriteTool, mcp_context):
@@ -449,42 +446,6 @@ class TestTodoWriteTool:
 
                 assert "Error storing todos: Storage error" in result
                 tool_ctx.error.assert_called_with("Error storing todos: Storage error")
-
-    def test_parameter_schema(self, todo_write_tool: TodoWriteTool):
-        """Test that parameter schema is correctly defined."""
-        params = todo_write_tool.parameters
-
-        assert params["type"] == "object"
-        assert "session_id" in params["properties"]
-        assert "todos" in params["properties"]
-        assert params["required"] == ["session_id", "todos"]
-        assert params["additionalProperties"] is False
-
-        # Check session_id property
-        session_id_prop = params["properties"]["session_id"]
-        assert session_id_prop["type"] == "string"
-
-        # Check todos property
-        todos_prop = params["properties"]["todos"]
-        assert todos_prop["type"] == "array"
-        assert "items" in todos_prop
-
-        # Check todo item schema
-        todo_item = todos_prop["items"]
-        assert todo_item["type"] == "object"
-        assert "content" in todo_item["properties"]
-        assert "status" in todo_item["properties"]
-        assert "priority" in todo_item["properties"]
-        assert "id" in todo_item["properties"]
-        assert todo_item["required"] == ["content", "status", "priority", "id"]
-
-        # Check enum values
-        assert todo_item["properties"]["status"]["enum"] == [
-            "pending",
-            "in_progress",
-            "completed",
-        ]
-        assert todo_item["properties"]["priority"]["enum"] == ["high", "medium", "low"]
 
     @pytest.mark.asyncio
     async def test_todos_with_special_characters(

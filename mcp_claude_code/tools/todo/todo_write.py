@@ -6,7 +6,7 @@ This module provides the TodoWrite tool for creating and managing a structured t
 from typing import Annotated, Any, Literal, TypedDict, final, override
 
 from fastmcp import FastMCP
-from mcp.server.fastmcp import Context as MCPContext
+from fastmcp import Context as MCPContext
 from pydantic import Field
 
 from mcp_claude_code.tools.todo.base import TodoBaseTool, TodoStorage

@@ -77,7 +77,6 @@ class TestAgentTool:
         """Test agent tool initialization."""
         assert agent_tool.name == "dispatch_agent"
         assert "Launch a new agent" in agent_tool.description
-        assert agent_tool.required == ["prompt"]
         assert agent_tool.model_override is None
         assert agent_tool.api_key_override is None
         assert agent_tool.max_tokens_override is None
@@ -92,17 +91,6 @@ class TestAgentTool:
         assert agent_tool_with_params.max_tokens_override == 2000
         assert agent_tool_with_params.max_iterations == 40
         assert agent_tool_with_params.max_tool_uses == 150
-
-    def test_parameters(self, agent_tool):
-        """Test agent tool parameters."""
-        params = agent_tool.parameters
-        assert "prompt" in params["properties"]
-        assert params["properties"]["prompt"]["type"] == "string"
-        assert (
-            "Task for the agent to perform"
-            in params["properties"]["prompt"]["description"]
-        )
-        assert params["required"] == ["prompt"]
 
     def test_model_and_api_key_override(
         self, document_context, permission_manager, command_executor

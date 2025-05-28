@@ -6,8 +6,8 @@ This module provides the TodoRead tool for reading the current todo list for a s
 import json
 from typing import Annotated, Any, final, override
 
+from fastmcp import Context as MCPContext
 from fastmcp import FastMCP
-from mcp.server.fastmcp import Context as MCPContext
 from pydantic import Field
 
 from mcp_claude_code.tools.todo.base import TodoBaseTool, TodoStorage

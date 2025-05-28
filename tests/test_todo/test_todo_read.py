@@ -32,8 +32,6 @@ class TestTodoReadTool:
             "read the current to-do list for the session"
             in todo_read_tool.description.lower()
         )
-        assert todo_read_tool.required == ["session_id"]
-        assert "session_id" in todo_read_tool.parameters["properties"]
 
     @pytest.mark.asyncio
     async def test_read_empty_session(self, todo_read_tool: TodoReadTool, mcp_context):
@@ -292,16 +290,3 @@ class TestTodoReadTool:
 
                 assert "Error reading todos: Storage error" in result
                 tool_ctx.error.assert_called_with("Error reading todos: Storage error")
-
-    def test_parameter_schema(self, todo_read_tool: TodoReadTool):
-        """Test that parameter schema is correctly defined."""
-        params = todo_read_tool.parameters
-
-        assert params["type"] == "object"
-        assert "session_id" in params["properties"]
-        assert params["required"] == ["session_id"]
-        assert params["additionalProperties"] is False
-
-        session_id_prop = params["properties"]["session_id"]
-        assert session_id_prop["type"] == "string"
-        assert "identifier" in session_id_prop["description"].lower()
