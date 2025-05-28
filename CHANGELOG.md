@@ -5,6 +5,28 @@ All notable changes to the MCP Claude Code project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2025-05-29
+
+### Refactored
+- **Tool Handler Architecture** (b1f5bda)
+  - Simplified tool handler methods by using `get_context()` dependency injection
+  - Removed explicit MCPContext parameter from all tool handler signatures
+  - Improved code organization and reduced boilerplate across all tool implementations
+  - Maintained functionality while making handler signatures cleaner and more consistent
+
+- **FastMCP Migration** (90a1419)
+  - Updated all imports from `mcp.server.fastmcp` to `fastmcp` for improved consistency
+  - Refactored tool parameter definitions to use pydantic Field annotations
+  - Replaced deprecated parameter schema definitions with typed parameters
+  - Enhanced type safety with TypedDict for complex parameter types
+  - Added validation constraints through Field annotations
+
+- **Test Suite Cleanup** (801efbf)
+  - Removed obsolete parameter schema validation tests following pydantic migration
+  - Cleaned up deprecated mcp_description method tests
+  - Simplified test suites to focus on core functionality rather than schema validation
+  - Retained essential tool property assertions for name and description validation
+
 ## [0.3.2] - 2025-05-26
 
 ### Fixed
