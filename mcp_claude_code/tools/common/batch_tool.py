@@ -5,10 +5,11 @@ parallel or serial depending on their characteristics.
 """
 
 import asyncio
-from typing import Any, final, override
+from typing import Annotated, Any, TypedDict, final, override
 
+from fastmcp import FastMCP
 from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from pydantic import Field
 
 from mcp_claude_code.tools.common.base import BaseTool
 from mcp_claude_code.tools.common.context import create_tool_context
@@ -74,56 +75,6 @@ Available tools in batch call:
 Tool: dispatch_agent,read,directory_tree,grep,grep_ast,run_command,notebook_read
 Not available: think,write,edit,multi_edit,notebook_edit
 """
-
-    @property
-    @override
-    def parameters(self) -> dict[str, Any]:
-        """Get the parameter specifications for the tool.
-
-        Returns:
-            Parameter specifications
-        """
-        return {
-            "properties": {
-                "description": {
-                    "type": "string",
-                    "description": "A short (3-5 word) description of the batch operation",
-                },
-                "invocations": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "tool_name": {
-                                "type": "string",
-                                "description": "The name of the tool to invoke",
-                            },
-                            "input": {
-                                "type": "object",
-                                "additionalProperties": {},
-                                "description": "The input to pass to the tool",
-                            },
-                        },
-                        "required": ["tool_name", "input"],
-                        "additionalProperties": False,
-                    },
-                    "description": "The list of tool invocations to execute (required -- you MUST provide at least one tool invocation)",
-                },
-            },
-            "required": ["description", "invocations"],
-            "additionalProperties": False,
-            "$schema": "http://json-schema.org/draft-07/schema#",
-        }
-
-    @property
-    @override
-    def required(self) -> list[str]:
-        """Get the list of required parameter names.
-
-        Returns:
-            List of required parameter names
-        """
-        return ["description", "invocations"]
 
     def __init__(self, tools: dict[str, BaseTool]) -> None:
         """Initialize the batch tool.
@@ -310,9 +261,38 @@ Not available: think,write,edit,multi_edit,notebook_edit
         """
         tool_self = self  # Create a reference to self for use in the closure
 
-        @mcp_server.tool(name=self.name, description=self.mcp_description)
+        class InvocationItem(TypedDict):
+            tool_name: Annotated[
+                str,
+                Field(
+                    description="The name of the tool to invoke",
+                    min_length=1,
+                ),
+            ]
+            input: Annotated[
+                dict[str, Any],
+                Field(
+                    description="The input to pass to the tool",
+                ),
+            ]
+
+        @mcp_server.tool(name=self.name, description=self.description)
         async def batch(
-            ctx: MCPContext, description: str, invocations: list[dict[str, Any]]
+            ctx: MCPContext,
+            description: Annotated[
+                str,
+                Field(
+                    description="A short (3-5 word) description of the batch operation",
+                    min_length=1,
+                ),
+            ],
+            invocations: Annotated[
+                list[InvocationItem],
+                Field(
+                    description="The list of tool invocations to execute (required -- you MUST provide at least one tool invocation)",
+                    min_length=1,
+                ),
+            ],
         ) -> str:
             return await tool_self.call(
                 ctx, description=description, invocations=invocations

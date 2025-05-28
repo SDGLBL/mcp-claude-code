@@ -5,10 +5,11 @@ This module provides the NotebookReadTool for reading Jupyter notebook files.
 
 import json
 from pathlib import Path
-from typing import Any, final, override
+from typing import Annotated, Any, final, override
 
+from fastmcp import FastMCP
 from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from pydantic import Field
 
 from mcp_claude_code.tools.jupyter.base import JupyterBaseTool
 
@@ -36,35 +37,6 @@ class NotebookReadTool(JupyterBaseTool):
             Tool description
         """
         return "Reads a Jupyter notebook (.ipynb file) and returns all of the cells with their outputs. Jupyter notebooks are interactive documents that combine code, text, and visualizations, commonly used for data analysis and scientific computing. The notebook_path parameter must be an absolute path, not a relative path."
-
-    @property
-    @override
-    def parameters(self) -> dict[str, Any]:
-        """Get the parameter specifications for the tool.
-
-        Returns:
-            Parameter specifications
-        """
-        return {
-            "properties": {
-                "notebook_path": {
-                    "type": "string",
-                    "description": "The absolute path to the Jupyter notebook file to read (must be absolute, not relative)",
-                }
-            },
-            "required": ["notebook_path"],
-            "type": "object",
-        }
-
-    @property
-    @override
-    def required(self) -> list[str]:
-        """Get the list of required parameter names.
-
-        Returns:
-            List of required parameter names
-        """
-        return ["notebook_path"]
 
     @override
     async def call(self, ctx: MCPContext, **params: Any) -> str:
@@ -155,8 +127,17 @@ class NotebookReadTool(JupyterBaseTool):
         Args:
             mcp_server: The FastMCP server instance
         """
+
         tool_self = self  # Create a reference to self for use in the closure
 
-        @mcp_server.tool(name=self.name, description=self.mcp_description)
-        async def notebook_read(notebook_path: str, ctx: MCPContext) -> str:
+        @mcp_server.tool(name=self.name, description=self.description)
+        async def notebook_read(
+            ctx: MCPContext,
+            notebook_path: Annotated[
+                str,
+                Field(
+                    description="The absolute path to the Jupyter notebook file to read (must be absolute, not relative)",
+                ),
+            ],
+        ) -> str:
             return await tool_self.call(ctx, notebook_path=notebook_path)

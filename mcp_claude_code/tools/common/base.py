@@ -7,10 +7,12 @@ behavior and provide a foundation for tool registration and management.
 
 import functools
 from abc import ABC, abstractmethod
-from typing import Any, Awaitable, Callable, final
+from collections.abc import Awaitable
+from typing import Any, Callable, final
+from warnings import deprecated
 
+from fastmcp import FastMCP
 from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
 
 from mcp_claude_code.tools.common.context import DocumentContext
 from mcp_claude_code.tools.common.permissions import PermissionManager
@@ -84,83 +86,6 @@ class BaseTool(ABC):
 
         Returns:
             Detailed description of the tool's purpose and usage
-        """
-        pass
-
-    @property
-    def mcp_description(self) -> str:
-        """Get the complete tool description for MCP.
-
-        This method combines the tool description with parameter descriptions.
-
-        Returns:
-            Complete tool description including parameter details
-        """
-        # Start with the base description
-        desc = self.description.strip()
-
-        # Add parameter descriptions section if there are parameters
-        if self.parameters and "properties" in self.parameters:
-            # Add Args section header
-            desc += "\n\nArgs:"
-
-            # Get the properties dictionary
-            properties = self.parameters["properties"]
-
-            # Add each parameter description
-            for param_name, param_info in properties.items():
-                # Get the title if available, otherwise use the parameter name and capitalize it
-                if "title" in param_info:
-                    title = param_info["title"]
-                else:
-                    # Convert snake_case to Title Case
-                    title = " ".join(
-                        word.capitalize() for word in param_name.split("_")
-                    )
-
-                # Check if the parameter is required
-                required = param_name in self.required
-                required_text = "" if required else " (optional)"
-
-                # Get the parameter description if available
-                param_description = ""
-                if "description" in param_info:
-                    param_description = f" - {param_info['description']}"
-
-                # Add the parameter description line
-                desc += f"\n    {param_name}: {title}{required_text}{param_description}"
-
-        # Add Returns section
-        desc += "\n\nReturns:\n    "
-
-        # Add a generic return description based on the tool's purpose
-        # This could be enhanced with more specific return descriptions
-        if "read" in self.name or "get" in self.name or "search" in self.name:
-            desc += f"{self.name.replace('_', ' ').capitalize()} results"
-        elif "write" in self.name or "edit" in self.name or "create" in self.name:
-            desc += "Result of the operation"
-        else:
-            desc += "Tool execution results"
-
-        return desc
-
-    @property
-    @abstractmethod
-    def parameters(self) -> dict[str, Any]:
-        """Get the parameter specifications for the tool.
-
-        Returns:
-            Dictionary containing parameter specifications in JSON Schema format
-        """
-        pass
-
-    @property
-    @abstractmethod
-    def required(self) -> list[str]:
-        """Get the list of required parameter names.
-
-        Returns:
-            List of parameter names that are required for the tool
         """
         pass
 

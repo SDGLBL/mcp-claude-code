@@ -4,10 +4,11 @@ This module provides the DirectoryTreeTool for viewing file and directory struct
 """
 
 from pathlib import Path
-from typing import Any, final, override
+from typing import Annotated, Any, final, override
 
+from fastmcp import FastMCP
 from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
 
@@ -41,49 +42,6 @@ Directories are marked with trailing slashes. The output is formatted as an
 indented list for readability. By default, common development directories like
 .git, node_modules, and venv are noted but not traversed unless explicitly
 requested. Only works within allowed directories."""
-
-    @property
-    @override
-    def parameters(self) -> dict[str, Any]:
-        """Get the parameter specifications for the tool.
-
-        Returns:
-            Parameter specifications
-        """
-        return {
-            "properties": {
-                "path": {
-                    "title": "Path",
-                    "type": "string",
-                    "description": "The path to the directory to view",
-                },
-                "depth": {
-                    "default": 3,
-                    "title": "Depth",
-                    "type": "integer",
-                    "description": "The maximum depth to traverse (0 for unlimited)",
-                },
-                "include_filtered": {
-                    "default": False,
-                    "title": "Include Filtered",
-                    "type": "boolean",
-                    "description": "Include directories that are normally filtered",
-                },
-            },
-            "required": ["path"],
-            "title": "directory_treeArguments",
-            "type": "object",
-        }
-
-    @property
-    @override
-    def required(self) -> list[str]:
-        """Get the list of required parameter names.
-
-        Returns:
-            List of required parameter names
-        """
-        return ["path"]
 
     @override
     async def call(self, ctx: MCPContext, **params: Any) -> str:
@@ -302,9 +260,32 @@ requested. Only works within allowed directories."""
         """
         tool_self = self  # Create a reference to self for use in the closure
 
-        @mcp_server.tool(name=self.name, description=self.mcp_description)
+        @mcp_server.tool(name=self.name, description=self.description)
         async def directory_tree(
-            ctx: MCPContext, path: str, depth: int = 3, include_filtered: bool = False
+            ctx: MCPContext,
+            path: Annotated[
+                str,
+                Field(
+                    description="The path to the directory to view",
+                    title="Path",
+                ),
+            ],
+            depth: Annotated[
+                int,
+                Field(
+                    default=3,
+                    description="The maximum depth to traverse (0 for unlimited)",
+                    title="Depth",
+                ),
+            ] = 3,
+            include_filtered: Annotated[
+                bool,
+                Field(
+                    default=False,
+                    description="Include directories that are normally filtered",
+                    title="Include Filtered",
+                ),
+            ] = False,
         ) -> str:
             return await tool_self.call(
                 ctx, path=path, depth=depth, include_filtered=include_filtered

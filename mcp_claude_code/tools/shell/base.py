@@ -6,10 +6,10 @@ including command execution, script running, and process management.
 
 from abc import ABC, abstractmethod
 from typing import Any, final
-from typing_extensions import override
 
+from fastmcp import FastMCP
 from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from typing_extensions import override
 
 from mcp_claude_code.tools.common.base import BaseTool
 from mcp_claude_code.tools.common.permissions import PermissionManager
@@ -116,33 +116,3 @@ class ShellBaseTool(BaseTool, ABC):
             Prepared tool context
         """
         pass
-
-    @override
-    def register(self, mcp_server: FastMCP) -> None:
-        """Register this shell tool with the MCP server.
-
-        This provides a default implementation that derived classes should override
-        with more specific parameter definitions. This implementation uses generic
-        **kwargs which doesn't provide proper parameter definitions to MCP.
-
-        Args:
-            mcp_server: The FastMCP server instance
-        """
-        tool_self = self  # Create a reference to self for use in the closure
-
-        # Each derived class should override this with a more specific signature
-        # that explicitly defines the parameters expected by the tool
-        @mcp_server.tool(name=self.name, description=self.mcp_description)
-        async def generic_wrapper(**kwargs: Any) -> str:
-            """Generic wrapper for shell tool.
-
-            This wrapper should be overridden by derived classes to provide
-            explicit parameter definitions.
-
-            Returns:
-                Tool execution result
-            """
-            # Extract context from kwargs
-            ctx = kwargs.pop("ctx")
-            # Call the actual tool implementation
-            return await tool_self.call(ctx, **kwargs)

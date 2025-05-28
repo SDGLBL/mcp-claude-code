@@ -4,7 +4,7 @@ This package provides tools for interacting with the filesystem, including readi
 and editing files, directory navigation, and content searching.
 """
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from mcp_claude_code.tools.common.base import BaseTool, ToolRegistry
 from mcp_claude_code.tools.common.context import DocumentContext

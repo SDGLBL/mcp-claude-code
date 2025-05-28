@@ -10,10 +10,11 @@ import re
 import shlex
 import shutil
 from pathlib import Path
-from typing import Any, final, override
+from typing import Annotated, Any, final, override
 
+from fastmcp import FastMCP
 from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from pydantic import Field
 
 from mcp_claude_code.tools.common.context import ToolContext
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
@@ -48,48 +49,6 @@ Filter files by pattern with the include parameter (eg. "*.js", "*.{ts,tsx}").
 Returns matching file paths sorted by modification time.
 Use this tool when you need to find files containing specific patterns.
 When you are doing an open ended search that may require multiple rounds of globbing and grepping, use the Agent tool instead."""
-
-    @property
-    @override
-    def parameters(self) -> dict[str, Any]:
-        """Get the parameter specifications for the tool.
-
-        Returns:
-            Parameter specifications
-        """
-        return {
-            "properties": {
-                "pattern": {
-                    "type": "string",
-                    "description": "The regular expression pattern to search for in file contents",
-                },
-                "path": {
-                    "type": "string",
-                    "description": "The directory to search in. Defaults to the current working directory.",
-                },
-                "include": {
-                    "type": "string",
-                    "description": 'File pattern to include in the search (e.g. "*.js", "*.{ts,tsx}")',
-                },
-                "file_pattern": {
-                    "type": "string",
-                    "description": "Legacy parameter: File pattern to include in the search. Use 'include' instead.",
-                },
-            },
-            "required": ["pattern"],
-            "additionalProperties": False,
-            "$schema": "http://json-schema.org/draft-07/schema#",
-        }
-
-    @property
-    @override
-    def required(self) -> list[str]:
-        """Get the list of required parameter names.
-
-        Returns:
-            List of required parameter names
-        """
-        return ["pattern"]
 
     def is_ripgrep_installed(self) -> bool:
         """Check if ripgrep (rg) is installed.
@@ -448,13 +407,36 @@ When you are doing an open ended search that may require multiple rounds of glob
         """
         tool_self = self  # Create a reference to self for use in the closure
 
-        @mcp_server.tool(name=self.name, description=self.mcp_description)
+        @mcp_server.tool(name=self.name, description=self.description)
         async def grep(
             ctx: MCPContext,
-            pattern: str,
-            path: str = ".",
-            include: str | None = None,
-            file_pattern: str | None = "*",
+            pattern: Annotated[
+                str,
+                Field(
+                    description="The regular expression pattern to search for in file contents",
+                    min_length=1,
+                ),
+            ],
+            path: Annotated[
+                str,
+                Field(
+                    description="The directory to search in. Defaults to the current working directory.",
+                    default=".",
+                ),
+            ] = ".",
+            include: Annotated[
+                str | None,
+                Field(
+                    description='File pattern to include in the search (e.g. "*.js", "*.{ts,tsx}")',
+                ),
+            ] = None,
+            file_pattern: Annotated[
+                str | None,
+                Field(
+                    description="Legacy parameter: File pattern to include in the search. Use 'include' instead.",
+                    default="*",
+                ),
+            ] = "*",
         ) -> str:
             # Use 'include' parameter if provided, otherwise fall back to 'file_pattern'
             include_param = include or file_pattern

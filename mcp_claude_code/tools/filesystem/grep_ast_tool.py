@@ -6,11 +6,12 @@ seeing matching lines with useful context showing how they fit into the code str
 
 import os
 from pathlib import Path
-from typing import Any, final, override
+from typing import Annotated, Any, final, override
 
+from fastmcp import FastMCP
 from grep_ast.grep_ast import TreeContext
 from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
 
@@ -55,49 +56,6 @@ Example usage:
 grep_ast(pattern="function_name", path="/path/to/file.py", ignore_case=False, line_number=True)
 ```"""
 
-    @property
-    @override
-    def parameters(self) -> dict[str, Any]:
-        """Get the parameter specifications for the tool.
-
-        Returns:
-            Parameter specifications
-        """
-        return {
-            "properties": {
-                "pattern": {
-                    "type": "string",
-                    "description": "The regex pattern to search for in source code files",
-                },
-                "path": {
-                    "type": "string",
-                    "description": "The path to search in (file or directory)",
-                },
-                "ignore_case": {
-                    "type": "boolean",
-                    "description": "Whether to ignore case when matching",
-                    "default": False,
-                },
-                "line_number": {
-                    "type": "boolean",
-                    "description": "Whether to display line numbers",
-                    "default": False,
-                },
-            },
-            "required": ["pattern", "path"],
-            "type": "object",
-        }
-
-    @property
-    @override
-    def required(self) -> list[str]:
-        """Get the list of required parameter names.
-
-        Returns:
-            List of required parameter names
-        """
-        return ["pattern", "path"]
-
     @override
     async def call(self, ctx: MCPContext, **params: Any) -> str:
         """Execute the tool with the given parameters.
@@ -130,8 +88,8 @@ grep_ast(pattern="function_name", path="/path/to/file.py", ignore_case=False, li
         # Validate the path
         path_validation = self.validate_path(path)
         if not path_validation.is_valid:
-            await tool_ctx.error(f"Invalid path: {path_validation.error}")
-            return f"Error: Invalid path: {path_validation.error}"
+            await tool_ctx.error(f"Invalid path: {path_validation.error_message}")
+            return f"Error: Invalid path: {path_validation.error_message}"
 
         # Check if path is allowed
         is_allowed, error_message = await self.check_path_allowed(path, tool_ctx)
@@ -230,13 +188,37 @@ grep_ast(pattern="function_name", path="/path/to/file.py", ignore_case=False, li
         """
         tool_self = self  # Create a reference to self for use in the closure
 
-        @mcp_server.tool(name=self.name, description=self.mcp_description)
+        @mcp_server.tool(name=self.name, description=self.description)
         async def grep_ast(
             ctx: MCPContext,
-            pattern: str,
-            path: str,
-            ignore_case: bool = False,
-            line_number: bool = False,
+            pattern: Annotated[
+                str,
+                Field(
+                    description="The regex pattern to search for in source code files",
+                    min_length=1,
+                ),
+            ],
+            path: Annotated[
+                str,
+                Field(
+                    description="The path to search in (file or directory)",
+                    min_length=1,
+                ),
+            ],
+            ignore_case: Annotated[
+                bool,
+                Field(
+                    description="Whether to ignore case when matching",
+                    default=False,
+                ),
+            ] = False,
+            line_number: Annotated[
+                bool,
+                Field(
+                    description="Whether to display line numbers",
+                    default=False,
+                ),
+            ] = False,
         ) -> str:
             return await tool_self.call(
                 ctx,

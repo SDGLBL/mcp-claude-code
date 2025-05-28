@@ -5,12 +5,28 @@ This module provides the NoteBookEditTool for editing Jupyter notebook files.
 
 import json
 from pathlib import Path
-from typing import Any, final, override
+from typing import Annotated, Any, Literal, final, override
 
+from fastmcp import FastMCP
 from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from pydantic import Field
 
 from mcp_claude_code.tools.jupyter.base import JupyterBaseTool
+
+type NotebookPath = Annotated[
+    str,
+    Field(
+        description="The absolute path to the Jupyter notebook file to edit (must be absolute, not relative)",
+    ),
+]
+
+type CellNumber = Annotated[
+    int,
+    Field(
+        description="The index of the cell to edit (0-based)",
+        ge=0,
+    ),
+]
 
 
 @final
@@ -36,58 +52,6 @@ class NoteBookEditTool(JupyterBaseTool):
             Tool description
         """
         return "Completely replaces the contents of a specific cell in a Jupyter notebook (.ipynb file) with new source. Jupyter notebooks are interactive documents that combine code, text, and visualizations, commonly used for data analysis and scientific computing. The notebook_path parameter must be an absolute path, not a relative path. The cell_number is 0-indexed. Use edit_mode=insert to add a new cell at the index specified by cell_number. Use edit_mode=delete to delete the cell at the index specified by cell_number."
-
-    @property
-    @override
-    def parameters(self) -> dict[str, Any]:
-        """Get the parameter specifications for the tool.
-
-        Returns:
-            Parameter specifications
-        """
-        return {
-            "properties": {
-                "notebook_path": {
-                    "type": "string",
-                    "description": "The absolute path to the Jupyter notebook file to edit (must be absolute, not relative)",
-                },
-                "cell_number": {
-                    "type": "number",
-                    "description": "The index of the cell to edit (0-based)",
-                },
-                "new_source": {
-                    "type": "string",
-                    "description": "The new source for the cell",
-                },
-                "cell_type": {
-                    "anyOf": [
-                        {"enum": ["code", "markdown"], "type": "string"},
-                        {"type": "null"},
-                    ],
-                    "default": None,
-                    "description": "The type of the cell (code or markdown). If not specified, it defaults to the current cell type. If using edit_mode=insert, this is required.",
-                },
-                "edit_mode": {
-                    "default": "replace",
-                    "enum": ["replace", "insert", "delete"],
-                    "type": "string",
-                    "description": "The type of edit to make (replace, insert, delete). Defaults to replace.",
-                },
-            },
-            "required": ["notebook_path", "cell_number", "new_source"],
-            "title": "notebook_editArguments",
-            "type": "object",
-        }
-
-    @property
-    @override
-    def required(self) -> list[str]:
-        """Get the list of required parameter names.
-
-        Returns:
-            List of required parameter names
-        """
-        return ["notebook_path", "cell_number", "new_source"]
 
     @override
     async def call(self, ctx: MCPContext, **params: Any) -> str:
@@ -303,14 +267,29 @@ class NoteBookEditTool(JupyterBaseTool):
         """
         tool_self = self  # Create a reference to self for use in the closure
 
-        @mcp_server.tool(name=self.name, description=self.mcp_description)
+        @mcp_server.tool(name=self.name, description=self.description)
         async def notebook_edit(
             ctx: MCPContext,
-            notebook_path: str,
-            cell_number: int,
-            new_source: str,
-            cell_type: str | None = None,
-            edit_mode: str = "replace",
+            notebook_path: NotebookPath,
+            cell_number: CellNumber,
+            new_source: Annotated[
+                str,
+                Field(
+                    description="The new source for the cell",
+                ),
+            ] = "",
+            cell_type: Annotated[
+                Literal["code", "markdown"] | None,
+                Field(
+                    description="The type of the cell (code or markdown). If not specified, it defaults to the current cell type. If using edit_mode=insert, this is required.",
+                ),
+            ] = None,
+            edit_mode: Annotated[
+                Literal["replace", "insert", "delete"],
+                Field(
+                    description="The type of edit to make (replace, insert, delete). Defaults to replace.",
+                ),
+            ] = "replace",
         ) -> str:
             return await tool_self.call(
                 ctx,

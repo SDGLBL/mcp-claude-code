@@ -3,10 +3,11 @@
 This module provides the TodoWrite tool for creating and managing a structured task list for a session.
 """
 
-from typing import Any, final, override
+from typing import Annotated, Any, Literal, TypedDict, final, override
 
+from fastmcp import FastMCP
 from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from pydantic import Field
 
 from mcp_claude_code.tools.todo.base import TodoBaseTool, TodoStorage
 
@@ -76,67 +77,6 @@ NOTE that you should use should not use this tool if there is only one trivial t
    - Use clear, descriptive task names
 
 When in doubt, use this tool. Being proactive with task management demonstrates attentiveness and ensures you complete all requirements successfully."""
-
-    @property
-    @override
-    def parameters(self) -> dict[str, Any]:
-        """Get the parameter specifications for the tool.
-
-        Returns:
-            Parameter specifications
-        """
-        return {
-            "type": "object",
-            "properties": {
-                "session_id": {
-                    "type": "string",
-                    "description": "Unique identifier for the Claude Desktop session (generate using timestamp command in seconds)",
-                },
-                "todos": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "content": {
-                                "type": "string",
-                                "minLength": 1,
-                                "description": "Description of the task to be completed",
-                            },
-                            "status": {
-                                "type": "string",
-                                "enum": ["pending", "in_progress", "completed"],
-                                "description": "Current status of the task",
-                            },
-                            "priority": {
-                                "type": "string",
-                                "enum": ["high", "medium", "low"],
-                                "description": "Priority level of the task",
-                            },
-                            "id": {
-                                "type": "string",
-                                "description": "Unique identifier for the task",
-                            },
-                        },
-                        "required": ["content", "status", "priority", "id"],
-                        "additionalProperties": False,
-                    },
-                    "description": "The complete todo list to store for this session",
-                },
-            },
-            "required": ["session_id", "todos"],
-            "additionalProperties": False,
-            "$schema": "http://json-schema.org/draft-07/schema#",
-        }
-
-    @property
-    @override
-    def required(self) -> list[str]:
-        """Get the list of required parameter names.
-
-        Returns:
-            List of required parameter names
-        """
-        return ["session_id", "todos"]
 
     @override
     async def call(self, ctx: MCPContext, **params: Any) -> str:
@@ -247,8 +187,42 @@ When in doubt, use this tool. Being proactive with task management demonstrates 
         """
         tool_self = self  # Create a reference to self for use in the closure
 
-        @mcp_server.tool(name=self.name, description=self.mcp_description)
+        class TodoItem(TypedDict):
+            content: Annotated[
+                str,
+                Field(
+                    description="Description of the task to be completed",
+                    min_length=1,
+                ),
+            ]
+            status: Annotated[
+                Literal["pending", "in_progress", "completed"],
+                Field(description="Current status of the task"),
+            ]
+            priority: Annotated[
+                Literal["high", "medium", "low"],
+                Field(description="Priority level of the task"),
+            ]
+            id: Annotated[
+                str,
+                Field(description="Unique identifier for the task", min_length=3),
+            ]
+
+        @mcp_server.tool(name=self.name, description=self.description)
         async def todo_write(
-            ctx: MCPContext, session_id: str | int | float, todos: list[dict[str, Any]]
+            ctx: MCPContext,
+            session_id: Annotated[
+                str | int | float,
+                Field(
+                    description="Unique identifier for the Claude Desktop session (generate using timestamp command)",
+                ),
+            ],
+            todos: Annotated[
+                list[TodoItem],
+                Field(
+                    description="The complete todo list to store for this session",
+                    min_length=1,
+                ),
+            ],
         ) -> str:
             return await tool_self.call(ctx, session_id=session_id, todos=todos)

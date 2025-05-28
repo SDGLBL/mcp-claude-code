@@ -4,10 +4,11 @@ This module provides the Write tool for creating or overwriting files.
 """
 
 from pathlib import Path
-from typing import Any, final, override
+from typing import Annotated, Any, final, override
 
+from fastmcp import FastMCP
 from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
 
@@ -41,40 +42,6 @@ Usage:
 - If this is an existing file, you MUST use the Read tool first to read the file's contents. This tool will fail if you did not read the file first.
 - ALWAYS prefer editing existing files in the codebase. NEVER write new files unless explicitly required.
 - NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User."""
-
-    @property
-    @override
-    def parameters(self) -> dict[str, Any]:
-        """Get the parameter specifications for the tool.
-
-        Returns:
-            Parameter specifications
-        """
-        return {
-            "properties": {
-                "file_path": {
-                    "type": "string",
-                    "description": "The absolute path to the file to write (must be absolute, not relative)",
-                },
-                "content": {
-                    "type": "string",
-                    "description": "The content to write to the file",
-                },
-            },
-            "required": ["file_path", "content"],
-            "type": "object",
-            "additionalProperties": False,
-        }
-
-    @property
-    @override
-    def required(self) -> list[str]:
-        """Get the list of required parameter names.
-
-        Returns:
-            List of required parameter names
-        """
-        return ["file_path", "content"]
 
     @override
     async def call(self, ctx: MCPContext, **params: Any) -> str:
@@ -161,6 +128,22 @@ Usage:
         """
         tool_self = self  # Create a reference to self for use in the closure
 
-        @mcp_server.tool(name=self.name, description=self.mcp_description)
-        async def write(file_path: str, content: str, ctx: MCPContext) -> str:
+        @mcp_server.tool(name=self.name, description=self.description)
+        async def write(
+            ctx: MCPContext,
+            file_path: Annotated[
+                str,
+                Field(
+                    description="The absolute path to the file to write (must be absolute, not relative)",
+                    min_length=1,
+                ),
+            ],
+            content: Annotated[
+                str,
+                Field(
+                    description="The content to write to the file",
+                    min_length=1,
+                ),
+            ],
+        ) -> str:
             return await tool_self.call(ctx, file_path=file_path, content=content)

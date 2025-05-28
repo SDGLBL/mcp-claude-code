@@ -5,10 +5,11 @@ This module provides the Edit tool for making precise text replacements in files
 
 from difflib import unified_diff
 from pathlib import Path
-from typing import Any, final, override
+from typing import Annotated, Any, final, override
 
+from fastmcp import FastMCP
 from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
 
@@ -40,49 +41,6 @@ class Edit(FilesystemBaseTool):
 Usage:
 - When editing text from Read tool output, ensure you preserve the exact indentation (tabs/spaces) as it appears AFTER the line number prefix. The line number prefix format is: spaces + line number + tab. Everything after that tab is the actual file content to match. Never include any part of the line number prefix in the old_string or new_string.
 - ALWAYS prefer editing existing files in the codebase. NEVER write new files unless explicitly required."""
-
-    @property
-    @override
-    def parameters(self) -> dict[str, Any]:
-        """Get the parameter specifications for the tool.
-
-        Returns:
-            Parameter specifications
-        """
-        return {
-            "properties": {
-                "file_path": {
-                    "type": "string",
-                    "description": "The absolute path to the file to modify (must be absolute, not relative)",
-                },
-                "old_string": {
-                    "type": "string",
-                    "description": "The text to replace (must match the file contents exactly, including all whitespace and indentation)",
-                },
-                "new_string": {
-                    "type": "string",
-                    "description": "The edited text to replace the old_string",
-                },
-                "expected_replacements": {
-                    "type": "number",
-                    "default": 1,
-                    "description": "The expected number of replacements to perform. Defaults to 1 if not specified.",
-                },
-            },
-            "required": ["file_path", "old_string", "new_string"],
-            "type": "object",
-            "additionalProperties": False,
-        }
-
-    @property
-    @override
-    def required(self) -> list[str]:
-        """Get the list of required parameter names.
-
-        Returns:
-            List of required parameter names
-        """
-        return ["file_path", "old_string", "new_string"]
 
     @override
     async def call(self, ctx: MCPContext, **params: Any) -> str:
@@ -277,13 +235,34 @@ Usage:
         """
         tool_self = self  # Create a reference to self for use in the closure
 
-        @mcp_server.tool(name=self.name, description=self.mcp_description)
+        @mcp_server.tool(name=self.name, description=self.description)
         async def edit(
             ctx: MCPContext,
-            file_path: str,
-            old_string: str,
-            new_string: str,
-            expected_replacements: int = 1,
+            file_path: Annotated[
+                str,
+                Field(
+                    description="The absolute path to the file to modify (must be absolute, not relative)",
+                ),
+            ],
+            old_string: Annotated[
+                str,
+                Field(
+                    description="The text to replace (must match the file contents exactly, including all whitespace and indentation)",
+                ),
+            ],
+            new_string: Annotated[
+                str,
+                Field(
+                    description="The edited text to replace the old_string",
+                ),
+            ],
+            expected_replacements: Annotated[
+                int,
+                Field(
+                    default=1,
+                    description="The expected number of replacements to perform. Defaults to 1 if not specified.",
+                ),
+            ] = 1,
         ) -> str:
             return await tool_self.call(
                 ctx,

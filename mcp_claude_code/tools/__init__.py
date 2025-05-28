@@ -9,7 +9,7 @@ space for structured thinking. It also includes an "agent" tool that enables Cla
 to delegate tasks to sub-agents for concurrent execution and specialized processing.
 """
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from mcp_claude_code.tools.agent import register_agent_tools
 from mcp_claude_code.tools.common import register_batch_tool, register_thinking_tool

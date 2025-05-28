@@ -4,10 +4,11 @@ This module provides the TodoRead tool for reading the current todo list for a s
 """
 
 import json
-from typing import Any, final, override
+from typing import Annotated, Any, final, override
 
+from fastmcp import FastMCP
 from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from pydantic import Field
 
 from mcp_claude_code.tools.todo.base import TodoBaseTool, TodoStorage
 
@@ -48,37 +49,6 @@ Usage:
 - Returns a list of todo items with their status, priority, and content
 - Use this information to track progress and plan next steps
 - If no todos exist yet for the session, an empty list will be returned"""
-
-    @property
-    @override
-    def parameters(self) -> dict[str, Any]:
-        """Get the parameter specifications for the tool.
-
-        Returns:
-            Parameter specifications
-        """
-        return {
-            "type": "object",
-            "properties": {
-                "session_id": {
-                    "type": "string",
-                    "description": "Unique identifier for the Claude Desktop session (generate using timestamp command)",
-                }
-            },
-            "required": ["session_id"],
-            "additionalProperties": False,
-            "$schema": "http://json-schema.org/draft-07/schema#",
-        }
-
-    @property
-    @override
-    def required(self) -> list[str]:
-        """Get the list of required parameter names.
-
-        Returns:
-            List of required parameter names
-        """
-        return ["session_id"]
 
     @override
     async def call(self, ctx: MCPContext, **params: Any) -> str:
@@ -146,6 +116,14 @@ Usage:
         """
         tool_self = self  # Create a reference to self for use in the closure
 
-        @mcp_server.tool(name=self.name, description=self.mcp_description)
-        async def todo_read(ctx: MCPContext, session_id: str | int | float) -> str:
+        @mcp_server.tool(name=self.name, description=self.description)
+        async def todo_read(
+            ctx: MCPContext,
+            session_id: Annotated[
+                str | int | float,
+                Field(
+                    description="Unique identifier for the Claude Desktop session (generate using timestamp command)"
+                ),
+            ],
+        ) -> str:
             return await tool_self.call(ctx, session_id=session_id)

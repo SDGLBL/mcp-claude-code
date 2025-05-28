@@ -1,6 +1,6 @@
 """Common utilities for MCP Claude Code tools."""
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from mcp_claude_code.tools.common.base import BaseTool, ToolRegistry
 from mcp_claude_code.tools.common.batch_tool import BatchTool

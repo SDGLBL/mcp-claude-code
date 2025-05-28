@@ -4,10 +4,11 @@ This module provides the ReadTool for reading the contents of files.
 """
 
 from pathlib import Path
-from typing import Any, final, override
+from typing import Annotated, Any, final, override
 
+from fastmcp import FastMCP
 from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
 
@@ -50,44 +51,6 @@ Usage:
 - Results are returned using cat -n format, with line numbers starting at 1
 - For Jupyter notebooks (.ipynb files), use the notebook_read instead
 - When reading multiple files, you MUST use the batch tool to read them all at once"""
-
-    @property
-    @override
-    def parameters(self) -> dict[str, Any]:
-        """Get the parameter specifications for the tool.
-
-        Returns:
-            Parameter specifications
-        """
-        return {
-            "properties": {
-                "file_path": {
-                    "type": "string",
-                    "description": "The absolute path to the file to read",
-                },
-                "offset": {
-                    "type": "number",
-                    "description": "The line number to start reading from. Only provide if the file is too large to read at once",
-                },
-                "limit": {
-                    "type": "number",
-                    "description": "The number of lines to read. Only provide if the file is too large to read at once.",
-                },
-            },
-            "required": ["file_path"],
-            "additionalProperties": False,
-            "$schema": "http://json-schema.org/draft-07/schema#",
-        }
-
-    @property
-    @override
-    def required(self) -> list[str]:
-        """Get the list of required parameter names.
-
-        Returns:
-            List of required parameter names
-        """
-        return ["file_path"]
 
     @override
     async def call(self, ctx: MCPContext, **params: Any) -> str:
@@ -255,11 +218,29 @@ Usage:
         Args:
             mcp_server: The FastMCP server instance
         """
-        tool_self = self  # Create a reference to self for use in the closure
+        tool_self = self
 
-        @mcp_server.tool(name=self.name, description=self.mcp_description)
+        @mcp_server.tool(name=self.name, description=self.description)
         async def read(
-            ctx: MCPContext, file_path: str, offset: int = 0, limit: int = 2000
+            ctx: MCPContext,
+            file_path: Annotated[
+                str,
+                Field(
+                    description="The absolute path to the file to read",
+                ),
+            ],
+            offset: Annotated[
+                int,
+                Field(
+                    description="The line number to start reading from. Only provide if the file is too large to read at once",
+                ),
+            ] = 0,
+            limit: Annotated[
+                int,
+                Field(
+                    description="The number of lines to read. Only provide if the file is too large to read at once",
+                ),
+            ] = 2000,
         ) -> str:
             return await tool_self.call(
                 ctx, file_path=file_path, offset=offset, limit=limit

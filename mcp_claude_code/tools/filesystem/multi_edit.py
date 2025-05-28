@@ -5,10 +5,11 @@ This module provides the MultiEdit tool for making multiple precise text replace
 
 from difflib import unified_diff
 from pathlib import Path
-from typing import Any, final, override
+from typing import Annotated, Any, TypedDict, final, override
 
+from fastmcp import FastMCP
 from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
 
@@ -77,61 +78,6 @@ If you want to create a new file, use:
 - A new file path, including dir name if needed
 - First edit: empty old_string and the new file's contents as new_string
 - Subsequent edits: normal edit operations on the created content"""
-
-    @property
-    @override
-    def parameters(self) -> dict[str, Any]:
-        """Get the parameter specifications for the tool.
-
-        Returns:
-            Parameter specifications
-        """
-        return {
-            "properties": {
-                "file_path": {
-                    "type": "string",
-                    "description": "The absolute path to the file to modify (must be absolute, not relative)",
-                },
-                "edits": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "old_string": {
-                                "type": "string",
-                                "description": "The text to replace (must match the file contents exactly, including all whitespace and indentation)",
-                            },
-                            "new_string": {
-                                "type": "string",
-                                "description": "The edited text to replace the old_string",
-                            },
-                            "expected_replacements": {
-                                "type": "number",
-                                "default": 1,
-                                "description": "The expected number of replacements to perform. Defaults to 1 if not specified.",
-                            },
-                        },
-                        "required": ["old_string", "new_string"],
-                        "additionalProperties": False,
-                    },
-                    "minItems": 1,
-                    "description": "Array of edit operations to perform sequentially on the file",
-                },
-            },
-            "required": ["file_path", "edits"],
-            "type": "object",
-            "additionalProperties": False,
-        }
-
-    @property
-    @override
-    def required(self) -> list[str]:
-        """Get the list of required parameter names.
-
-        Returns:
-            List of required parameter names
-        """
-        return ["file_path", "edits"]
 
     @override
     async def call(self, ctx: MCPContext, **params: Any) -> str:
@@ -362,11 +308,43 @@ If you want to create a new file, use:
         """
         tool_self = self  # Create a reference to self for use in the closure
 
-        @mcp_server.tool(name=self.name, description=self.mcp_description)
+        class EditItem(TypedDict):
+            old_string: Annotated[
+                str,
+                Field(
+                    description="The text to replace (must match the file contents exactly, including all whitespace and indentation)",
+                ),
+            ]
+            new_string: Annotated[
+                str,
+                Field(
+                    description="The edited text to replace the old_string",
+                ),
+            ]
+            expected_replacements: Annotated[
+                int,
+                Field(
+                    default=1,
+                    description="The expected number of replacements to perform. Defaults to 1 if not specified.",
+                ),
+            ]
+
+        @mcp_server.tool(name=self.name, description=self.description)
         async def multi_edit(
             ctx: MCPContext,
-            file_path: str,
-            edits: list[dict[str, Any]],
+            file_path: Annotated[
+                str,
+                Field(
+                    description="The absolute path to the file to modify (must be absolute, not relative)",
+                ),
+            ],
+            edits: Annotated[
+                list[EditItem],
+                Field(
+                    description="Array of edit operations to perform sequentially on the file",
+                    min_length=1,
+                ),
+            ],
         ) -> str:
             return await tool_self.call(
                 ctx,

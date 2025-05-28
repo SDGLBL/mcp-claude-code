@@ -4,10 +4,11 @@ This module provides the RunCommandTool for running shell commands.
 """
 
 import os
-from typing import Any, final, override
+from typing import Annotated, Any, final, override
 
+from fastmcp import FastMCP
 from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from pydantic import Field
 
 from mcp_claude_code.tools.common.base import handle_connection_errors
 from mcp_claude_code.tools.common.context import create_tool_context
@@ -185,44 +186,6 @@ Important:
 # Other common operations
 - View comments on a Github PR: gh api repos/foo/bar/pulls/123/comments"""
 
-    @property
-    @override
-    def parameters(self) -> dict[str, Any]:
-        """Get the parameter specifications for the tool.
-
-        Returns:
-            Parameter specifications
-        """
-        return {
-            "properties": {
-                "command": {"title": "Command", "type": "string"},
-                "cwd": {"title": "Cwd", "type": "string"},
-                "shell_type": {
-                    "anyOf": [{"type": "string"}, {"type": "null"}],
-                    "default": None,
-                    "title": "Shell Type",
-                },
-                "use_login_shell": {
-                    "default": True,
-                    "title": "Use Login Shell",
-                    "type": "boolean",
-                },
-            },
-            "required": ["command", "cwd"],
-            "title": "run_commandArguments",
-            "type": "object",
-        }
-
-    @property
-    @override
-    def required(self) -> list[str]:
-        """Get the list of required parameter names.
-
-        Returns:
-            List of required parameter names
-        """
-        return ["command", "cwd"]
-
     @override
     async def prepare_tool_context(self, ctx: MCPContext) -> Any:
         """Create and prepare the tool context.
@@ -327,14 +290,38 @@ Important:
         """
         tool_self = self  # Create a reference to self for use in the closure
 
-        @mcp_server.tool(name=self.name, description=self.mcp_description)
+        @mcp_server.tool(name=self.name, description=self.description)
         @handle_connection_errors
         async def run_command(
             ctx: MCPContext,
-            command: str,
-            cwd: str,
-            shell_type: str | None = None,
-            use_login_shell: bool = True,
+            command: Annotated[
+                str,
+                Field(
+                    description="The shell command to execute",
+                    min_length=1,
+                ),
+            ],
+            cwd: Annotated[
+                str,
+                Field(
+                    description="Working directory where the command should be executed",
+                    min_length=1,
+                ),
+            ],
+            shell_type: Annotated[
+                str | None,
+                Field(
+                    description="Type of shell to use (e.g., bash, zsh). Defaults to system default",
+                    default=None,
+                ),
+            ] = None,
+            use_login_shell: Annotated[
+                bool,
+                Field(
+                    description="Whether to use a login shell (default: True)",
+                    default=True,
+                ),
+            ] = True,
         ) -> str:
             return await tool_self.call(
                 ctx,

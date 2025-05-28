@@ -3,7 +3,7 @@
 This package provides tools for executing shell commands and scripts.
 """
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from mcp_claude_code.tools.common.base import BaseTool, ToolRegistry
 from mcp_claude_code.tools.common.permissions import PermissionManager

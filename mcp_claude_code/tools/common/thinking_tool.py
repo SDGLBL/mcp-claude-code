@@ -3,10 +3,11 @@
 This module provides the ThinkingTool for Claude to engage in structured thinking.
 """
 
-from typing import Any, final, override
+from typing import Annotated, Any, final, override
 
+from fastmcp import FastMCP
 from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from pydantic import Field
 
 from mcp_claude_code.tools.common.base import BaseTool
 from mcp_claude_code.tools.common.context import create_tool_context
@@ -69,31 +70,6 @@ Feature Implementation Planning
 * Performance tests with large codebases
 </think_example>"""
 
-    @property
-    @override
-    def parameters(self) -> dict[str, Any]:
-        """Get the parameter specifications for the tool.
-
-        Returns:
-            Parameter specifications
-        """
-        return {
-            "properties": {"thought": {"title": "Thought", "type": "string"}},
-            "required": ["thought"],
-            "title": "thinkArguments",
-            "type": "object",
-        }
-
-    @property
-    @override
-    def required(self) -> list[str]:
-        """Get the list of required parameter names.
-
-        Returns:
-            List of required parameter names
-        """
-        return ["thought"]
-
     def __init__(self) -> None:
         """Initialize the thinking tool."""
         pass
@@ -144,6 +120,15 @@ Feature Implementation Planning
         """
         tool_self = self  # Create a reference to self for use in the closure
 
-        @mcp_server.tool(name=self.name, description=self.mcp_description)
-        async def think(thought: str, ctx: MCPContext) -> str:
+        @mcp_server.tool(name=self.name, description=self.description)
+        async def think(
+            ctx: MCPContext,
+            thought: Annotated[
+                str,
+                Field(
+                    description="The detailed thought process to record",
+                    min_length=1,
+                ),
+            ],
+        ) -> str:
             return await tool_self.call(ctx, thought=thought)

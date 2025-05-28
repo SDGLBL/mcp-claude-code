@@ -5,10 +5,11 @@ This module provides the ContentReplaceTool for replacing text patterns in files
 
 import fnmatch
 from pathlib import Path
-from typing import Any, final, override
+from typing import Annotated, Any, final, override
 
+from fastmcp import FastMCP
 from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
+from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
 
@@ -41,41 +42,6 @@ Searches for text patterns across all files in the specified directory
 that match the file pattern and replaces them with the specified text.
 Can be run in dry-run mode to preview changes without applying them.
 Only works within allowed directories."""
-
-    @property
-    @override
-    def parameters(self) -> dict[str, Any]:
-        """Get the parameter specifications for the tool.
-
-        Returns:
-            Parameter specifications
-        """
-        return {
-            "properties": {
-                "pattern": {"title": "Pattern", "type": "string"},
-                "replacement": {"title": "Replacement", "type": "string"},
-                "path": {"title": "Path", "type": "string"},
-                "file_pattern": {
-                    "default": "*",
-                    "title": "File Pattern",
-                    "type": "string",
-                },
-                "dry_run": {"default": False, "title": "Dry Run", "type": "boolean"},
-            },
-            "required": ["pattern", "replacement", "path"],
-            "title": "content_replaceArguments",
-            "type": "object",
-        }
-
-    @property
-    @override
-    def required(self) -> list[str]:
-        """Get the list of required parameter names.
-
-        Returns:
-            List of required parameter names
-        """
-        return ["pattern", "replacement", "path"]
 
     @override
     async def call(self, ctx: MCPContext, **params: Any) -> str:
@@ -273,14 +239,43 @@ Only works within allowed directories."""
         """
         tool_self = self  # Create a reference to self for use in the closure
 
-        @mcp_server.tool(name=self.name, description=self.mcp_description)
+        @mcp_server.tool(name=self.name, description=self.description)
         async def content_replace(
             ctx: MCPContext,
-            pattern: str,
-            replacement: str,
-            path: str,
-            file_pattern: str = "*",
-            dry_run: bool = False,
+            pattern: Annotated[
+                str,
+                Field(
+                    description="Text pattern to search for in files",
+                    min_length=1,
+                ),
+            ],
+            replacement: Annotated[
+                str,
+                Field(
+                    description="Text to replace the pattern with (can be empty string)",
+                ),
+            ],
+            path: Annotated[
+                str,
+                Field(
+                    description="Path to file or directory to search in",
+                    min_length=1,
+                ),
+            ],
+            file_pattern: Annotated[
+                str,
+                Field(
+                    description="File name pattern to match (default: all files)",
+                    default="*",
+                ),
+            ] = "*",
+            dry_run: Annotated[
+                bool,
+                Field(
+                    description="If True, only preview changes without modifying files",
+                    default=False,
+                ),
+            ] = False,
         ) -> str:
             return await tool_self.call(
                 ctx,

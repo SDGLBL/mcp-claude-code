@@ -8,11 +8,11 @@ import json
 import re
 import time
 from collections.abc import Iterable
-from typing import Any, final, override
+from typing import Annotated, Any, final, override
 
 import litellm
+from fastmcp import FastMCP
 from mcp.server.fastmcp import Context as MCPContext
-from mcp.server.fastmcp import FastMCP
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam
 
 from mcp_claude_code.tools.agent.prompt import (
@@ -82,35 +82,6 @@ Usage notes:
 3. Each agent invocation is stateless. You will not be able to send additional messages to the agent, nor will the agent be able to communicate with you outside of its final report. Therefore, your prompt should contain a highly detailed task description for the agent to perform autonomously and you should specify exactly what information the agent should return back to you in its final and only message to you.
 4. The agent's outputs should generally be trusted
 5.IMPORTANT: The Agent has no awareness of your context, so you must explicitly specify absolute project/file/directory paths and detailed background information about the current task. """
-
-    @property
-    @override
-    def parameters(self) -> dict[str, Any]:
-        """Get the parameter specifications for the tool.
-
-        Returns:
-            Parameter specifications
-        """
-        return {
-            "properties": {
-                "prompt": {
-                    "type": "string",
-                    "description": "Task for the agent to perform (must include absolute paths starting with /)",
-                }
-            },
-            "required": ["prompt"],
-            "type": "object",
-        }
-
-    @property
-    @override
-    def required(self) -> list[str]:
-        """Get the list of required parameter names.
-
-        Returns:
-            List of required parameter names
-        """
-        return ["prompt"]
 
     def __init__(
         self,
@@ -459,8 +430,25 @@ AGENT RESPONSE:
 
     @override
     def register(self, mcp_server: FastMCP) -> None:
+        """Register this agent tool with the MCP server.
+
+        Creates a wrapper function with explicitly defined parameters that match
+        the tool's parameter schema and registers it with the MCP server.
+
+        Args:
+            mcp_server: The FastMCP server instance
+        """
         tool_self = self  # Create a reference to self for use in the closure
 
-        @mcp_server.tool(name=self.name, description=self.mcp_description)
-        async def dispatch_agent(ctx: MCPContext, prompt: str) -> str:
+        @mcp_server.tool(name=self.name, description=self.description)
+        async def dispatch_agent(
+            ctx: MCPContext,
+            prompt: Annotated[
+                str,
+                litellm.Field(
+                    description="Task for the agent to perform (must include absolute paths starting with /)",
+                    min_length=1,
+                ),
+            ],
+        ) -> str:
             return await tool_self.call(ctx, prompt=prompt)
