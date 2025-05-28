@@ -7,8 +7,9 @@ import fnmatch
 from pathlib import Path
 from typing import Annotated, Any, final, override
 
-from fastmcp import FastMCP
 from fastmcp import Context as MCPContext
+from fastmcp import FastMCP
+from fastmcp.server.dependencies import get_context
 from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
@@ -241,7 +242,6 @@ Only works within allowed directories."""
 
         @mcp_server.tool(name=self.name, description=self.description)
         async def content_replace(
-            ctx: MCPContext,
             pattern: Annotated[
                 str,
                 Field(
@@ -277,6 +277,7 @@ Only works within allowed directories."""
                 ),
             ] = False,
         ) -> str:
+            ctx = get_context()
             return await tool_self.call(
                 ctx,
                 pattern=pattern,

@@ -7,8 +7,9 @@ import json
 from pathlib import Path
 from typing import Annotated, Any, Literal, final, override
 
-from fastmcp import FastMCP
 from fastmcp import Context as MCPContext
+from fastmcp import FastMCP
+from fastmcp.server.dependencies import get_context
 from pydantic import Field
 
 from mcp_claude_code.tools.jupyter.base import JupyterBaseTool
@@ -269,7 +270,6 @@ class NoteBookEditTool(JupyterBaseTool):
 
         @mcp_server.tool(name=self.name, description=self.description)
         async def notebook_edit(
-            ctx: MCPContext,
             notebook_path: NotebookPath,
             cell_number: CellNumber,
             new_source: Annotated[
@@ -291,6 +291,7 @@ class NoteBookEditTool(JupyterBaseTool):
                 ),
             ] = "replace",
         ) -> str:
+            ctx = get_context()
             return await tool_self.call(
                 ctx,
                 notebook_path=notebook_path,

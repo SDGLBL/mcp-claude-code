@@ -8,9 +8,10 @@ import os
 from pathlib import Path
 from typing import Annotated, Any, final, override
 
-from fastmcp import FastMCP
-from grep_ast.grep_ast import TreeContext
 from fastmcp import Context as MCPContext
+from fastmcp import FastMCP
+from fastmcp.server.dependencies import get_context
+from grep_ast.grep_ast import TreeContext
 from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
@@ -190,7 +191,6 @@ grep_ast(pattern="function_name", path="/path/to/file.py", ignore_case=False, li
 
         @mcp_server.tool(name=self.name, description=self.description)
         async def grep_ast(
-            ctx: MCPContext,
             pattern: Annotated[
                 str,
                 Field(
@@ -220,6 +220,7 @@ grep_ast(pattern="function_name", path="/path/to/file.py", ignore_case=False, li
                 ),
             ] = False,
         ) -> str:
+            ctx = get_context()
             return await tool_self.call(
                 ctx,
                 pattern=pattern,

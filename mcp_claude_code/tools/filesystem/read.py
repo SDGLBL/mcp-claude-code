@@ -6,8 +6,9 @@ This module provides the ReadTool for reading the contents of files.
 from pathlib import Path
 from typing import Annotated, Any, final, override
 
-from fastmcp import FastMCP
 from fastmcp import Context as MCPContext
+from fastmcp import FastMCP
+from fastmcp.server.dependencies import get_context
 from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
@@ -222,7 +223,6 @@ Usage:
 
         @mcp_server.tool(name=self.name, description=self.description)
         async def read(
-            ctx: MCPContext,
             file_path: Annotated[
                 str,
                 Field(
@@ -242,6 +242,7 @@ Usage:
                 ),
             ] = 2000,
         ) -> str:
+            ctx = get_context()
             return await tool_self.call(
                 ctx, file_path=file_path, offset=offset, limit=limit
             )

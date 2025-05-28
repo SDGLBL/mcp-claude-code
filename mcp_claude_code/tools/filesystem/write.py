@@ -6,8 +6,9 @@ This module provides the Write tool for creating or overwriting files.
 from pathlib import Path
 from typing import Annotated, Any, final, override
 
-from fastmcp import FastMCP
 from fastmcp import Context as MCPContext
+from fastmcp import FastMCP
+from fastmcp.server.dependencies import get_context
 from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
@@ -130,7 +131,6 @@ Usage:
 
         @mcp_server.tool(name=self.name, description=self.description)
         async def write(
-            ctx: MCPContext,
             file_path: Annotated[
                 str,
                 Field(
@@ -146,4 +146,5 @@ Usage:
                 ),
             ],
         ) -> str:
+            ctx = get_context()
             return await tool_self.call(ctx, file_path=file_path, content=content)

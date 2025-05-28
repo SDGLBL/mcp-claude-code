@@ -8,6 +8,7 @@ from typing import Annotated, Any, final, override
 
 from fastmcp import Context as MCPContext
 from fastmcp import FastMCP
+from fastmcp.server.dependencies import get_context
 from pydantic import Field
 
 from mcp_claude_code.tools.todo.base import TodoBaseTool, TodoStorage
@@ -118,7 +119,6 @@ Usage:
 
         @mcp_server.tool(name=self.name, description=self.description)
         async def todo_read(
-            ctx: MCPContext,
             session_id: Annotated[
                 str | int | float,
                 Field(
@@ -126,4 +126,5 @@ Usage:
                 ),
             ],
         ) -> str:
+            ctx = get_context()
             return await tool_self.call(ctx, session_id=session_id)

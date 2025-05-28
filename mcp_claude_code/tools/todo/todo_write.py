@@ -5,8 +5,9 @@ This module provides the TodoWrite tool for creating and managing a structured t
 
 from typing import Annotated, Any, Literal, TypedDict, final, override
 
-from fastmcp import FastMCP
 from fastmcp import Context as MCPContext
+from fastmcp import FastMCP
+from fastmcp.server.dependencies import get_context
 from pydantic import Field
 
 from mcp_claude_code.tools.todo.base import TodoBaseTool, TodoStorage
@@ -210,7 +211,6 @@ When in doubt, use this tool. Being proactive with task management demonstrates 
 
         @mcp_server.tool(name=self.name, description=self.description)
         async def todo_write(
-            ctx: MCPContext,
             session_id: Annotated[
                 str | int | float,
                 Field(
@@ -225,4 +225,5 @@ When in doubt, use this tool. Being proactive with task management demonstrates 
                 ),
             ],
         ) -> str:
+            ctx = get_context()
             return await tool_self.call(ctx, session_id=session_id, todos=todos)

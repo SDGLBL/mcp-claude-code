@@ -7,8 +7,9 @@ from difflib import unified_diff
 from pathlib import Path
 from typing import Annotated, Any, TypedDict, final, override
 
-from fastmcp import FastMCP
 from fastmcp import Context as MCPContext
+from fastmcp import FastMCP
+from fastmcp.server.dependencies import get_context
 from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
@@ -331,7 +332,6 @@ If you want to create a new file, use:
 
         @mcp_server.tool(name=self.name, description=self.description)
         async def multi_edit(
-            ctx: MCPContext,
             file_path: Annotated[
                 str,
                 Field(
@@ -346,6 +346,7 @@ If you want to create a new file, use:
                 ),
             ],
         ) -> str:
+            ctx = get_context()
             return await tool_self.call(
                 ctx,
                 file_path=file_path,

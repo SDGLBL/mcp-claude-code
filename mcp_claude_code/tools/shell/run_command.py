@@ -6,8 +6,9 @@ This module provides the RunCommandTool for running shell commands.
 import os
 from typing import Annotated, Any, final, override
 
-from fastmcp import FastMCP
 from fastmcp import Context as MCPContext
+from fastmcp import FastMCP
+from fastmcp.server.dependencies import get_context
 from pydantic import Field
 
 from mcp_claude_code.tools.common.base import handle_connection_errors
@@ -293,7 +294,6 @@ Important:
         @mcp_server.tool(name=self.name, description=self.description)
         @handle_connection_errors
         async def run_command(
-            ctx: MCPContext,
             command: Annotated[
                 str,
                 Field(
@@ -323,6 +323,7 @@ Important:
                 ),
             ] = True,
         ) -> str:
+            ctx = get_context()
             return await tool_self.call(
                 ctx,
                 command=command,
