@@ -1,4 +1,4 @@
-CREATE_RELEASE_PROMPT = """Help me create a new release for my project. Follow these steps to guide me through the process:
+CREATE_RELEASE_PROMPT = """Help me create a new release for my project. Follow these steps:
 
 ## Initial Analysis
 1. Examine the project version files (typically `__init__.py`, `package.json`, `pyproject.toml`, etc.)
@@ -35,6 +35,4 @@ CREATE_RELEASE_PROMPT = """Help me create a new release for my project. Follow t
    ```bash
    git push origin main
    git push origin vX.Y.Z
-   ```
-
-Guide me through each step, examining my project structure to determine the appropriate files to modify and explaining any decisions you make along the way."""
+   ```"""
