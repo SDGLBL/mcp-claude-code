@@ -5,7 +5,7 @@ This module provides the NotebookReadTool for reading Jupyter notebook files.
 
 import json
 from pathlib import Path
-from typing import Annotated, Any, final, override
+from typing import Annotated, TypedDict, Unpack, final, override
 
 from fastmcp import Context as MCPContext
 from fastmcp import FastMCP
@@ -13,6 +13,23 @@ from fastmcp.server.dependencies import get_context
 from pydantic import Field
 
 from mcp_claude_code.tools.jupyter.base import JupyterBaseTool
+
+NotebookPath = Annotated[
+    str,
+    Field(
+        description="The absolute path to the Jupyter notebook file to read (must be absolute, not relative)",
+    ),
+]
+
+
+class NotebookReadToolParams(TypedDict):
+    """Parameters for the NotebookReadTool.
+
+    Attributes:
+        notebook_path: The absolute path to the Jupyter notebook file to read (must be absolute, not relative)
+    """
+
+    notebook_path: NotebookPath
 
 
 @final
@@ -40,7 +57,11 @@ class NotebookReadTool(JupyterBaseTool):
         return "Reads a Jupyter notebook (.ipynb file) and returns all of the cells with their outputs. Jupyter notebooks are interactive documents that combine code, text, and visualizations, commonly used for data analysis and scientific computing. The notebook_path parameter must be an absolute path, not a relative path."
 
     @override
-    async def call(self, ctx: MCPContext, **params: Any) -> str:
+    async def call(
+        self,
+        ctx: MCPContext,
+        **params: Unpack[NotebookReadToolParams],
+    ) -> str:
         """Execute the tool with the given parameters.
 
         Args:
@@ -54,11 +75,7 @@ class NotebookReadTool(JupyterBaseTool):
         self.set_tool_context_info(tool_ctx)
 
         # Extract parameters
-        notebook_path = params.get("notebook_path")
-
-        if not notebook_path:
-            await tool_ctx.error("Missing required parameter: notebook_path")
-            return "Error: Missing required parameter: notebook_path"
+        notebook_path: NotebookPath = params["notebook_path"]
 
         # Validate path parameter
         path_validation = self.validate_path(notebook_path)
@@ -133,12 +150,8 @@ class NotebookReadTool(JupyterBaseTool):
 
         @mcp_server.tool(name=self.name, description=self.description)
         async def notebook_read(
-            notebook_path: Annotated[
-                str,
-                Field(
-                    description="The absolute path to the Jupyter notebook file to read (must be absolute, not relative)",
-                ),
-            ],
+            ctx: MCPContext,
+            notebook_path: NotebookPath,
         ) -> str:
             ctx = get_context()
             return await tool_self.call(ctx, notebook_path=notebook_path)

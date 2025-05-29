@@ -306,26 +306,6 @@ class TestNotebookReadTool:
         # Verify result
         assert "Error: Access denied" in result
 
-    @pytest.mark.asyncio
-    async def test_read_notebook_missing_parameter(
-        self,
-        notebook_read_tool: NotebookReadTool,
-        mcp_context: MagicMock,
-    ):
-        """Test reading with missing notebook_path parameter."""
-        # Mock context calls
-        tool_ctx = AsyncMock()
-
-        # Mock the base class methods
-        with patch.object(JupyterBaseTool, "set_tool_context_info"):
-            with patch.object(
-                JupyterBaseTool, "create_tool_context", return_value=tool_ctx
-            ):
-                result = await notebook_read_tool.call(mcp_context, notebook_path="")
-
-        # Verify error message
-        assert "Error: Missing required parameter: notebook_path" in result
-
 
 class TestNoteBookEditTool:
     """Test the NoteBookEditTool class."""
@@ -611,33 +591,6 @@ class TestNoteBookEditTool:
         assert "Error: Cell number 10 is out of bounds" in result
 
     @pytest.mark.asyncio
-    async def test_edit_notebook_negative_cell_number(
-        self,
-        notebook_edit_tool: NoteBookEditTool,
-        test_notebook_editable: str,
-        mcp_context: MagicMock,
-    ):
-        """Test editing with a negative cell number."""
-        # Mock context calls
-        tool_ctx = AsyncMock()
-
-        # Mock the base class methods
-        with patch.object(JupyterBaseTool, "set_tool_context_info"):
-            with patch.object(
-                JupyterBaseTool, "create_tool_context", return_value=tool_ctx
-            ):
-                result = await notebook_edit_tool.call(
-                    mcp_context,
-                    notebook_path=test_notebook_editable,
-                    cell_number=-1,
-                    new_source="test",
-                    edit_mode="replace",
-                )
-
-        # Verify error message
-        assert "Error: Cell number must be non-negative" in result
-
-    @pytest.mark.asyncio
     async def test_edit_notebook_insert_without_cell_type(
         self,
         notebook_edit_tool: NoteBookEditTool,
@@ -746,33 +699,6 @@ class TestNoteBookEditTool:
 
         # Verify result
         assert "Error: Access denied" in result
-
-    @pytest.mark.asyncio
-    async def test_edit_notebook_missing_parameters(
-        self,
-        notebook_edit_tool: NoteBookEditTool,
-        test_notebook_editable: str,
-        mcp_context: MagicMock,
-    ):
-        """Test editing with missing required parameters."""
-        # Mock context calls
-        tool_ctx = AsyncMock()
-
-        # Mock the base class methods
-        with patch.object(JupyterBaseTool, "set_tool_context_info"):
-            with patch.object(
-                JupyterBaseTool, "create_tool_context", return_value=tool_ctx
-            ):
-                # Test missing notebook_path
-                result = await notebook_edit_tool.call(
-                    mcp_context,
-                    notebook_path=None,
-                    cell_number=0,
-                    new_source="test",
-                )
-
-        # Verify error message
-        assert "Error: notebook_path parameter is required" in result
 
     @pytest.mark.asyncio
     async def test_edit_notebook_invalid_json(

@@ -4,7 +4,7 @@ This module provides the TodoRead tool for reading the current todo list for a s
 """
 
 import json
-from typing import Annotated, Any, final, override
+from typing import Annotated, TypedDict, Unpack, final, override
 
 from fastmcp import Context as MCPContext
 from fastmcp import FastMCP
@@ -12,6 +12,23 @@ from fastmcp.server.dependencies import get_context
 from pydantic import Field
 
 from mcp_claude_code.tools.todo.base import TodoBaseTool, TodoStorage
+
+SessionId = Annotated[
+    str | int | float,
+    Field(
+        description="Unique identifier for the Claude Desktop session (generate using timestamp command)"
+    ),
+]
+
+
+class TodoReadToolParams(TypedDict):
+    """Parameters for the TodoReadTool.
+
+    Attributes:
+        session_id: Unique identifier for the Claude Desktop session (generate using timestamp command)
+    """
+
+    session_id: SessionId
 
 
 @final
@@ -52,7 +69,11 @@ Usage:
 - If no todos exist yet for the session, an empty list will be returned"""
 
     @override
-    async def call(self, ctx: MCPContext, **params: Any) -> str:
+    async def call(
+        self,
+        ctx: MCPContext,
+        **params: Unpack[TodoReadToolParams],
+    ) -> str:
         """Execute the tool with the given parameters.
 
         Args:
@@ -68,6 +89,7 @@ Usage:
         # Extract parameters
         session_id = params.get("session_id")
 
+        # Validate required parameters for direct calls (not through MCP framework)
         if session_id is None:
             await tool_ctx.error("Parameter 'session_id' is required but was None")
             return "Error: Parameter 'session_id' is required but was None"
@@ -119,12 +141,8 @@ Usage:
 
         @mcp_server.tool(name=self.name, description=self.description)
         async def todo_read(
-            session_id: Annotated[
-                str | int | float,
-                Field(
-                    description="Unique identifier for the Claude Desktop session (generate using timestamp command)"
-                ),
-            ],
+            ctx: MCPContext,
+            session_id: SessionId,
         ) -> str:
             ctx = get_context()
             return await tool_self.call(ctx, session_id=session_id)

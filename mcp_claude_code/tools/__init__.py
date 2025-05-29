@@ -13,10 +13,9 @@ from fastmcp import FastMCP
 
 from mcp_claude_code.tools.agent import register_agent_tools
 from mcp_claude_code.tools.common import register_batch_tool, register_thinking_tool
-from mcp_claude_code.tools.common.base import BaseTool, ToolRegistry
+from mcp_claude_code.tools.common.base import BaseTool
 from mcp_claude_code.tools.common.context import DocumentContext
 from mcp_claude_code.tools.common.permissions import PermissionManager
-from mcp_claude_code.tools.common.thinking_tool import ThinkingTool
 from mcp_claude_code.tools.filesystem import register_filesystem_tools
 from mcp_claude_code.tools.jupyter import register_jupyter_tools
 from mcp_claude_code.tools.shell import register_shell_tools

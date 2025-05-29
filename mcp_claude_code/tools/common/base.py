@@ -9,7 +9,6 @@ import functools
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable
 from typing import Any, Callable, final
-from warnings import deprecated
 
 from fastmcp import FastMCP
 from fastmcp import Context as MCPContext
@@ -90,7 +89,7 @@ class BaseTool(ABC):
         pass
 
     @abstractmethod
-    async def call(self, ctx: MCPContext, **params: Any) -> str:
+    async def call(self, ctx: MCPContext, **params: Any) -> Any:
         """Execute the tool with the given parameters.
 
         Args:

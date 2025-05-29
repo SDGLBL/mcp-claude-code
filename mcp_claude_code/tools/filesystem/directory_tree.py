@@ -4,7 +4,7 @@ This module provides the DirectoryTreeTool for viewing file and directory struct
 """
 
 from pathlib import Path
-from typing import Annotated, Any, final, override
+from typing import Annotated, Any, TypedDict, Unpack, final, override
 
 from fastmcp import Context as MCPContext
 from fastmcp import FastMCP
@@ -12,6 +12,46 @@ from fastmcp.server.dependencies import get_context
 from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
+
+DirectoryPath = Annotated[
+    str,
+    Field(
+        description="The path to the directory to view",
+        title="Path",
+    ),
+]
+
+Depth = Annotated[
+    int,
+    Field(
+        default=3,
+        description="The maximum depth to traverse (0 for unlimited)",
+        title="Depth",
+    ),
+]
+
+IncludeFiltered = Annotated[
+    bool,
+    Field(
+        default=False,
+        description="Include directories that are normally filtered",
+        title="Include Filtered",
+    ),
+]
+
+
+class DirectoryTreeToolParams(TypedDict):
+    """Parameters for the DirectoryTreeTool.
+
+    Attributes:
+        path: The path to the directory to view
+        depth: The maximum depth to traverse (0 for unlimited)
+        include_filtered: Include directories that are normally filtered
+    """
+
+    path: DirectoryPath
+    depth: Depth
+    include_filtered: IncludeFiltered
 
 
 @final
@@ -45,7 +85,11 @@ indented list for readability. By default, common development directories like
 requested. Only works within allowed directories."""
 
     @override
-    async def call(self, ctx: MCPContext, **params: Any) -> str:
+    async def call(
+        self,
+        ctx: MCPContext,
+        **params: Unpack[DirectoryTreeToolParams],
+    ) -> str:
         """Execute the tool with the given parameters.
 
         Args:
@@ -58,17 +102,9 @@ requested. Only works within allowed directories."""
         tool_ctx = self.create_tool_context(ctx)
 
         # Extract parameters
-        path = params.get("path")
+        path: DirectoryPath = params["path"]
         depth = params.get("depth", 3)  # Default depth is 3
         include_filtered = params.get("include_filtered", False)  # Default to False
-
-        if not path:
-            await tool_ctx.error("Parameter 'path' is required but was None")
-            return "Error: Parameter 'path' is required but was None"
-
-        if path.strip() == "":
-            await tool_ctx.error("Parameter 'path' cannot be empty")
-            return "Error: Parameter 'path' cannot be empty"
 
         # Validate path parameter
         path_validation = self.validate_path(path)
@@ -263,29 +299,10 @@ requested. Only works within allowed directories."""
 
         @mcp_server.tool(name=self.name, description=self.description)
         async def directory_tree(
-            path: Annotated[
-                str,
-                Field(
-                    description="The path to the directory to view",
-                    title="Path",
-                ),
-            ],
-            depth: Annotated[
-                int,
-                Field(
-                    default=3,
-                    description="The maximum depth to traverse (0 for unlimited)",
-                    title="Depth",
-                ),
-            ] = 3,
-            include_filtered: Annotated[
-                bool,
-                Field(
-                    default=False,
-                    description="Include directories that are normally filtered",
-                    title="Include Filtered",
-                ),
-            ] = False,
+            ctx: MCPContext,
+            path: DirectoryPath,
+            depth: Depth,
+            include_filtered: IncludeFiltered,
         ) -> str:
             ctx = get_context()
             return await tool_self.call(

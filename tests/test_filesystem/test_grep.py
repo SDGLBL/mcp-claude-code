@@ -313,29 +313,6 @@ class TestGrep:
         # tool_ctx.error.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_empty_pattern_parameter(
-        self,
-        grep_tool: Grep,
-        mcp_context: MagicMock,
-    ):
-        """Test grep with empty pattern parameter."""
-        # Mock context calls
-        tool_ctx = AsyncMock()
-        tool_ctx.set_tool_info = AsyncMock()
-        tool_ctx.error = AsyncMock()
-        tool_ctx.info = AsyncMock()
-
-        with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
-            with patch.object(
-                FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
-            ):
-                result = await grep_tool.call(mcp_context, pattern="  ")
-
-        # Verify result
-        assert "Error: Parameter 'pattern' cannot be empty" in result
-        # tool_ctx.error.assert_called_once()
-
-    @pytest.mark.asyncio
     async def test_invalid_path_parameter(
         self,
         grep_tool: Grep,

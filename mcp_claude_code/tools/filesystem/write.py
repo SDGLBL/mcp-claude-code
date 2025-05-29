@@ -4,7 +4,7 @@ This module provides the Write tool for creating or overwriting files.
 """
 
 from pathlib import Path
-from typing import Annotated, Any, final, override
+from typing import Annotated, TypedDict, Unpack, final, override
 
 from fastmcp import Context as MCPContext
 from fastmcp import FastMCP
@@ -12,6 +12,34 @@ from fastmcp.server.dependencies import get_context
 from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
+
+FilePath = Annotated[
+    str,
+    Field(
+        description="The absolute path to the file to write (must be absolute, not relative)",
+        min_length=1,
+    ),
+]
+
+Content = Annotated[
+    str,
+    Field(
+        description="The content to write to the file",
+        min_length=1,
+    ),
+]
+
+
+class WriteToolParams(TypedDict):
+    """Parameters for the Write tool.
+
+    Attributes:
+        file_path: The absolute path to the file to write (must be absolute, not relative)
+        content: The content to write to the file
+    """
+
+    file_path: FilePath
+    content: Content
 
 
 @final
@@ -45,7 +73,11 @@ Usage:
 - NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User."""
 
     @override
-    async def call(self, ctx: MCPContext, **params: Any) -> str:
+    async def call(
+        self,
+        ctx: MCPContext,
+        **params: Unpack[WriteToolParams],
+    ) -> str:
         """Execute the tool with the given parameters.
 
         Args:
@@ -59,26 +91,14 @@ Usage:
         self.set_tool_context_info(tool_ctx)
 
         # Extract parameters
-        file_path = params.get("file_path")
-        content = params.get("content")
-
-        if not file_path:
-            await tool_ctx.error("Parameter 'file_path' is required but was None")
-            return "Error: Parameter 'file_path' is required but was None"
-
-        if file_path.strip() == "":
-            await tool_ctx.error("Parameter 'file_path' cannot be empty")
-            return "Error: Parameter 'file_path' cannot be empty"
+        file_path: FilePath = params["file_path"]
+        content: Content = params["content"]
 
         # Validate parameters
         path_validation = self.validate_path(file_path)
         if path_validation.is_error:
             await tool_ctx.error(path_validation.error_message)
             return f"Error: {path_validation.error_message}"
-
-        if not content:
-            await tool_ctx.error("Parameter 'content' is required but was None")
-            return "Error: Parameter 'content' is required but was None"
 
         await tool_ctx.info(f"Writing file: {file_path}")
 
@@ -131,20 +151,9 @@ Usage:
 
         @mcp_server.tool(name=self.name, description=self.description)
         async def write(
-            file_path: Annotated[
-                str,
-                Field(
-                    description="The absolute path to the file to write (must be absolute, not relative)",
-                    min_length=1,
-                ),
-            ],
-            content: Annotated[
-                str,
-                Field(
-                    description="The content to write to the file",
-                    min_length=1,
-                ),
-            ],
+            ctx: MCPContext,
+            file_path: FilePath,
+            content: Content,
         ) -> str:
             ctx = get_context()
             return await tool_self.call(ctx, file_path=file_path, content=content)

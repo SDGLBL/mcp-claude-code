@@ -5,7 +5,7 @@ parallel or serial depending on their characteristics.
 """
 
 import asyncio
-from typing import Annotated, Any, TypedDict, final, override
+from typing import Annotated, Any, TypedDict, Unpack, final, override
 
 from fastmcp import Context as MCPContext
 from fastmcp import FastMCP
@@ -14,6 +14,58 @@ from pydantic import Field
 
 from mcp_claude_code.tools.common.base import BaseTool
 from mcp_claude_code.tools.common.context import create_tool_context
+
+
+class InvocationItem(TypedDict):
+    """A single tool invocation item.
+
+    Attributes:
+        tool_name: The name of the tool to invoke
+        input: The input to pass to the tool
+    """
+
+    tool_name: Annotated[
+        str,
+        Field(
+            description="The name of the tool to invoke",
+            min_length=1,
+        ),
+    ]
+    input: Annotated[
+        dict[str, Any],
+        Field(
+            description="The input to pass to the tool",
+        ),
+    ]
+
+
+Description = Annotated[
+    str,
+    Field(
+        description="A short (3-5 word) description of the batch operation",
+        min_length=1,
+    ),
+]
+
+Invocations = Annotated[
+    list[InvocationItem],
+    Field(
+        description="The list of tool invocations to execute (required -- you MUST provide at least one tool invocation)",
+        min_length=1,
+    ),
+]
+
+
+class BatchToolParams(TypedDict):
+    """Parameters for the BatchTool.
+
+    Attributes:
+        description: A short (3-5 word) description of the batch operation
+        invocations: The list of tool invocations to execute (required -- you MUST provide at least one tool invocation)
+    """
+
+    description: Description
+    invocations: Invocations
 
 
 @final
@@ -86,7 +138,11 @@ Not available: think,write,edit,multi_edit,notebook_edit
         self.tools = tools
 
     @override
-    async def call(self, ctx: MCPContext, **params: Any) -> str:
+    async def call(
+        self,
+        ctx: MCPContext,
+        **params: Unpack[BatchToolParams],
+    ) -> str:
         """Execute the tool with the given parameters.
 
         Args:
@@ -262,37 +318,11 @@ Not available: think,write,edit,multi_edit,notebook_edit
         """
         tool_self = self  # Create a reference to self for use in the closure
 
-        class InvocationItem(TypedDict):
-            tool_name: Annotated[
-                str,
-                Field(
-                    description="The name of the tool to invoke",
-                    min_length=1,
-                ),
-            ]
-            input: Annotated[
-                dict[str, Any],
-                Field(
-                    description="The input to pass to the tool",
-                ),
-            ]
-
         @mcp_server.tool(name=self.name, description=self.description)
         async def batch(
-            description: Annotated[
-                str,
-                Field(
-                    description="A short (3-5 word) description of the batch operation",
-                    min_length=1,
-                ),
-            ],
-            invocations: Annotated[
-                list[InvocationItem],
-                Field(
-                    description="The list of tool invocations to execute (required -- you MUST provide at least one tool invocation)",
-                    min_length=1,
-                ),
-            ],
+            ctx: MCPContext,
+            description: Description,
+            invocations: Invocations,
         ) -> str:
             ctx = get_context()
             return await tool_self.call(

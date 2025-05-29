@@ -4,7 +4,7 @@ This module provides the ReadTool for reading the contents of files.
 """
 
 from pathlib import Path
-from typing import Annotated, Any, final, override
+from typing import Annotated, TypedDict, Unpack, final, override
 
 from fastmcp import Context as MCPContext
 from fastmcp import FastMCP
@@ -12,6 +12,43 @@ from fastmcp.server.dependencies import get_context
 from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
+
+FilePath = Annotated[
+    str,
+    Field(
+        description="The absolute path to the file to read",
+    ),
+]
+
+Offset = Annotated[
+    int,
+    Field(
+        description="The line number to start reading from. Only provide if the file is too large to read at once",
+        default=0,
+    ),
+]
+
+Limit = Annotated[
+    int,
+    Field(
+        description="The number of lines to read. Only provide if the file is too large to read at once",
+        default=2000,
+    ),
+]
+
+
+class ReadToolParams(TypedDict):
+    """Parameters for the ReadTool.
+
+    Attributes:
+        file_path: The absolute path to the file to read
+        offset: The line number to start reading from. Only provide if the file is too large to read at once
+        limit: The number of lines to read. Only provide if the file is too large to read at once
+    """
+
+    file_path: FilePath
+    offset: Offset
+    limit: Limit
 
 
 @final
@@ -54,7 +91,11 @@ Usage:
 - When reading multiple files, you MUST use the batch tool to read them all at once"""
 
     @override
-    async def call(self, ctx: MCPContext, **params: Any) -> str:
+    async def call(
+        self,
+        ctx: MCPContext,
+        **params: Unpack[ReadToolParams],
+    ) -> str:
         """Execute the tool with the given parameters.
 
         Args:
@@ -72,17 +113,7 @@ Usage:
         offset = params.get("offset", 0)
         limit = params.get("limit", self.DEFAULT_LINE_LIMIT)
 
-        # Ensure offset and limit are integers
-        try:
-            offset = int(offset) if offset is not None else 0
-            limit = int(limit) if limit is not None else self.DEFAULT_LINE_LIMIT
-        except (ValueError, TypeError):
-            await tool_ctx.error(
-                "Parameters 'offset' and 'limit' must be valid numbers"
-            )
-            return "Error: Parameters 'offset' and 'limit' must be valid numbers"
-
-        # Validate the 'file_path' parameter
+        # Validate required parameters for direct calls (not through MCP framework)
         if not file_path:
             await tool_ctx.error("Parameter 'file_path' is required but was None")
             return "Error: Parameter 'file_path' is required but was None"
@@ -223,24 +254,10 @@ Usage:
 
         @mcp_server.tool(name=self.name, description=self.description)
         async def read(
-            file_path: Annotated[
-                str,
-                Field(
-                    description="The absolute path to the file to read",
-                ),
-            ],
-            offset: Annotated[
-                int,
-                Field(
-                    description="The line number to start reading from. Only provide if the file is too large to read at once",
-                ),
-            ] = 0,
-            limit: Annotated[
-                int,
-                Field(
-                    description="The number of lines to read. Only provide if the file is too large to read at once",
-                ),
-            ] = 2000,
+            ctx: MCPContext,
+            file_path: FilePath,
+            offset: Offset,
+            limit: Limit,
         ) -> str:
             ctx = get_context()
             return await tool_self.call(

@@ -131,25 +131,6 @@ class TestAgentTool:
         assert agent_tool.api_key_override is None
 
     @pytest.mark.asyncio
-    async def test_call_no_prompt(self, agent_tool, mcp_context):
-        """Test agent tool call with no prompt."""
-        # Mock the tool context
-        tool_ctx = MagicMock()
-        tool_ctx.error = AsyncMock()
-        tool_ctx.info = AsyncMock()
-        tool_ctx.set_tool_info = AsyncMock()
-
-        with patch(
-            "mcp_claude_code.tools.agent.agent_tool.create_tool_context",
-            return_value=tool_ctx,
-        ):
-            result = await agent_tool.call(ctx=mcp_context)
-
-        assert "Error" in result
-        assert "prompt" in result
-        tool_ctx.error.assert_called_once()
-
-    @pytest.mark.asyncio
     async def test_call_with_litellm_error(self, agent_tool, mcp_context):
         """Test agent tool call when litellm raises an error."""
         # Mock the tool context
@@ -214,46 +195,6 @@ class TestAgentTool:
         assert "Agent execution completed" in result
         assert "Agent result" in result
         tool_ctx.info.assert_called()
-
-    @pytest.mark.asyncio
-    async def test_call_with_empty_prompt(self, agent_tool, mcp_context):
-        """Test agent tool call with an empty prompt string."""
-        # Mock the tool context
-        tool_ctx = MagicMock()
-        tool_ctx.set_tool_info = AsyncMock()
-        tool_ctx.info = AsyncMock()
-        tool_ctx.error = AsyncMock()
-
-        with patch(
-            "mcp_claude_code.tools.agent.agent_tool.create_tool_context",
-            return_value=tool_ctx,
-        ):
-            # Test with empty string
-            result = await agent_tool.call(ctx=mcp_context, prompt="")
-
-        assert "Error" in result
-        assert "must be a non-empty string" in result
-        tool_ctx.error.assert_called()
-
-    @pytest.mark.asyncio
-    async def test_call_with_invalid_type(self, agent_tool, mcp_context):
-        """Test agent tool call with an invalid parameter type."""
-        # Mock the tool context
-        tool_ctx = MagicMock()
-        tool_ctx.set_tool_info = AsyncMock()
-        tool_ctx.info = AsyncMock()
-        tool_ctx.error = AsyncMock()
-
-        with patch(
-            "mcp_claude_code.tools.agent.agent_tool.create_tool_context",
-            return_value=tool_ctx,
-        ):
-            # Test with invalid type (number)
-            result = await agent_tool.call(ctx=mcp_context, prompt=123)
-
-        assert "Error" in result
-        assert "Parameter 'prompt' must be a string" in result
-        tool_ctx.error.assert_called()
 
     @pytest.mark.asyncio
     async def test_call_with_no_absolute_path(self, agent_tool, mcp_context):

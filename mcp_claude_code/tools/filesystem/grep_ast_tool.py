@@ -6,7 +6,7 @@ seeing matching lines with useful context showing how they fit into the code str
 
 import os
 from pathlib import Path
-from typing import Annotated, Any, final, override
+from typing import Annotated, TypedDict, Unpack, final, override
 
 from fastmcp import Context as MCPContext
 from fastmcp import FastMCP
@@ -15,6 +15,54 @@ from grep_ast.grep_ast import TreeContext
 from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
+
+Pattern = Annotated[
+    str,
+    Field(
+        description="The regex pattern to search for in source code files",
+        min_length=1,
+    ),
+]
+
+SearchPath = Annotated[
+    str,
+    Field(
+        description="The path to search in (file or directory)",
+        min_length=1,
+    ),
+]
+
+IgnoreCase = Annotated[
+    bool,
+    Field(
+        description="Whether to ignore case when matching",
+        default=False,
+    ),
+]
+
+LineNumber = Annotated[
+    bool,
+    Field(
+        description="Whether to display line numbers",
+        default=False,
+    ),
+]
+
+
+class GrepAstToolParams(TypedDict):
+    """Parameters for the GrepAstTool.
+
+    Attributes:
+        pattern: The regex pattern to search for in source code files
+        path: The path to search in (file or directory)
+        ignore_case: Whether to ignore case when matching
+        line_number: Whether to display line numbers
+    """
+
+    pattern: Pattern
+    path: SearchPath
+    ignore_case: IgnoreCase
+    line_number: LineNumber
 
 
 @final
@@ -58,7 +106,11 @@ grep_ast(pattern="function_name", path="/path/to/file.py", ignore_case=False, li
 ```"""
 
     @override
-    async def call(self, ctx: MCPContext, **params: Any) -> str:
+    async def call(
+        self,
+        ctx: MCPContext,
+        **params: Unpack[GrepAstToolParams],
+    ) -> str:
         """Execute the tool with the given parameters.
 
         Args:
@@ -72,19 +124,10 @@ grep_ast(pattern="function_name", path="/path/to/file.py", ignore_case=False, li
         self.set_tool_context_info(tool_ctx)
 
         # Extract parameters
-        pattern = params.get("pattern")
-        path = params.get("path")
+        pattern: Pattern = params["pattern"]
+        path: SearchPath = params["path"]
         ignore_case = params.get("ignore_case", False)
         line_number = params.get("line_number", False)
-
-        # Validate parameters
-        if not pattern:
-            await tool_ctx.error("Parameter 'pattern' is required but was None")
-            return "Error: Parameter 'pattern' is required but was None"
-
-        if not path:
-            await tool_ctx.error("Parameter 'path' is required but was None")
-            return "Error: Parameter 'path' is required but was None"
 
         # Validate the path
         path_validation = self.validate_path(path)
@@ -191,34 +234,11 @@ grep_ast(pattern="function_name", path="/path/to/file.py", ignore_case=False, li
 
         @mcp_server.tool(name=self.name, description=self.description)
         async def grep_ast(
-            pattern: Annotated[
-                str,
-                Field(
-                    description="The regex pattern to search for in source code files",
-                    min_length=1,
-                ),
-            ],
-            path: Annotated[
-                str,
-                Field(
-                    description="The path to search in (file or directory)",
-                    min_length=1,
-                ),
-            ],
-            ignore_case: Annotated[
-                bool,
-                Field(
-                    description="Whether to ignore case when matching",
-                    default=False,
-                ),
-            ] = False,
-            line_number: Annotated[
-                bool,
-                Field(
-                    description="Whether to display line numbers",
-                    default=False,
-                ),
-            ] = False,
+            ctx: MCPContext,
+            pattern: Pattern,
+            path: SearchPath,
+            ignore_case: IgnoreCase,
+            line_number: LineNumber,
         ) -> str:
             ctx = get_context()
             return await tool_self.call(

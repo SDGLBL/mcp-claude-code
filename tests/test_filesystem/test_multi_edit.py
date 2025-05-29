@@ -39,30 +39,6 @@ class TestMultiEdit:
         assert "multiple edits" in multi_edit_tool.description.lower()
 
     @pytest.mark.asyncio
-    async def test_invalid_file_path(self, multi_edit_tool, mock_ctx):
-        """Test handling of invalid file path."""
-        result = await multi_edit_tool.call(
-            mock_ctx, file_path="", edits=[{"old_string": "old", "new_string": "new"}]
-        )
-        assert "Error: Parameter 'file_path' cannot be empty" in result
-
-    @pytest.mark.asyncio
-    async def test_missing_edits(self, multi_edit_tool, mock_ctx):
-        """Test handling of missing edits parameter."""
-        result = await multi_edit_tool.call(
-            mock_ctx, file_path="/tmp/test.txt", edits=None
-        )
-        assert "Error: Parameter 'edits' is required but was None" in result
-
-    @pytest.mark.asyncio
-    async def test_empty_edits_array(self, multi_edit_tool, mock_ctx):
-        """Test handling of empty edits array."""
-        result = await multi_edit_tool.call(
-            mock_ctx, file_path="/tmp/test.txt", edits=[]
-        )
-        assert "Error: Parameter 'edits' must be a non-empty array" in result
-
-    @pytest.mark.asyncio
     async def test_invalid_edit_object(self, multi_edit_tool, mock_ctx):
         """Test handling of invalid edit objects."""
         result = await multi_edit_tool.call(

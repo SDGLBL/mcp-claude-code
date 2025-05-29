@@ -7,9 +7,7 @@ including command execution, script running, and process management.
 from abc import ABC, abstractmethod
 from typing import Any, final
 
-from fastmcp import FastMCP
 from fastmcp import Context as MCPContext
-from typing_extensions import override
 
 from mcp_claude_code.tools.common.base import BaseTool
 from mcp_claude_code.tools.common.permissions import PermissionManager

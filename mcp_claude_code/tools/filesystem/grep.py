@@ -10,7 +10,7 @@ import re
 import shlex
 import shutil
 from pathlib import Path
-from typing import Annotated, Any, final, override
+from typing import Annotated, TypedDict, Unpack, final, override
 
 from fastmcp import Context as MCPContext
 from fastmcp import FastMCP
@@ -19,6 +19,44 @@ from pydantic import Field
 
 from mcp_claude_code.tools.common.context import ToolContext
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
+
+Pattern = Annotated[
+    str,
+    Field(
+        description="The regular expression pattern to search for in file contents",
+        min_length=1,
+    ),
+]
+
+SearchPath = Annotated[
+    str,
+    Field(
+        description="The directory to search in. Defaults to the current working directory.",
+        default=".",
+    ),
+]
+
+Include = Annotated[
+    str | None,
+    Field(
+        description='File pattern to include in the search (e.g. "*.js", "*.{ts,tsx}")',
+        default=None,
+    ),
+]
+
+
+class GrepToolParams(TypedDict):
+    """Parameters for the Grep tool.
+
+    Attributes:
+        pattern: The regular expression pattern to search for in file contents
+        path: The directory to search in. Defaults to the current working directory.
+        include: File pattern to include in the search (e.g. "*.js", "*.{ts,tsx}")
+    """
+
+    pattern: Pattern
+    path: SearchPath
+    include: Include
 
 
 @final
@@ -329,7 +367,11 @@ When you are doing an open ended search that may require multiple rounds of glob
             return f"Error searching file contents: {str(e)}"
 
     @override
-    async def call(self, ctx: MCPContext, **params: Any) -> str:
+    async def call(
+        self,
+        ctx: MCPContext,
+        **params: Unpack[GrepToolParams],
+    ) -> str:
         """Execute the grep tool with the given parameters.
 
         Args:
@@ -347,14 +389,10 @@ When you are doing an open ended search that may require multiple rounds of glob
         # Support both 'include' and legacy 'file_pattern' parameter for backward compatibility
         include: str = params.get("include") or params.get("file_pattern", "*")
 
-        # Validate required parameters
+        # Validate required parameters for direct calls (not through MCP framework)
         if pattern is None:
             await tool_ctx.error("Parameter 'pattern' is required but was None")
             return "Error: Parameter 'pattern' is required but was None"
-
-        if isinstance(pattern, str) and pattern.strip() == "":
-            await tool_ctx.error("Parameter 'pattern' cannot be empty")
-            return "Error: Parameter 'pattern' cannot be empty"
 
         # Validate path if provided
         if path:
@@ -410,36 +448,12 @@ When you are doing an open ended search that may require multiple rounds of glob
 
         @mcp_server.tool(name=self.name, description=self.description)
         async def grep(
-            pattern: Annotated[
-                str,
-                Field(
-                    description="The regular expression pattern to search for in file contents",
-                    min_length=1,
-                ),
-            ],
-            path: Annotated[
-                str,
-                Field(
-                    description="The directory to search in. Defaults to the current working directory.",
-                    default=".",
-                ),
-            ] = ".",
-            include: Annotated[
-                str | None,
-                Field(
-                    description='File pattern to include in the search (e.g. "*.js", "*.{ts,tsx}")',
-                ),
-            ] = None,
-            file_pattern: Annotated[
-                str | None,
-                Field(
-                    description="Legacy parameter: File pattern to include in the search. Use 'include' instead.",
-                    default="*",
-                ),
-            ] = "*",
+            ctx: MCPContext,
+            pattern: Pattern,
+            path: SearchPath,
+            include: Include,
         ) -> str:
             # Use 'include' parameter if provided, otherwise fall back to 'file_pattern'
-            ctx = get_context()
             return await tool_self.call(
                 ctx, pattern=pattern, path=path, include=include
             )

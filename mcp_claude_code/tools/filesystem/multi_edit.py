@@ -5,7 +5,7 @@ This module provides the MultiEdit tool for making multiple precise text replace
 
 from difflib import unified_diff
 from pathlib import Path
-from typing import Annotated, Any, TypedDict, final, override
+from typing import Annotated, TypedDict, Unpack, final, override
 
 from fastmcp import Context as MCPContext
 from fastmcp import FastMCP
@@ -13,6 +13,58 @@ from fastmcp.server.dependencies import get_context
 from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
+
+FilePath = Annotated[
+    str,
+    Field(
+        description="The absolute path to the file to modify (must be absolute, not relative)",
+    ),
+]
+
+
+class EditItem(TypedDict):
+    """A single edit operation."""
+
+    old_string: Annotated[
+        str,
+        Field(
+            description="The text to replace (must match the file contents exactly, including all whitespace and indentation)",
+        ),
+    ]
+    new_string: Annotated[
+        str,
+        Field(
+            description="The edited text to replace the old_string",
+        ),
+    ]
+    expected_replacements: Annotated[
+        int,
+        Field(
+            default=1,
+            description="The expected number of replacements to perform. Defaults to 1 if not specified.",
+        ),
+    ]
+
+
+Edits = Annotated[
+    list[EditItem],
+    Field(
+        description="Array of edit operations to perform sequentially on the file",
+        min_length=1,
+    ),
+]
+
+
+class MultiEditToolParams(TypedDict):
+    """Parameters for the MultiEdit tool.
+
+    Attributes:
+        file_path: The absolute path to the file to modify (must be absolute, not relative)
+        edits: Array of edit operations to perform sequentially on the file
+    """
+
+    file_path: FilePath
+    edits: Edits
 
 
 @final
@@ -81,7 +133,11 @@ If you want to create a new file, use:
 - Subsequent edits: normal edit operations on the created content"""
 
     @override
-    async def call(self, ctx: MCPContext, **params: Any) -> str:
+    async def call(
+        self,
+        ctx: MCPContext,
+        **params: Unpack[MultiEditToolParams],
+    ) -> str:
         """Execute the tool with the given parameters.
 
         Args:
@@ -95,30 +151,14 @@ If you want to create a new file, use:
         self.set_tool_context_info(tool_ctx)
 
         # Extract parameters
-        file_path = params.get("file_path")
-        edits = params.get("edits")
-
-        if file_path is None:
-            await tool_ctx.error("Parameter 'file_path' is required but was None")
-            return "Error: Parameter 'file_path' is required but was None"
-
-        if isinstance(file_path, str) and file_path.strip() == "":
-            await tool_ctx.error("Parameter 'file_path' cannot be empty")
-            return "Error: Parameter 'file_path' cannot be empty"
+        file_path: FilePath = params["file_path"]
+        edits: Edits = params["edits"]
 
         # Validate parameters
         path_validation = self.validate_path(file_path)
         if path_validation.is_error:
             await tool_ctx.error(path_validation.error_message)
             return f"Error: {path_validation.error_message}"
-
-        if edits is None:
-            await tool_ctx.error("Parameter 'edits' is required but was None")
-            return "Error: Parameter 'edits' is required but was None"
-
-        if not isinstance(edits, list) or len(edits) == 0:
-            await tool_ctx.error("Parameter 'edits' must be a non-empty array")
-            return "Error: Parameter 'edits' must be a non-empty array"
 
         # Validate each edit
         for i, edit in enumerate(edits):
@@ -309,42 +349,11 @@ If you want to create a new file, use:
         """
         tool_self = self  # Create a reference to self for use in the closure
 
-        class EditItem(TypedDict):
-            old_string: Annotated[
-                str,
-                Field(
-                    description="The text to replace (must match the file contents exactly, including all whitespace and indentation)",
-                ),
-            ]
-            new_string: Annotated[
-                str,
-                Field(
-                    description="The edited text to replace the old_string",
-                ),
-            ]
-            expected_replacements: Annotated[
-                int,
-                Field(
-                    default=1,
-                    description="The expected number of replacements to perform. Defaults to 1 if not specified.",
-                ),
-            ]
-
         @mcp_server.tool(name=self.name, description=self.description)
         async def multi_edit(
-            file_path: Annotated[
-                str,
-                Field(
-                    description="The absolute path to the file to modify (must be absolute, not relative)",
-                ),
-            ],
-            edits: Annotated[
-                list[EditItem],
-                Field(
-                    description="Array of edit operations to perform sequentially on the file",
-                    min_length=1,
-                ),
-            ],
+            ctx: MCPContext,
+            file_path: FilePath,
+            edits: Edits,
         ) -> str:
             ctx = get_context()
             return await tool_self.call(

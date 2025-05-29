@@ -5,7 +5,7 @@ This module provides the ContentReplaceTool for replacing text patterns in files
 
 import fnmatch
 from pathlib import Path
-from typing import Annotated, Any, final, override
+from typing import Annotated, TypedDict, Unpack, final, override
 
 from fastmcp import Context as MCPContext
 from fastmcp import FastMCP
@@ -13,6 +13,63 @@ from fastmcp.server.dependencies import get_context
 from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
+
+Pattern = Annotated[
+    str,
+    Field(
+        description="Text pattern to search for in files",
+        min_length=1,
+    ),
+]
+
+Replacement = Annotated[
+    str,
+    Field(
+        description="Text to replace the pattern with (can be empty string)",
+    ),
+]
+
+SearchPath = Annotated[
+    str,
+    Field(
+        description="Path to file or directory to search in",
+        min_length=1,
+    ),
+]
+
+FilePattern = Annotated[
+    str,
+    Field(
+        description="File name pattern to match (default: all files)",
+        default="*",
+    ),
+]
+
+DryRun = Annotated[
+    bool,
+    Field(
+        description="If True, only preview changes without modifying files",
+        default=False,
+    ),
+]
+
+
+class ContentReplaceToolParams(TypedDict):
+    """Parameters for the ContentReplaceTool.
+
+    Attributes:
+        pattern: Text pattern to search for in files
+        replacement: Text to replace the pattern with (can be empty string)
+        path: Path to file or directory to search in
+        file_pattern: File name pattern to match (default: all files)
+        dry_run: If True, only preview changes without modifying files
+    """
+
+    pattern: Pattern
+    replacement: Replacement
+    path: SearchPath
+    file_pattern: FilePattern
+    dry_run: DryRun
 
 
 @final
@@ -45,7 +102,11 @@ Can be run in dry-run mode to preview changes without applying them.
 Only works within allowed directories."""
 
     @override
-    async def call(self, ctx: MCPContext, **params: Any) -> str:
+    async def call(
+        self,
+        ctx: MCPContext,
+        **params: Unpack[ContentReplaceToolParams],
+    ) -> str:
         """Execute the tool with the given parameters.
 
         Args:
@@ -58,34 +119,11 @@ Only works within allowed directories."""
         tool_ctx = self.create_tool_context(ctx)
 
         # Extract parameters
-        pattern = params.get("pattern")
-        replacement = params.get("replacement")
-        path = params.get("path")
+        pattern: Pattern = params["pattern"]
+        replacement: Replacement = params["replacement"]
+        path: SearchPath = params["path"]
         file_pattern = params.get("file_pattern", "*")  # Default to all files
         dry_run = params.get("dry_run", False)  # Default to False
-
-        # Validate required parameters
-        if not pattern:
-            await tool_ctx.error("Parameter 'pattern' is required but was None")
-            return "Error: Parameter 'pattern' is required but was None"
-
-        if pattern.strip() == "":
-            await tool_ctx.error("Parameter 'pattern' cannot be empty")
-            return "Error: Parameter 'pattern' cannot be empty"
-
-        if replacement is None:
-            await tool_ctx.error("Parameter 'replacement' is required but was None")
-            return "Error: Parameter 'replacement' is required but was None"
-
-        if not path:
-            await tool_ctx.error("Parameter 'path' is required but was None")
-            return "Error: Parameter 'path' is required but was None"
-
-        if path.strip() == "":
-            await tool_ctx.error("Parameter 'path' cannot be empty")
-            return "Error: Parameter 'path' cannot be empty"
-
-        # Note: replacement can be an empty string as sometimes you want to delete the pattern
 
         path_validation = self.validate_path(path)
         if path_validation.is_error:
@@ -242,40 +280,12 @@ Only works within allowed directories."""
 
         @mcp_server.tool(name=self.name, description=self.description)
         async def content_replace(
-            pattern: Annotated[
-                str,
-                Field(
-                    description="Text pattern to search for in files",
-                    min_length=1,
-                ),
-            ],
-            replacement: Annotated[
-                str,
-                Field(
-                    description="Text to replace the pattern with (can be empty string)",
-                ),
-            ],
-            path: Annotated[
-                str,
-                Field(
-                    description="Path to file or directory to search in",
-                    min_length=1,
-                ),
-            ],
-            file_pattern: Annotated[
-                str,
-                Field(
-                    description="File name pattern to match (default: all files)",
-                    default="*",
-                ),
-            ] = "*",
-            dry_run: Annotated[
-                bool,
-                Field(
-                    description="If True, only preview changes without modifying files",
-                    default=False,
-                ),
-            ] = False,
+            ctx: MCPContext,
+            pattern: Pattern,
+            replacement: Replacement,
+            path: SearchPath,
+            file_pattern: FilePattern,
+            dry_run: DryRun,
         ) -> str:
             ctx = get_context()
             return await tool_self.call(

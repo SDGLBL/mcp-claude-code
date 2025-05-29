@@ -8,7 +8,7 @@ import json
 import re
 import time
 from collections.abc import Iterable
-from typing import Annotated, Any, final, override
+from typing import Annotated, TypedDict, Unpack, final, override
 
 import litellm
 from fastmcp import Context as MCPContext
@@ -37,6 +37,24 @@ from mcp_claude_code.tools.common.permissions import PermissionManager
 from mcp_claude_code.tools.filesystem import get_read_only_filesystem_tools
 from mcp_claude_code.tools.jupyter import get_read_only_jupyter_tools
 from mcp_claude_code.tools.shell.command_executor import CommandExecutor
+
+Prompt = Annotated[
+    str,
+    Field(
+        description="Task for the agent to perform (must include absolute paths starting with /)",
+        min_length=1,
+    ),
+]
+
+
+class AgentToolParams(TypedDict):
+    """Parameters for the AgentTool.
+
+    Attributes:
+        prompt: Task for the agent to perform (must include absolute paths starting with /)
+    """
+
+    prompt: Prompt
 
 
 @final
@@ -133,7 +151,11 @@ Usage notes:
         )
 
     @override
-    async def call(self, ctx: MCPContext, **params: Any) -> str:
+    async def call(
+        self,
+        ctx: MCPContext,
+        **params: Unpack[AgentToolParams],
+    ) -> str:
         """Execute the tool with the given parameters.
 
         Args:
@@ -151,17 +173,6 @@ Usage notes:
 
         # Extract parameters
         prompt = params.get("prompt")
-        if prompt is None:
-            await tool_ctx.error("Parameter 'prompt' is required but was not provided")
-            return "Error: Parameter 'prompt' is required but was not provided"
-
-        if not isinstance(prompt, str):
-            await tool_ctx.error("Parameter 'prompt' must be a string")
-            return "Error: Parameter 'prompt' must be a string"
-
-        if not prompt.strip():  # Empty or whitespace-only string
-            await tool_ctx.error("The prompt must be a non-empty string")
-            return "Error: The prompt must be a non-empty string"
 
         # Check for absolute path in prompt
         absolute_path_pattern = r"/(?:[^/\s]+/)*[^/\s]+"
@@ -379,7 +390,7 @@ The agent cannot access files without knowing their absolute locations."""
 
         # If we've reached the limit, add a warning and get final response
         if total_tool_use_count >= max_tool_uses or iteration_count >= max_iterations:
-            limit_type = (
+            limit_ = (
                 "tool usage" if total_tool_use_count >= max_tool_uses else "iterations"
             )
             await tool_ctx.info(
@@ -444,13 +455,7 @@ AGENT RESPONSE:
 
         @mcp_server.tool(name=self.name, description=self.description)
         async def dispatch_agent(
-            prompt: Annotated[
-                str,
-                Field(
-                    description="Task for the agent to perform (must include absolute paths starting with /)",
-                    min_length=1,
-                ),
-            ],
+            prompt: Prompt,
         ) -> str:
             ctx = get_context()
             return await tool_self.call(ctx, prompt=prompt)

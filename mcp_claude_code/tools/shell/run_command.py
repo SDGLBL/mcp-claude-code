@@ -4,7 +4,7 @@ This module provides the RunCommandTool for running shell commands.
 """
 
 import os
-from typing import Annotated, Any, final, override
+from typing import Annotated, Any, TypedDict, Unpack, final, override
 
 from fastmcp import Context as MCPContext
 from fastmcp import FastMCP
@@ -15,6 +15,54 @@ from mcp_claude_code.tools.common.base import handle_connection_errors
 from mcp_claude_code.tools.common.context import create_tool_context
 from mcp_claude_code.tools.shell.base import ShellBaseTool
 from mcp_claude_code.tools.shell.command_executor import CommandExecutor
+
+Command = Annotated[
+    str,
+    Field(
+        description="The shell command to execute",
+        min_length=1,
+    ),
+]
+
+CWD = Annotated[
+    str,
+    Field(
+        description="Working directory where the command should be executed",
+        min_length=1,
+    ),
+]
+
+ShellType = Annotated[
+    str | None,
+    Field(
+        description="Type of shell to use (e.g., bash, zsh). Defaults to system default",
+        default=None,
+    ),
+]
+
+UseLoginShell = Annotated[
+    bool,
+    Field(
+        description="Whether to use a login shell (default: True)",
+        default=True,
+    ),
+]
+
+
+class RunCommandToolParams(TypedDict):
+    """Parameters for the RunCommandTool.
+
+    Attributes:
+        command: The shell command to execute
+        cwd: Working directory where the command should be executed
+        shell_type: Type of shell to use (e.g., bash, zsh). Defaults to system default
+        use_login_shell: Whether to use a login shell (default: True)
+    """
+
+    command: Command
+    cwd: CWD
+    shell_type: ShellType
+    use_login_shell: UseLoginShell
 
 
 @final
@@ -202,7 +250,11 @@ Important:
         return tool_ctx
 
     @override
-    async def call(self, ctx: MCPContext, **params: Any) -> str:
+    async def call(
+        self,
+        ctx: MCPContext,
+        **params: Unpack[RunCommandToolParams],
+    ) -> str:
         """Execute the tool with the given parameters.
 
         Args:
@@ -215,27 +267,10 @@ Important:
         tool_ctx = await self.prepare_tool_context(ctx)
 
         # Extract parameters
-        command = params.get("command")
+        command: Command = params["command"]
         cwd = params.get("cwd")
         shell_type = params.get("shell_type")
         use_login_shell = params.get("use_login_shell", True)
-
-        # Validate required parameters
-        if not command:
-            await tool_ctx.error("Parameter 'command' is required but was None")
-            return "Error: Parameter 'command' is required but was None"
-
-        if command.strip() == "":
-            await tool_ctx.error("Parameter 'command' cannot be empty")
-            return "Error: Parameter 'command' cannot be empty"
-
-        if not cwd:
-            await tool_ctx.error("Parameter 'cwd' is required but was None")
-            return "Error: Parameter 'cwd' is required but was None"
-
-        if cwd.strip() == "":
-            await tool_ctx.error("Parameter 'cwd' cannot be empty")
-            return "Error: Parameter 'cwd' cannot be empty"
 
         await tool_ctx.info(f"Executing command: {command}")
 
@@ -294,34 +329,11 @@ Important:
         @mcp_server.tool(name=self.name, description=self.description)
         @handle_connection_errors
         async def run_command(
-            command: Annotated[
-                str,
-                Field(
-                    description="The shell command to execute",
-                    min_length=1,
-                ),
-            ],
-            cwd: Annotated[
-                str,
-                Field(
-                    description="Working directory where the command should be executed",
-                    min_length=1,
-                ),
-            ],
-            shell_type: Annotated[
-                str | None,
-                Field(
-                    description="Type of shell to use (e.g., bash, zsh). Defaults to system default",
-                    default=None,
-                ),
-            ] = None,
-            use_login_shell: Annotated[
-                bool,
-                Field(
-                    description="Whether to use a login shell (default: True)",
-                    default=True,
-                ),
-            ] = True,
+            ctx: MCPContext,
+            command: Command,
+            cwd: CWD,
+            shell_type: ShellType,
+            use_login_shell: UseLoginShell,
         ) -> str:
             ctx = get_context()
             return await tool_self.call(

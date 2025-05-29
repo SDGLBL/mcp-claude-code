@@ -5,7 +5,7 @@ This module provides the Edit tool for making precise text replacements in files
 
 from difflib import unified_diff
 from pathlib import Path
-from typing import Annotated, Any, final, override
+from typing import Annotated, TypedDict, Unpack, final, override
 
 from fastmcp import Context as MCPContext
 from fastmcp import FastMCP
@@ -13,6 +13,51 @@ from fastmcp.server.dependencies import get_context
 from pydantic import Field
 
 from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
+
+FilePath = Annotated[
+    str,
+    Field(
+        description="The absolute path to the file to modify (must be absolute, not relative)",
+    ),
+]
+
+OldString = Annotated[
+    str,
+    Field(
+        description="The text to replace (must match the file contents exactly, including all whitespace and indentation)",
+    ),
+]
+
+NewString = Annotated[
+    str,
+    Field(
+        description="The edited text to replace the old_string",
+    ),
+]
+
+ExpectedReplacements = Annotated[
+    int,
+    Field(
+        default=1,
+        description="The expected number of replacements to perform. Defaults to 1 if not specified.",
+    ),
+]
+
+
+class EditToolParams(TypedDict):
+    """Parameters for the Edit tool.
+
+    Attributes:
+        file_path: The absolute path to the file to modify (must be absolute, not relative)
+        old_string: The text to replace (must match the file contents exactly, including all whitespace and indentation)
+        new_string: The edited text to replace the old_string
+        expected_replacements: The expected number of replacements to perform. Defaults to 1 if not specified.
+    """
+
+    file_path: FilePath
+    old_string: OldString
+    new_string: NewString
+    expected_replacements: ExpectedReplacements
 
 
 @final
@@ -44,7 +89,11 @@ Usage:
 - ALWAYS prefer editing existing files in the codebase. NEVER write new files unless explicitly required."""
 
     @override
-    async def call(self, ctx: MCPContext, **params: Any) -> str:
+    async def call(
+        self,
+        ctx: MCPContext,
+        **params: Unpack[EditToolParams],
+    ) -> str:
         """Execute the tool with the given parameters.
 
         Args:
@@ -58,30 +107,16 @@ Usage:
         self.set_tool_context_info(tool_ctx)
 
         # Extract parameters
-        file_path = params.get("file_path")
-        old_string = params.get("old_string")
-        new_string = params.get("new_string")
-        expected_replacements = params.get(
-            "expected_replacements", 1
-        )  # Default to 1 if not provided
-
-        if not file_path:
-            await tool_ctx.error("Parameter 'file_path' is required but was None")
-            return "Error: Parameter 'file_path' is required but was None"
-
-        if file_path.strip() == "":
-            await tool_ctx.error("Parameter 'file_path' cannot be empty")
-            return "Error: Parameter 'file_path' cannot be empty"
+        file_path: FilePath = params["file_path"]
+        old_string: OldString = params["old_string"]
+        new_string: NewString = params["new_string"]
+        expected_replacements = params.get("expected_replacements", 1)
 
         # Validate parameters
         path_validation = self.validate_path(file_path)
         if path_validation.is_error:
             await tool_ctx.error(path_validation.error_message)
             return f"Error: {path_validation.error_message}"
-
-        if old_string is None:
-            await tool_ctx.error("Parameter 'old_string' is required but was None")
-            return "Error: Parameter 'old_string' is required but was None"
 
         # Only validate old_string for non-empty if we're not creating a new file
         # Empty old_string is valid when creating a new file
@@ -91,10 +126,6 @@ Usage:
                 "Parameter 'old_string' cannot be empty for existing files"
             )
             return "Error: Parameter 'old_string' cannot be empty for existing files"
-
-        if new_string is None:
-            await tool_ctx.error("Parameter 'new_string' is required but was None")
-            return "Error: Parameter 'new_string' is required but was None"
 
         if (
             expected_replacements is None
@@ -238,31 +269,11 @@ Usage:
 
         @mcp_server.tool(name=self.name, description=self.description)
         async def edit(
-            file_path: Annotated[
-                str,
-                Field(
-                    description="The absolute path to the file to modify (must be absolute, not relative)",
-                ),
-            ],
-            old_string: Annotated[
-                str,
-                Field(
-                    description="The text to replace (must match the file contents exactly, including all whitespace and indentation)",
-                ),
-            ],
-            new_string: Annotated[
-                str,
-                Field(
-                    description="The edited text to replace the old_string",
-                ),
-            ],
-            expected_replacements: Annotated[
-                int,
-                Field(
-                    default=1,
-                    description="The expected number of replacements to perform. Defaults to 1 if not specified.",
-                ),
-            ] = 1,
+            ctx: MCPContext,
+            file_path: FilePath,
+            old_string: OldString,
+            new_string: NewString,
+            expected_replacements: ExpectedReplacements,
         ) -> str:
             ctx = get_context()
             return await tool_self.call(

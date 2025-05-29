@@ -3,7 +3,7 @@
 This module provides the ThinkingTool for Claude to engage in structured thinking.
 """
 
-from typing import Annotated, Any, final, override
+from typing import Annotated, TypedDict, Unpack, final, override
 
 from fastmcp import Context as MCPContext
 from fastmcp import FastMCP
@@ -12,6 +12,25 @@ from pydantic import Field
 
 from mcp_claude_code.tools.common.base import BaseTool
 from mcp_claude_code.tools.common.context import create_tool_context
+
+
+Thought = Annotated[
+    str,
+    Field(
+        description="The detailed thought process to record",
+        min_length=1,
+    ),
+]
+
+
+class ThinkingToolParams(TypedDict):
+    """Parameters for the ThinkingTool.
+
+    Attributes:
+        thought: The detailed thought process to record
+    """
+
+    thought: Thought
 
 
 @final
@@ -76,7 +95,11 @@ Feature Implementation Planning
         pass
 
     @override
-    async def call(self, ctx: MCPContext, **params: Any) -> str:
+    async def call(
+        self,
+        ctx: MCPContext,
+        **params: Unpack[ThinkingToolParams],
+    ) -> str:
         """Execute the tool with the given parameters.
 
         Args:
@@ -123,13 +146,8 @@ Feature Implementation Planning
 
         @mcp_server.tool(name=self.name, description=self.description)
         async def think(
-            thought: Annotated[
-                str,
-                Field(
-                    description="The detailed thought process to record",
-                    min_length=1,
-                ),
-            ],
+            ctx: MCPContext,
+            thought: Thought,
         ) -> str:
             ctx = get_context()
             return await tool_self.call(ctx, thought=thought)

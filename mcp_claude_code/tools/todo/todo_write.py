@@ -3,7 +3,7 @@
 This module provides the TodoWrite tool for creating and managing a structured task list for a session.
 """
 
-from typing import Annotated, Any, Literal, TypedDict, final, override
+from typing import Annotated, Literal, TypedDict, Unpack, final, override
 
 from fastmcp import Context as MCPContext
 from fastmcp import FastMCP
@@ -11,6 +11,58 @@ from fastmcp.server.dependencies import get_context
 from pydantic import Field
 
 from mcp_claude_code.tools.todo.base import TodoBaseTool, TodoStorage
+
+
+class TodoItem(TypedDict):
+    """A single todo item."""
+
+    content: Annotated[
+        str,
+        Field(
+            description="Description of the task to be completed",
+            min_length=1,
+        ),
+    ]
+    status: Annotated[
+        Literal["pending", "in_progress", "completed"],
+        Field(description="Current status of the task"),
+    ]
+    priority: Annotated[
+        Literal["high", "medium", "low"],
+        Field(description="Priority level of the task"),
+    ]
+    id: Annotated[
+        str,
+        Field(description="Unique identifier for the task", min_length=3),
+    ]
+
+
+SessionId = Annotated[
+    str | int | float,
+    Field(
+        description="Unique identifier for the Claude Desktop session (generate using timestamp command)",
+    ),
+]
+
+Todos = Annotated[
+    list[TodoItem],
+    Field(
+        description="The complete todo list to store for this session",
+        min_length=1,
+    ),
+]
+
+
+class TodoWriteToolParams(TypedDict):
+    """Parameters for the TodoWriteTool.
+
+    Attributes:
+        session_id: Unique identifier for the Claude Desktop session (generate using timestamp command)
+        todos: The complete todo list to store for this session
+    """
+
+    session_id: SessionId
+    todos: Todos
 
 
 @final
@@ -203,7 +255,11 @@ The assistant did not use the todo list because this is a single command executi
 When in doubt, use this tool. Being proactive with task management demonstrates attentiveness and ensures you complete all requirements successfully."""
 
     @override
-    async def call(self, ctx: MCPContext, **params: Any) -> str:
+    async def call(
+        self,
+        ctx: MCPContext,
+        **params: Unpack[TodoWriteToolParams],
+    ) -> str:
         """Execute the tool with the given parameters.
 
         Args:
@@ -220,6 +276,7 @@ When in doubt, use this tool. Being proactive with task management demonstrates 
         session_id = params.get("session_id")
         todos = params.get("todos")
 
+        # Validate required parameters for direct calls (not through MCP framework)
         if session_id is None:
             await tool_ctx.error("Parameter 'session_id' is required but was None")
             return "Error: Parameter 'session_id' is required but was None"
@@ -311,42 +368,11 @@ When in doubt, use this tool. Being proactive with task management demonstrates 
         """
         tool_self = self  # Create a reference to self for use in the closure
 
-        class TodoItem(TypedDict):
-            content: Annotated[
-                str,
-                Field(
-                    description="Description of the task to be completed",
-                    min_length=1,
-                ),
-            ]
-            status: Annotated[
-                Literal["pending", "in_progress", "completed", "cancelled"],
-                Field(description="Current status of the task"),
-            ]
-            priority: Annotated[
-                Literal["high", "medium", "low"],
-                Field(description="Priority level of the task"),
-            ]
-            id: Annotated[
-                str,
-                Field(description="Unique identifier for the task", min_length=3),
-            ]
-
         @mcp_server.tool(name=self.name, description=self.description)
         async def todo_write(
-            session_id: Annotated[
-                str | int | float,
-                Field(
-                    description="Unique identifier for the Claude Desktop session (generate using timestamp command)",
-                ),
-            ],
-            todos: Annotated[
-                list[TodoItem],
-                Field(
-                    description="The complete todo list to store for this session",
-                    min_length=1,
-                ),
-            ],
+            ctx: MCPContext,
+            session_id: SessionId,
+            todos: Todos,
         ) -> str:
             ctx = get_context()
             return await tool_self.call(ctx, session_id=session_id, todos=todos)
