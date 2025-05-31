@@ -52,12 +52,6 @@ class ClaudeCodeServer:
         self.document_context = DocumentContext()
         self.permission_manager = PermissionManager()
 
-        # Initialize command executor
-        self.command_executor = CommandExecutor(
-            permission_manager=self.permission_manager,
-            verbose=False,  # Set to True for debugging
-        )
-
         # Add allowed paths
         if allowed_paths:
             for path in allowed_paths:

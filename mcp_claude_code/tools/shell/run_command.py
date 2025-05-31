@@ -15,6 +15,7 @@ from mcp_claude_code.tools.common.base import handle_connection_errors
 from mcp_claude_code.tools.common.context import create_tool_context
 from mcp_claude_code.tools.shell.base import ShellBaseTool
 from mcp_claude_code.tools.shell.command_executor import CommandExecutor
+from mcp_claude_code.tools.shell.session_manager import SessionManager
 
 Command = Annotated[
     str,
@@ -48,6 +49,30 @@ UseLoginShell = Annotated[
     ),
 ]
 
+SessionId = Annotated[
+    str | None,
+    Field(
+        description="Optional session ID for persistent shell sessions. If provided, commands will be executed in a persistent tmux session that maintains environment and history. If None, uses subprocess-based execution.",
+        default=None,
+    ),
+]
+
+SessionTimeout = Annotated[
+    int,
+    Field(
+        description="Timeout in seconds for session-based commands with no output changes (default: 30)",
+        default=30,
+    ),
+]
+
+Blocking = Annotated[
+    bool,
+    Field(
+        description="Whether to run in blocking mode (disables no-change timeout, default: False)",
+        default=False,
+    ),
+]
+
 
 class RunCommandToolParams(TypedDict):
     """Parameters for the RunCommandTool.
@@ -57,12 +82,18 @@ class RunCommandToolParams(TypedDict):
         cwd: Working directory where the command should be executed
         shell_type: Type of shell to use (e.g., bash, zsh). Defaults to system default
         use_login_shell: Whether to use a login shell (default: True)
+        session_id: Optional session ID for persistent shell sessions
+        session_timeout: Timeout in seconds for session-based commands with no output changes
+        blocking: Whether to run in blocking mode (disables no-change timeout)
     """
 
     command: Command
     cwd: CWD
     shell_type: ShellType
     use_login_shell: UseLoginShell
+    session_id: SessionId
+    session_timeout: SessionTimeout
+    blocking: Blocking
 
 
 @final
@@ -80,6 +111,7 @@ class RunCommandTool(ShellBaseTool):
         """
         super().__init__(permission_manager)
         self.command_executor: CommandExecutor = command_executor
+        self.session_manager: SessionManager = SessionManager()
 
     @property
     @override
@@ -99,7 +131,22 @@ class RunCommandTool(ShellBaseTool):
         Returns:
             Tool description
         """
-        return """Executes a given bash command in a persistent shell session with optional timeout, ensuring proper handling and security measures.
+        return """Executes a given bash command with support for both subprocess and persistent session execution modes.
+
+## Session-Based Execution (NEW!)
+- **session_id**: Optional parameter to enable persistent shell sessions using tmux
+- When session_id is provided, commands are executed in a persistent bash session that maintains:
+  - Environment variables across commands
+  - Command history and shell state
+  - Current working directory
+  - Background processes
+- Session persists until explicitly cleaned up or timeout (default: 30 minutes)
+- Requires tmux to be installed; falls back to subprocess mode if unavailable
+
+## Subprocess Execution (Default)
+- When session_id is None (default), uses subprocess-based execution
+- Each command runs in isolation without shared state
+- More secure but no persistence between commands
 
 Before executing the command, please follow these steps:
 
@@ -113,6 +160,9 @@ Before executing the command, please follow these steps:
 
 Usage notes:
   - The command argument is required.
+  - session_id: Optional string for persistent sessions (e.g., "my-session-123")
+  - session_timeout: Timeout in seconds for session commands with no output changes (default: 30)
+  - blocking: Whether to disable no-change timeout for long-running commands (default: False)
   - You can specify an optional timeout in milliseconds (up to 600000ms / 10 minutes). If not specified, commands will timeout after 120000ms (2 minutes).
   - It is very helpful if you write a clear, concise description of what this command does in 5-10 words.
   - If the output exceeds 30000 characters, output will be truncated before being returned to you.
@@ -271,6 +321,9 @@ Important:
         cwd = params.get("cwd")
         shell_type = params.get("shell_type")
         use_login_shell = params.get("use_login_shell", True)
+        session_id = params.get("session_id")
+        session_timeout = params.get("session_timeout", 30)
+        blocking = params.get("blocking", False)
 
         await tool_ctx.info(f"Executing command: {command}")
 
@@ -289,14 +342,57 @@ Important:
             await tool_ctx.error(f"Working directory does not exist: {cwd}")
             return f"Error: Working directory does not exist: {cwd}"
 
-        # Execute the command
-        result = await self.command_executor.execute_command(
-            command,
-            cwd=cwd,
-            shell_type=shell_type,
-            timeout=120.0,  # Increased from 30s to 120s for better compatibility
-            use_login_shell=use_login_shell,
-        )
+        # Decide execution mode based on session_id
+        if session_id is not None:
+            # Session-based execution
+            await tool_ctx.info(
+                f"Using session-based execution with session_id: {session_id}"
+            )
+
+            # Validate session_id
+            is_valid, error_msg = self.session_manager.validate_session_id(session_id)
+            if not is_valid:
+                await tool_ctx.error(f"Invalid session_id: {error_msg}")
+                return f"Error: Invalid session_id: {error_msg}"
+
+            try:
+                # Get or create session
+                session = self.session_manager.get_or_create_session(
+                    session_id=session_id,
+                    work_dir=cwd,
+                    no_change_timeout_seconds=session_timeout,
+                )
+
+                # Execute command in session
+                result = session.execute(
+                    command=command,
+                    is_input=False,  # TODO: Add is_input parameter if needed
+                    blocking=blocking,
+                    timeout=120.0,  # Hard timeout
+                )
+
+            except RuntimeError as e:
+                # Fallback to subprocess mode if tmux is not available
+                await tool_ctx.warning(
+                    f"Session execution failed, falling back to subprocess mode: {str(e)}"
+                )
+                result = await self.command_executor.execute_command(
+                    command,
+                    cwd=cwd,
+                    shell_type=shell_type,
+                    timeout=120.0,
+                    use_login_shell=use_login_shell,
+                )
+        else:
+            # Subprocess-based execution (original behavior)
+            await tool_ctx.info("Using subprocess-based execution")
+            result = await self.command_executor.execute_command(
+                command,
+                cwd=cwd,
+                shell_type=shell_type,
+                timeout=120.0,
+                use_login_shell=use_login_shell,
+            )
 
         # Report result
         if result.is_success:
@@ -334,6 +430,9 @@ Important:
             cwd: CWD,
             shell_type: ShellType,
             use_login_shell: UseLoginShell,
+            session_id: SessionId,
+            session_timeout: SessionTimeout,
+            blocking: Blocking,
         ) -> str:
             ctx = get_context()
             return await tool_self.call(
@@ -342,4 +441,7 @@ Important:
                 cwd=cwd,
                 shell_type=shell_type,
                 use_login_shell=use_login_shell,
+                session_id=session_id,
+                session_timeout=session_timeout,
+                blocking=blocking,
             )
