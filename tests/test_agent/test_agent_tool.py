@@ -31,28 +31,20 @@ class TestAgentTool:
         return MagicMock()
 
     @pytest.fixture
-    def command_executor(self):
-        """Create a test command executor."""
-        return MagicMock()
-
-    @pytest.fixture
-    def agent_tool(self, document_context, permission_manager, command_executor):
+    def agent_tool(self, document_context, permission_manager):
         """Create a test agent tool."""
         with patch("mcp_claude_code.tools.agent.agent_tool.litellm"):
             # Set environment variable for test
             os.environ["OPENAI_API_KEY"] = "test_key"
-            return AgentTool(document_context, permission_manager, command_executor)
+            return AgentTool(document_context, permission_manager)
 
     @pytest.fixture
-    def agent_tool_with_params(
-        self, document_context, permission_manager, command_executor
-    ):
+    def agent_tool_with_params(self, document_context, permission_manager):
         """Create a test agent tool with custom parameters."""
         with patch("mcp_claude_code.tools.agent.agent_tool.litellm"):
             return AgentTool(
                 document_context=document_context,
                 permission_manager=permission_manager,
-                command_executor=command_executor,
                 model="anthropic/claude-3-sonnet",
                 api_key="test_anthropic_key",
                 max_tokens=2000,
@@ -92,15 +84,12 @@ class TestAgentTool:
         assert agent_tool_with_params.max_iterations == 40
         assert agent_tool_with_params.max_tool_uses == 150
 
-    def test_model_and_api_key_override(
-        self, document_context, permission_manager, command_executor
-    ):
+    def test_model_and_api_key_override(self, document_context, permission_manager):
         """Test API key and model override functionality."""
         # Test with antropic model and API key
         agent_tool = AgentTool(
             document_context=document_context,
             permission_manager=permission_manager,
-            command_executor=command_executor,
             model="anthropic/claude-3-sonnet",
             api_key="test_anthropic_key",
         )
@@ -112,7 +101,6 @@ class TestAgentTool:
         agent_tool = AgentTool(
             document_context=document_context,
             permission_manager=permission_manager,
-            command_executor=command_executor,
             model="openai/gpt-4o",
             api_key="test_openai_key",
         )
@@ -124,7 +112,6 @@ class TestAgentTool:
         agent_tool = AgentTool(
             document_context=document_context,
             permission_manager=permission_manager,
-            command_executor=command_executor,
         )
 
         assert agent_tool.model_override is None

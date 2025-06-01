@@ -7,13 +7,13 @@ from fastmcp import FastMCP
 
 from mcp_claude_code.tools.common.base import BaseTool, ToolRegistry
 from mcp_claude_code.tools.common.permissions import PermissionManager
-from mcp_claude_code.tools.shell.command_executor import CommandExecutor
+from mcp_claude_code.tools.shell.bash_session_executor import BashSessionExecutor
 from mcp_claude_code.tools.shell.run_command import RunCommandTool
 
 # Export all tool classes
 __all__ = [
     "RunCommandTool",
-    "CommandExecutor",
+    "BashSessionExecutor",
     "get_shell_tools",
     "register_shell_tools",
 ]
@@ -31,7 +31,7 @@ def get_shell_tools(
         List of shell tool instances
     """
     # Initialize the command executor
-    command_executor = CommandExecutor(permission_manager)
+    command_executor = BashSessionExecutor(permission_manager)
 
     return [
         RunCommandTool(permission_manager, command_executor),

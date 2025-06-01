@@ -32,7 +32,6 @@ class TestClaudeCodeServer:
         assert server_instance.mcp is mock_mcp
         assert server_instance.document_context is not None
         assert server_instance.permission_manager is not None
-        assert server_instance.command_executor is not None
 
     def test_initialization_with_allowed_paths(self) -> None:
         """Test initializing with allowed paths."""

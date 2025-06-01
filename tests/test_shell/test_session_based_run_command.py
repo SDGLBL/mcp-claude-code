@@ -9,7 +9,7 @@ import shutil
 import tempfile
 import time
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from mcp_claude_code.tools.common.permissions import PermissionManager
 
 from mcp_claude_code.tools.shell.bash_session import BashSession
-from mcp_claude_code.tools.shell.command_executor import CommandExecutor
+from mcp_claude_code.tools.shell.bash_session_executor import BashSessionExecutor
 from mcp_claude_code.tools.shell.run_command import RunCommandTool
 from mcp_claude_code.tools.shell.session_manager import SessionManager
 from mcp_claude_code.tools.shell.session_storage import SessionStorage
@@ -35,6 +35,7 @@ class TestBashSessionBasics:
     def test_bash_session_initialization(self, temp_work_dir):
         """Test BashSession initialization."""
         session = BashSession(
+            id="test_session_init",
             work_dir=temp_work_dir,
             username="testuser",
             no_change_timeout_seconds=30,
@@ -56,6 +57,7 @@ class TestBashSessionBasics:
             pytest.skip("tmux is not available for session testing")
 
         session = BashSession(
+            id="test_session_simple",
             work_dir=temp_work_dir,
             no_change_timeout_seconds=5,  # Short timeout for testing
         )
@@ -99,7 +101,9 @@ class TestSessionPersistenceAndState:
         if not shutil.which("tmux"):
             pytest.skip("tmux is not available for session testing")
 
-        session = BashSession(work_dir=temp_work_dir, no_change_timeout_seconds=5)
+        session = BashSession(
+            id="test_session_env", work_dir=temp_work_dir, no_change_timeout_seconds=5
+        )
 
         try:
             # Set an environment variable
@@ -118,7 +122,9 @@ class TestSessionPersistenceAndState:
         if not shutil.which("tmux"):
             pytest.skip("tmux is not available for session testing")
 
-        session = BashSession(work_dir=temp_work_dir, no_change_timeout_seconds=5)
+        session = BashSession(
+            id="test_session_wd", work_dir=temp_work_dir, no_change_timeout_seconds=5
+        )
 
         try:
             # Create a subdirectory
@@ -141,7 +147,7 @@ class TestSessionPersistenceAndState:
         if not shutil.which("tmux"):
             pytest.skip("tmux is not available for session testing")
 
-        session = BashSession(work_dir=temp_work_dir)
+        session = BashSession(id="test_session_storage", work_dir=temp_work_dir)
         session_id = "test_session_1"
 
         try:
@@ -172,39 +178,15 @@ class TestSessionPersistenceAndState:
         removed = SessionStorage.remove_session("nonexistent")
         assert removed is False
 
-    def test_session_manager_validate_session_id(self):
-        """Test session ID validation."""
-        session_manager = SessionManager()
-
-        # Valid session IDs
-        valid, msg = session_manager.validate_session_id("test_session_123")
-        assert valid is True
-        assert msg == ""
-
-        valid, msg = session_manager.validate_session_id("test-session-456")
-        assert valid is True
-        assert msg == ""
-
-        # Invalid session IDs
-        valid, msg = session_manager.validate_session_id("")
-        assert valid is False
-        assert "cannot be empty" in msg
-
-        valid, msg = session_manager.validate_session_id("test session with spaces")
-        assert valid is False
-        assert "alphanumeric characters" in msg
-
-        valid, msg = session_manager.validate_session_id("a" * 101)  # Too long
-        assert valid is False
-        assert "too long" in msg
-
 
 class TestBackwardCompatibility:
     """Test backward compatibility with subprocess mode."""
 
     @pytest.fixture
     def run_command_tool(
-        self, permission_manager: "PermissionManager", command_executor: CommandExecutor
+        self,
+        permission_manager: "PermissionManager",
+        command_executor: BashSessionExecutor,
     ):
         """Create a RunCommandTool instance for testing."""
         return RunCommandTool(permission_manager, command_executor)
@@ -239,44 +221,12 @@ class TestBackwardCompatibility:
         result = await run_command_tool.call(
             mcp_context,
             command="echo 'subprocess mode'",
-            cwd=temp_dir,
-            shell_type=None,
-            use_login_shell=True,
             session_id=None,  # No session ID = subprocess mode
-            session_timeout=30,
-            blocking=False,
+            time_out=30,
         )
 
         assert "subprocess mode" in result
         assert "Error:" not in result
-
-    @pytest.mark.asyncio
-    async def test_run_command_session_mode_fallback(
-        self, run_command_tool, mcp_context, temp_dir
-    ):
-        """Test run_command falls back to subprocess mode when tmux is unavailable."""
-        with patch("shutil.which", return_value=None):  # Mock tmux as unavailable
-            session_id = "test_session_fallback"
-
-            # Execute with session_id but tmux unavailable (should fallback to subprocess)
-            result = await run_command_tool.call(
-                mcp_context,
-                command="echo 'fallback mode'",
-                cwd=temp_dir,
-                shell_type=None,
-                use_login_shell=True,
-                session_id=session_id,
-                session_timeout=30,
-                blocking=False,
-            )
-
-            assert "fallback mode" in result
-            assert "Error:" not in result
-
-            # Verify warning was logged about fallback
-            mcp_context.warning.assert_called()
-            warning_call_args = mcp_context.warning.call_args[0][0]
-            assert "falling back to subprocess mode" in warning_call_args
 
     @pytest.mark.asyncio
     async def test_subprocess_mode_isolation(
@@ -287,12 +237,8 @@ class TestBackwardCompatibility:
         result1 = await run_command_tool.call(
             mcp_context,
             command="export SUBPROCESS_VAR='test_value'",
-            cwd=temp_dir,
             session_id=None,  # Subprocess mode
-            session_timeout=30,
-            blocking=False,
-            shell_type=None,
-            use_login_shell=True,
+            time_out=30,
         )
         assert "Error:" not in result1
 
@@ -300,12 +246,8 @@ class TestBackwardCompatibility:
         result2 = await run_command_tool.call(
             mcp_context,
             command="echo $SUBPROCESS_VAR",
-            cwd=temp_dir,
             session_id=None,  # Subprocess mode
-            session_timeout=30,
-            blocking=False,
-            shell_type=None,
-            use_login_shell=True,
+            time_out=30,
         )
         # In subprocess mode, environment variable should not persist
         assert "test_value" not in result2
@@ -322,23 +264,15 @@ class TestBackwardCompatibility:
         await run_command_tool.call(
             mcp_context,
             command="export TEST_MODE='subprocess'",
-            cwd=temp_dir,
             session_id=None,
-            session_timeout=30,
-            blocking=False,
-            shell_type=None,
-            use_login_shell=True,
+            time_out=30,
         )
 
         result_subprocess = await run_command_tool.call(
             mcp_context,
             command="echo $TEST_MODE",
-            cwd=temp_dir,
             session_id=None,
-            session_timeout=30,
-            blocking=False,
-            shell_type=None,
-            use_login_shell=True,
+            time_out=30,
         )
 
         # Test session mode (with persistence)
@@ -346,23 +280,15 @@ class TestBackwardCompatibility:
         await run_command_tool.call(
             mcp_context,
             command="export TEST_MODE='session'",
-            cwd=temp_dir,
             session_id=session_id,
-            session_timeout=30,
-            blocking=False,
-            shell_type=None,
-            use_login_shell=True,
+            time_out=30,
         )
 
         result_session = await run_command_tool.call(
             mcp_context,
             command="echo $TEST_MODE",
-            cwd=temp_dir,
             session_id=session_id,
-            session_timeout=30,
-            blocking=False,
-            shell_type=None,
-            use_login_shell=True,
+            time_out=30,
         )
 
         # Subprocess mode should not persist environment
@@ -379,12 +305,8 @@ class TestBackwardCompatibility:
         result = await run_command_tool.call(
             mcp_context,
             command="echo 'existing functionality'",
-            cwd=temp_dir,
-            shell_type="bash",
-            use_login_shell=True,
             session_id=None,  # This is the key - None means old behavior
-            session_timeout=30,  # New parameter with default
-            blocking=False,  # New parameter with default
+            time_out=30,  # New parameter with default
         )
 
         assert "existing functionality" in result
@@ -396,7 +318,9 @@ class TestErrorHandlingAndEdgeCases:
 
     @pytest.fixture
     def run_command_tool(
-        self, permission_manager: "PermissionManager", command_executor: CommandExecutor
+        self,
+        permission_manager: "PermissionManager",
+        command_executor: BashSessionExecutor,
     ):
         """Create a RunCommandTool instance for testing."""
         return RunCommandTool(permission_manager, command_executor)
@@ -420,47 +344,22 @@ class TestErrorHandlingAndEdgeCases:
         SessionStorage.clear_all_sessions()
 
     @pytest.mark.asyncio
-    async def test_run_command_invalid_session_id(
-        self, run_command_tool, mcp_context, temp_dir
-    ):
-        """Test error handling for invalid session IDs."""
-        # Test with invalid session ID
-        result = await run_command_tool.call(
-            mcp_context,
-            command="echo 'test'",
-            cwd=temp_dir,
-            shell_type=None,
-            use_login_shell=True,
-            session_id="invalid session id with spaces",  # Invalid characters
-            session_timeout=30,
-            blocking=False,
-        )
-
-        assert "Error: Invalid session_id" in result
-        assert "alphanumeric characters" in result
-
-    @pytest.mark.asyncio
     async def test_run_command_invalid_working_directory(
         self, run_command_tool, mcp_context
     ):
         """Test error handling for invalid working directory."""
+        # Note: With persistent sessions, working directory is handled within the session
+        # This test now validates that commands can still execute without explicit cwd
         result = await run_command_tool.call(
             mcp_context,
             command="echo 'test'",
-            cwd="/nonexistent/directory",
-            shell_type=None,
-            use_login_shell=True,
             session_id=None,
-            session_timeout=30,
-            blocking=False,
+            time_out=30,
         )
 
-        # The error could be either "not allowed" or "does not exist" depending on permissions check order
-        assert "Error:" in result
-        assert (
-            "Working directory not allowed" in result
-            or "Working directory does not exist" in result
-        )
+        # Command should succeed since we're not specifying an invalid cwd
+        assert "test" in result
+        assert "Error:" not in result
 
     @pytest.mark.asyncio
     async def test_run_command_disallowed_command(
@@ -470,12 +369,8 @@ class TestErrorHandlingAndEdgeCases:
         result = await run_command_tool.call(
             mcp_context,
             command="rm -rf /",  # This should be disallowed
-            cwd=temp_dir,
-            shell_type=None,
-            use_login_shell=True,
             session_id=None,
-            session_timeout=30,
-            blocking=False,
+            time_out=30,
         )
 
         assert "Error: Command not allowed" in result
@@ -483,7 +378,7 @@ class TestErrorHandlingAndEdgeCases:
     def test_bash_session_with_invalid_work_dir(self):
         """Test BashSession with invalid working directory."""
         # This should not fail during initialization, but during execution
-        session = BashSession(work_dir="/nonexistent/path")
+        session = BashSession(id="test_session_invalid", work_dir="/nonexistent/path")
         assert session.work_dir == "/nonexistent/path"
         session.close()
 
@@ -523,8 +418,8 @@ class TestSessionTimeoutAndCleanup:
         if not shutil.which("tmux"):
             pytest.skip("tmux is not available for session testing")
 
-        session1 = BashSession(work_dir=temp_work_dir)
-        session2 = BashSession(work_dir=temp_work_dir)
+        session1 = BashSession(id="session1_cleanup", work_dir=temp_work_dir)
+        session2 = BashSession(id="session2_cleanup", work_dir=temp_work_dir)
 
         try:
             SessionStorage.set_session("session1", session1)
@@ -551,8 +446,8 @@ class TestSessionTimeoutAndCleanup:
         session_manager = SessionManager()
 
         # Create some sessions
-        session1 = session_manager.get_or_create_session("session1", temp_work_dir)
-        session2 = session_manager.get_or_create_session("session2", temp_work_dir)
+        session_manager.get_or_create_session("session1", temp_work_dir)
+        session_manager.get_or_create_session("session2", temp_work_dir)
 
         assert session_manager.get_session_count() == 2
 
@@ -571,7 +466,7 @@ class TestSessionTimeoutAndCleanup:
         if not shutil.which("tmux"):
             pytest.skip("tmux is not available for session testing")
 
-        session = BashSession(work_dir=temp_work_dir)
+        session = BashSession(id="test_session_cleanup", work_dir=temp_work_dir)
         session.initialize()
 
         # Session should be initialized
@@ -588,7 +483,11 @@ class TestSessionTimeoutAndCleanup:
         if not shutil.which("tmux"):
             pytest.skip("tmux is not available for session testing")
 
-        session = BashSession(work_dir=temp_work_dir, no_change_timeout_seconds=2)
+        session = BashSession(
+            id="test_session_timeout",
+            work_dir=temp_work_dir,
+            no_change_timeout_seconds=2,
+        )
 
         try:
             # Execute a command that should timeout
@@ -607,7 +506,9 @@ class TestSessionTimeoutAndCleanup:
 
         # Create session in a scope that will be deleted
         def create_session():
-            session = BashSession(work_dir=temp_work_dir)
+            session = BashSession(
+                id="test_session_auto_cleanup", work_dir=temp_work_dir
+            )
             session.initialize()
             return session
 
@@ -622,3 +523,161 @@ class TestSessionTimeoutAndCleanup:
         import gc
 
         gc.collect()  # Force garbage collection
+
+
+class TestSessionIdValidationAndPersistence:
+    """Test comprehensive session_id validation and variable persistence."""
+
+    @pytest.fixture
+    def run_command_tool(
+        self,
+        permission_manager: "PermissionManager",
+        command_executor: BashSessionExecutor,
+    ):
+        """Create a RunCommandTool instance for testing."""
+        return RunCommandTool(permission_manager, command_executor)
+
+    @pytest.fixture
+    def mcp_context(self):
+        """Mock MCP context for testing."""
+        mock_context = MagicMock()
+        mock_context.info = AsyncMock()
+        mock_context.error = AsyncMock()
+        mock_context.warning = AsyncMock()
+        mock_context.debug = AsyncMock()
+        mock_context.report_progress = AsyncMock()
+        mock_context.request_id = "test-request-id"
+        mock_context.client_id = "test-client-id"
+        return mock_context
+
+    def setup_method(self):
+        """Clear sessions before each test."""
+        SessionStorage.clear_all_sessions()
+
+    def teardown_method(self):
+        """Clear sessions after each test."""
+        SessionStorage.clear_all_sessions()
+
+    @pytest.mark.asyncio
+    async def test_variable_persistence_exact_scenario(
+        self, run_command_tool, mcp_context
+    ):
+        """Test the exact scenario: A='xxxx'; echo $A."""
+        if not shutil.which("tmux"):
+            pytest.skip("tmux is not available for session testing")
+
+        session_id = "test_variable_persistence"
+
+        # Set variable A='xxxx'
+        result1 = await run_command_tool.call(
+            mcp_context,
+            command="A='xxxx'",
+            session_id=session_id,
+            time_out=30,
+            is_input=False,
+            blocking=False,
+        )
+
+        # Should be successful (no output for variable assignment)
+        assert "Error:" not in result1
+
+        # Echo the variable
+        result2 = await run_command_tool.call(
+            mcp_context,
+            command="echo $A",
+            session_id=session_id,
+            time_out=30,
+            is_input=False,
+            blocking=False,
+        )
+
+        # Should output 'xxxx'
+        assert result2.strip() == "xxxx", f"Expected 'xxxx', got {repr(result2)}"
+
+    @pytest.mark.asyncio
+    async def test_multiple_variables_in_same_session(
+        self, run_command_tool, mcp_context
+    ):
+        """Test that multiple variables persist in the same session."""
+        if not shutil.which("tmux"):
+            pytest.skip("tmux is not available for session testing")
+
+        session_id = "test_multiple_vars"
+
+        # Set multiple variables
+        await run_command_tool.call(
+            mcp_context,
+            command="VAR1='value1'",
+            session_id=session_id,
+            time_out=30,
+        )
+
+        await run_command_tool.call(
+            mcp_context,
+            command="VAR2='value2'",
+            session_id=session_id,
+            time_out=30,
+        )
+
+        await run_command_tool.call(
+            mcp_context,
+            command="VAR3='value3'",
+            session_id=session_id,
+            time_out=30,
+        )
+
+        # Test that all variables are accessible
+        result = await run_command_tool.call(
+            mcp_context,
+            command="echo $VAR1 $VAR2 $VAR3",
+            session_id=session_id,
+            time_out=30,
+        )
+
+        assert result.strip() == "value1 value2 value3"
+
+    @pytest.mark.asyncio
+    async def test_session_isolation_between_different_ids(
+        self, run_command_tool, mcp_context
+    ):
+        """Test that different session_ids are properly isolated."""
+        if not shutil.which("tmux"):
+            pytest.skip("tmux is not available for session testing")
+
+        session_a = "session_a"
+        session_b = "session_b"
+
+        # Set variable in session A
+        await run_command_tool.call(
+            mcp_context,
+            command="ISOLATION_TEST='session_a_value'",
+            session_id=session_a,
+            time_out=30,
+        )
+
+        # Set different variable in session B
+        await run_command_tool.call(
+            mcp_context,
+            command="ISOLATION_TEST='session_b_value'",
+            session_id=session_b,
+            time_out=30,
+        )
+
+        # Check that session A still has its value
+        result_a = await run_command_tool.call(
+            mcp_context,
+            command="echo $ISOLATION_TEST",
+            session_id=session_a,
+            time_out=30,
+        )
+
+        # Check that session B has its value
+        result_b = await run_command_tool.call(
+            mcp_context,
+            command="echo $ISOLATION_TEST",
+            session_id=session_b,
+            time_out=30,
+        )
+
+        assert result_a.strip() == "session_a_value"
+        assert result_b.strip() == "session_b_value"

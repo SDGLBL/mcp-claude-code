@@ -3,7 +3,6 @@
 This module provides the RunCommandTool for running shell commands.
 """
 
-import os
 from typing import Annotated, Any, TypedDict, Unpack, final, override
 
 from fastmcp import Context as MCPContext
@@ -14,8 +13,7 @@ from pydantic import Field
 from mcp_claude_code.tools.common.base import handle_connection_errors
 from mcp_claude_code.tools.common.context import create_tool_context
 from mcp_claude_code.tools.shell.base import ShellBaseTool
-from mcp_claude_code.tools.shell.command_executor import CommandExecutor
-from mcp_claude_code.tools.shell.session_manager import SessionManager
+from mcp_claude_code.tools.shell.bash_session_executor import BashSessionExecutor
 
 Command = Annotated[
     str,
@@ -25,39 +23,15 @@ Command = Annotated[
     ),
 ]
 
-CWD = Annotated[
+
+SessionID = Annotated[
     str,
     Field(
-        description="Working directory where the command should be executed",
-        min_length=1,
+        description="Session ID for persistent shell sessions (generate using timestamp command).",
     ),
 ]
 
-ShellType = Annotated[
-    str | None,
-    Field(
-        description="Type of shell to use (e.g., bash, zsh). Defaults to system default",
-        default=None,
-    ),
-]
-
-UseLoginShell = Annotated[
-    bool,
-    Field(
-        description="Whether to use a login shell (default: True)",
-        default=True,
-    ),
-]
-
-SessionId = Annotated[
-    str | None,
-    Field(
-        description="Optional session ID for persistent shell sessions. If provided, commands will be executed in a persistent tmux session that maintains environment and history. If None, uses subprocess-based execution.",
-        default=None,
-    ),
-]
-
-SessionTimeout = Annotated[
+TimeOut = Annotated[
     int,
     Field(
         description="Timeout in seconds for session-based commands with no output changes (default: 30)",
@@ -65,10 +39,18 @@ SessionTimeout = Annotated[
     ),
 ]
 
+IsInput = Annotated[
+    bool,
+    Field(
+        description="Whether this is input to a running process rather than a new command (default: False)",
+        default=False,
+    ),
+]
+
 Blocking = Annotated[
     bool,
     Field(
-        description="Whether to run in blocking mode (disables no-change timeout, default: False)",
+        description="Whether to run in blocking mode, ignoring no-change timeout (default: False)",
         default=False,
     ),
 ]
@@ -79,20 +61,16 @@ class RunCommandToolParams(TypedDict):
 
     Attributes:
         command: The shell command to execute
-        cwd: Working directory where the command should be executed
-        shell_type: Type of shell to use (e.g., bash, zsh). Defaults to system default
-        use_login_shell: Whether to use a login shell (default: True)
         session_id: Optional session ID for persistent shell sessions
-        session_timeout: Timeout in seconds for session-based commands with no output changes
-        blocking: Whether to run in blocking mode (disables no-change timeout)
+        time_out: Timeout in seconds for session-based commands with no output changes
+        is_input: Whether this is input to a running process rather than a new command
+        blocking: Whether to run in blocking mode, ignoring no-change timeout
     """
 
     command: Command
-    cwd: CWD
-    shell_type: ShellType
-    use_login_shell: UseLoginShell
-    session_id: SessionId
-    session_timeout: SessionTimeout
+    session_id: SessionID
+    time_out: TimeOut
+    is_input: IsInput
     blocking: Blocking
 
 
@@ -101,7 +79,7 @@ class RunCommandTool(ShellBaseTool):
     """Tool for executing shell commands."""
 
     def __init__(
-        self, permission_manager: Any, command_executor: CommandExecutor
+        self, permission_manager: Any, command_executor: BashSessionExecutor
     ) -> None:
         """Initialize the run command tool.
 
@@ -110,8 +88,7 @@ class RunCommandTool(ShellBaseTool):
             command_executor: Command executor for running commands
         """
         super().__init__(permission_manager)
-        self.command_executor: CommandExecutor = command_executor
-        self.session_manager: SessionManager = SessionManager()
+        self.command_executor: BashSessionExecutor = command_executor
 
     @property
     @override
@@ -131,28 +108,13 @@ class RunCommandTool(ShellBaseTool):
         Returns:
             Tool description
         """
-        return """Executes a given bash command with support for both subprocess and persistent session execution modes.
-
-## Session-Based Execution (NEW!)
-- **session_id**: Optional parameter to enable persistent shell sessions using tmux
-- When session_id is provided, commands are executed in a persistent bash session that maintains:
-  - Environment variables across commands
-  - Command history and shell state
-  - Current working directory
-  - Background processes
-- Session persists until explicitly cleaned up or timeout (default: 30 minutes)
-- Requires tmux to be installed; falls back to subprocess mode if unavailable
-
-## Subprocess Execution (Default)
-- When session_id is None (default), uses subprocess-based execution
-- Each command runs in isolation without shared state
-- More secure but no persistence between commands
+        return """Executes a given bash command in a persistent shell session with advanced interactive process handling, ensuring proper handling and security measures.
 
 Before executing the command, please follow these steps:
 
 1. Directory Verification:
-   - If the command will create new directories or files, first use the LS tool to verify the parent directory exists and is the correct location
-   - For example, before running \"mkdir foo/bar\", first use LS to check that \"foo\" exists and is the intended parent directory
+   - If the command will create new directories or files, first use the directory_tree tool to verify the parent directory exists and is the correct location
+   - For example, before running \"mkdir foo/bar\", first use directory_tree to check that \"foo\" exists and is the intended parent directory
 
 2. Command Execution:
    - After ensuring proper quoting, execute the command.
@@ -161,23 +123,32 @@ Before executing the command, please follow these steps:
 Usage notes:
   - The command argument is required.
   - session_id: Optional string for persistent sessions (e.g., "my-session-123")
-  - session_timeout: Timeout in seconds for session commands with no output changes (default: 30)
-  - blocking: Whether to disable no-change timeout for long-running commands (default: False)
-  - You can specify an optional timeout in milliseconds (up to 600000ms / 10 minutes). If not specified, commands will timeout after 120000ms (2 minutes).
+  - time_out: Timeout in seconds for commands with no output changes (default: 30)
+  - is_input: Set to true when sending input to a running process rather than executing a new command
+  - blocking: Set to true to ignore no-change timeout for long-running commands
   - It is very helpful if you write a clear, concise description of what this command does in 5-10 words.
   - If the output exceeds 30000 characters, output will be truncated before being returned to you.
-  - VERY IMPORTANT: You MUST avoid using search commands like `find` and `grep`. Instead use Grep, Glob, or Task to search. You MUST avoid read tools like `cat`, `head`, `tail`, and `ls`, and use Read and LS to read files.
-  - If you _still_ need to run `grep`, STOP. ALWAYS USE ripgrep at `rg` (or /opt/homebrew/Cellar/ripgrep/14.1.1/bin/rg) first, which all Claude Code users have pre-installed.
+  
+Interactive Process Handling:
+  - When a command is running and waiting for input, use is_input=true to send responses
+  - Commands like vim, nano, python REPL, and other interactive programs require is_input=true for interaction
+  - Use blocking=true for commands that legitimately take a long time without output
+  - Send control sequences (\"C-c\", \"C-z\", \"C-d\") as commands with is_input=true to interrupt processes
+  - The tool prevents sending new commands while a previous command is still running (use is_input=true to interact)
+  
+  VERY IMPORTANT: You MUST avoid using search commands like `grep`. Instead use grep, or dispatch_agent to search. You MUST avoid read tools like `cat`, `head`, `tail`, and `ls`, and use read and directory_tree to read files.
+  - If you _still_ need to run `grep`, STOP. ALWAYS USE ripgrep at `rg` first, which all Claude Code users have pre-installed.
   - When issuing multiple commands, use the ';' or '&&' operator to separate them. DO NOT use newlines (newlines are ok in quoted strings).
-  - Try to maintain your current working directory throughout the session by using absolute paths and avoiding usage of `cd`. You may use `cd` if the User explicitly requests it.
+  - Working Directory: New sessions start in the user's home directory. Use 'cd' commands to navigate to different directories within a session. Directory changes persist within the same session.
     <good-example>
-    pytest /foo/bar/tests
+    cd /foo/bar && pytest tests
+    </good-example>
+    <good-example>
+    pytest tests # Second running do not need cd 
     </good-example>
     <bad-example>
-    cd /foo/bar && pytest tests
+    pytest /foo/bar/tests  # This works but doesn't change the session's working directory
     </bad-example>
-
-
 
 # Committing changes with git
 
@@ -227,8 +198,9 @@ Important notes:
 git commit -m \"$(cat <<'EOF'
    Commit message here.
 
-   🤖 Generated with [MCP Claude Code](https://github.com/SDGLBL/mcp-claude-code)
+   🤖 Generated with [Claude Code](https://claude.ai/code)
 
+   Co-Authored-By: Claude <noreply@anthropic.com>
    EOF
    )\"
 </example>
@@ -318,96 +290,39 @@ Important:
 
         # Extract parameters
         command: Command = params["command"]
-        cwd = params.get("cwd")
-        shell_type = params.get("shell_type")
-        use_login_shell = params.get("use_login_shell", True)
         session_id = params.get("session_id")
-        session_timeout = params.get("session_timeout", 30)
+        time_out = params.get("time_out", 30)
+        is_input = params.get("is_input", False)
         blocking = params.get("blocking", False)
 
-        await tool_ctx.info(f"Executing command: {command}")
+        await tool_ctx.info(
+            f"Executing command: {command} ( session_id={session_id}, is_input={is_input}, blocking={blocking} )"
+        )
 
-        # Check if command is allowed
-        if not self.command_executor.is_command_allowed(command):
+        # Check if command is allowed (skip for input to running processes)
+        if not is_input and not self.command_executor.is_command_allowed(command):
             await tool_ctx.error(f"Command not allowed: {command}")
             return f"Error: Command not allowed: {command}"
 
-        # Check if working directory is allowed
-        if not self.is_path_allowed(cwd):
-            await tool_ctx.error(f"Working directory not allowed: {cwd}")
-            return f"Error: Working directory not allowed: {cwd}"
-
-        # Check if working directory exists
-        if not os.path.isdir(cwd):
-            await tool_ctx.error(f"Working directory does not exist: {cwd}")
-            return f"Error: Working directory does not exist: {cwd}"
-
-        # Decide execution mode based on session_id
-        if session_id is not None:
-            # Session-based execution
-            await tool_ctx.info(
-                f"Using session-based execution with session_id: {session_id}"
-            )
-
-            # Validate session_id
-            is_valid, error_msg = self.session_manager.validate_session_id(session_id)
-            if not is_valid:
-                await tool_ctx.error(f"Invalid session_id: {error_msg}")
-                return f"Error: Invalid session_id: {error_msg}"
-
-            try:
-                # Get or create session
-                session = self.session_manager.get_or_create_session(
-                    session_id=session_id,
-                    work_dir=cwd,
-                    no_change_timeout_seconds=session_timeout,
-                )
-
-                # Execute command in session
-                result = session.execute(
-                    command=command,
-                    is_input=False,  # TODO: Add is_input parameter if needed
-                    blocking=blocking,
-                    timeout=120.0,  # Hard timeout
-                )
-
-            except RuntimeError as e:
-                # Fallback to subprocess mode if tmux is not available
-                await tool_ctx.warning(
-                    f"Session execution failed, falling back to subprocess mode: {str(e)}"
-                )
-                result = await self.command_executor.execute_command(
-                    command,
-                    cwd=cwd,
-                    shell_type=shell_type,
-                    timeout=120.0,
-                    use_login_shell=use_login_shell,
-                )
-        else:
-            # Subprocess-based execution (original behavior)
-            await tool_ctx.info("Using subprocess-based execution")
+        try:
+            # Execute command using BashSessionExecutor with enhanced parameters
             result = await self.command_executor.execute_command(
-                command,
-                cwd=cwd,
-                shell_type=shell_type,
-                timeout=120.0,
-                use_login_shell=use_login_shell,
+                command=command,
+                timeout=time_out,
+                session_id=session_id,
+                is_input=is_input,
+                blocking=blocking,
             )
+        except RuntimeError as e:
+            await tool_ctx.error(f"Session execution failed: {str(e)}")
+            return f"Error: Session execution failed: {str(e)}"
 
-        # Report result
+        # Format the result using the new enhanced formatting
         if result.is_success:
-            await tool_ctx.info("Command executed successfully")
+            # Use the enhanced agent observation format for better user experience
+            return result.to_agent_observation()
         else:
-            await tool_ctx.error(f"Command failed with exit code {result.return_code}")
-
-        # Format the result
-        if result.is_success:
-            # For successful commands, just return stdout unless stderr has content
-            if result.stderr:
-                return f"Command executed successfully.\n\nSTDOUT:\n{result.stdout}\n\nSTDERR:\n{result.stderr}"
-            return result.stdout
-        else:
-            # For failed commands, include all available information
+            # For failed or running commands, provide comprehensive output
             return result.format_output()
 
     @override
@@ -427,21 +342,17 @@ Important:
         async def run_command(
             ctx: MCPContext,
             command: Command,
-            cwd: CWD,
-            shell_type: ShellType,
-            use_login_shell: UseLoginShell,
-            session_id: SessionId,
-            session_timeout: SessionTimeout,
+            session_id: SessionID,
+            time_out: TimeOut,
+            is_input: IsInput,
             blocking: Blocking,
         ) -> str:
             ctx = get_context()
             return await tool_self.call(
                 ctx,
                 command=command,
-                cwd=cwd,
-                shell_type=shell_type,
-                use_login_shell=use_login_shell,
                 session_id=session_id,
-                session_timeout=session_timeout,
+                time_out=time_out,
+                is_input=is_input,
                 blocking=blocking,
             )

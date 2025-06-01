@@ -19,7 +19,6 @@ from mcp_claude_code.tools.common.permissions import PermissionManager
 from mcp_claude_code.tools.filesystem import register_filesystem_tools
 from mcp_claude_code.tools.jupyter import register_jupyter_tools
 from mcp_claude_code.tools.shell import register_shell_tools
-from mcp_claude_code.tools.shell.command_executor import CommandExecutor
 from mcp_claude_code.tools.todo import register_todo_tools
 
 
@@ -77,7 +76,6 @@ def register_all_tools(
             mcp_server,
             document_context,
             permission_manager,
-            CommandExecutor(permission_manager),
             agent_model=agent_model,
             agent_max_tokens=agent_max_tokens,
             agent_api_key=agent_api_key,

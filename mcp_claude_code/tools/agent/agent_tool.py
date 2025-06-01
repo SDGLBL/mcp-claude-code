@@ -36,7 +36,6 @@ from mcp_claude_code.tools.common.context import (
 from mcp_claude_code.tools.common.permissions import PermissionManager
 from mcp_claude_code.tools.filesystem import get_read_only_filesystem_tools
 from mcp_claude_code.tools.jupyter import get_read_only_jupyter_tools
-from mcp_claude_code.tools.shell.command_executor import CommandExecutor
 
 Prompt = Annotated[
     str,
@@ -107,7 +106,6 @@ Usage notes:
         self,
         document_context: DocumentContext,
         permission_manager: PermissionManager,
-        command_executor: CommandExecutor,
         model: str | None = None,
         api_key: str | None = None,
         base_url: str | None = None,
@@ -120,7 +118,6 @@ Usage notes:
         Args:
             document_context: Document context for tracking file contents
             permission_manager: Permission manager for access control
-            command_executor: Command executor for running shell commands
             model: Optional model name override in LiteLLM format (e.g., "openai/gpt-4o")
             api_key: Optional API key for the model provider
             base_url: Optional base URL for the model provider API endpoint
@@ -130,7 +127,6 @@ Usage notes:
         """
         self.document_context = document_context
         self.permission_manager = permission_manager
-        self.command_executor = command_executor
         self.model_override = model
         self.api_key_override = api_key
         self.base_url_override = base_url
@@ -390,17 +386,10 @@ The agent cannot access files without knowing their absolute locations."""
 
         # If we've reached the limit, add a warning and get final response
         if total_tool_use_count >= max_tool_uses or iteration_count >= max_iterations:
-            limit_ = (
-                "tool usage" if total_tool_use_count >= max_tool_uses else "iterations"
-            )
-            await tool_ctx.info(
-                f"Reached maximum {limit_type} limit. Getting final response."
-            )
-
             messages.append(
                 {
                     "role": "system",
-                    "content": f"You have reached the maximum number of {limit_type}. Please provide your final response.",
+                    "content": "You have reached the maximum iteration. Please provide your final response.",
                 }
             )
 
@@ -416,7 +405,7 @@ The agent cannot access files without knowing their absolute locations."""
 
                 return (
                     final_response.choices[0].message.content
-                    or f"Agent reached {limit_type} limit without a response."
+                    or "Agent reached max iteration limit without a response."
                 )  # pyright: ignore
             except Exception as e:
                 await tool_ctx.error(f"Error in final model call: {str(e)}")

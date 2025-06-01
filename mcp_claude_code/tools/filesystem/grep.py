@@ -14,7 +14,6 @@ from typing import Annotated, TypedDict, Unpack, final, override
 
 from fastmcp import Context as MCPContext
 from fastmcp import FastMCP
-from fastmcp.server.dependencies import get_context
 from pydantic import Field
 
 from mcp_claude_code.tools.common.context import ToolContext
@@ -37,10 +36,10 @@ SearchPath = Annotated[
 ]
 
 Include = Annotated[
-    str | None,
+    str,
     Field(
         description='File pattern to include in the search (e.g. "*.js", "*.{ts,tsx}")',
-        default=None,
+        default="*",
     ),
 ]
 
@@ -387,7 +386,7 @@ When you are doing an open ended search that may require multiple rounds of glob
         pattern = params.get("pattern")
         path: str = params.get("path", ".")
         # Support both 'include' and legacy 'file_pattern' parameter for backward compatibility
-        include: str = params.get("include") or params.get("file_pattern", "*")
+        include: str = params.get("include")
 
         # Validate required parameters for direct calls (not through MCP framework)
         if pattern is None:

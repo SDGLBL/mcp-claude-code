@@ -8,7 +8,7 @@ import pytest
 
 from mcp_claude_code.tools.common.context import DocumentContext, ToolContext
 from mcp_claude_code.tools.common.permissions import PermissionManager
-from mcp_claude_code.tools.shell.command_executor import CommandExecutor
+from mcp_claude_code.tools.shell.bash_session_executor import BashSessionExecutor
 
 
 @pytest.fixture
@@ -94,4 +94,4 @@ def tool_context(mcp_context):
 @pytest.fixture
 def command_executor(permission_manager):
     """Create a command executor for testing."""
-    return CommandExecutor(permission_manager)
+    return BashSessionExecutor(permission_manager)

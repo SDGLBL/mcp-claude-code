@@ -38,10 +38,10 @@ NewSource = Annotated[
 ]
 
 CellType = Annotated[
-    Literal["code", "markdown"] | None,
+    Literal["code", "markdown"],
     Field(
         description="The of the cell (code or markdown). If not specified, it defaults to the current cell type. If using edit_mode=insert, this is required.",
-        default=None,
+        default="code",
     ),
 ]
 

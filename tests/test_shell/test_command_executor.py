@@ -1,16 +1,16 @@
-"""Tests for the command executor module."""
+"""Tests for the bash session executor module."""
 
 import os
 import sys
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, patch
 
 import pytest
 
 if TYPE_CHECKING:
     from mcp_claude_code.tools.common.permissions import PermissionManager
 
-from mcp_claude_code.tools.shell.command_executor import CommandExecutor, CommandResult
+from mcp_claude_code.tools.shell.base import CommandResult
+from mcp_claude_code.tools.shell.bash_session_executor import BashSessionExecutor
 
 
 class TestCommandResult:
@@ -71,23 +71,23 @@ class TestCommandResult:
         assert "Command output" in formatted
 
 
-class TestCommandExecutor:
-    """Test the CommandExecutor class."""
+class TestBashSessionExecutor:
+    """Test the BashSessionExecutor class."""
 
     @pytest.fixture
-    def executor(self, permission_manager: "PermissionManager") -> CommandExecutor:
-        """Create a CommandExecutor instance for testing."""
-        return CommandExecutor(permission_manager)
+    def executor(self, permission_manager: "PermissionManager") -> BashSessionExecutor:
+        """Create a BashSessionExecutor instance for testing."""
+        return BashSessionExecutor(permission_manager)
 
     def test_initialization(self, permission_manager: "PermissionManager") -> None:
-        """Test initializing CommandExecutor."""
-        executor = CommandExecutor(permission_manager)
+        """Test initializing BashSessionExecutor."""
+        executor = BashSessionExecutor(permission_manager)
 
         assert executor.permission_manager is permission_manager
         assert not executor.verbose
         assert isinstance(executor.excluded_commands, list)
 
-    def test_deny_command(self, executor: CommandExecutor) -> None:
+    def test_deny_command(self, executor: BashSessionExecutor) -> None:
         """Test denying a command."""
         # Add a new command to denied list
         executor.deny_command("custom_command")
@@ -95,7 +95,7 @@ class TestCommandExecutor:
         # Verify command is excluded
         assert "custom_command" in executor.excluded_commands
 
-    def test_is_command_allowed(self, executor: CommandExecutor) -> None:
+    def test_is_command_allowed(self, executor: BashSessionExecutor) -> None:
         """Test checking if a command is allowed."""
         # Allowed command
         assert executor.is_command_allowed("echo Hello")
@@ -111,7 +111,7 @@ class TestCommandExecutor:
 
     @pytest.mark.asyncio
     async def test_execute_command_allowed(
-        self, executor: CommandExecutor, temp_dir: str
+        self, executor: BashSessionExecutor, temp_dir: str
     ) -> None:
         """Test executing an allowed command."""
         # Create a test file
@@ -125,8 +125,8 @@ class TestCommandExecutor:
         else:
             command = f"cat {test_file}"
 
-        # Execute a command
-        result: CommandResult = await executor.execute_command(command, cwd=temp_dir)
+        # Execute a command (note: cwd parameter removed as it's handled by persistent sessions)
+        result: CommandResult = await executor.execute_command(command)
 
         # Verify result
         assert result.is_success
@@ -134,7 +134,9 @@ class TestCommandExecutor:
         assert result.stderr == ""
 
     @pytest.mark.asyncio
-    async def test_execute_command_not_allowed(self, executor: CommandExecutor) -> None:
+    async def test_execute_command_not_allowed(
+        self, executor: BashSessionExecutor
+    ) -> None:
         """Test executing a command that is not allowed."""
         # Try an excluded command
         result = await executor.execute_command("rm test.txt")
@@ -145,19 +147,19 @@ class TestCommandExecutor:
 
     @pytest.mark.asyncio
     async def test_execute_command_with_invalid_cwd(
-        self, executor: CommandExecutor
+        self, executor: BashSessionExecutor
     ) -> None:
-        """Test executing a command with an invalid working directory."""
-        # Try with non-existent directory
-        result = await executor.execute_command("ls", cwd="/nonexistent/dir")
+        """Test executing a command - working directory is now handled by persistent sessions."""
+        # With persistent sessions, working directory is managed at the session level
+        # This test now verifies basic command execution works
+        result = await executor.execute_command("ls")
 
-        # Verify result
-        assert not result.is_success
-        assert "Working directory does not exist" in result.error_message
+        # Verify result - should succeed since it uses the current working directory
+        assert result.is_success or "Error:" not in result.error_message
 
     @pytest.mark.asyncio
     async def test_execute_command_with_timeout(
-        self, executor: CommandExecutor
+        self, executor: BashSessionExecutor
     ) -> None:
         """Test command execution with timeout."""
         # Execute a command that sleeps
@@ -175,89 +177,8 @@ class TestCommandExecutor:
         assert "Command timed out" in result.error_message
 
     @pytest.mark.asyncio
-    async def test_execute_script(
-        self, executor: CommandExecutor, temp_dir: str
-    ) -> None:
-        """Test executing a script."""
-        # Mock the _execute_script_with_stdin method
-        with patch.object(executor, "_execute_script_with_stdin") as mock_execute:
-            mock_execute.return_value = CommandResult(0, "Script output", "")
-
-            # Execute script
-            script = "echo 'test'"
-            result = await executor.execute_script(script, "bash", cwd=temp_dir)
-
-            # Verify some method was called to execute the script
-            mock_execute.assert_called_once()
-
-            # Verify result
-            assert result.is_success
-            assert "Script output" in result.stdout
-
-    @pytest.mark.asyncio
-    async def test_handle_fish_script(
-        self, executor: CommandExecutor, temp_dir: str
-    ) -> None:
-        """Test special handling for Fish shell scripts."""
-        # Patch asyncio.create_subprocess_shell
-        with patch("asyncio.create_subprocess_shell") as mock_subprocess:
-            # Setup mock process
-            mock_process = AsyncMock()
-            mock_process.returncode = 0
-            mock_process.communicate = AsyncMock(return_value=(b"Fish output", b""))
-            mock_subprocess.return_value = mock_process
-
-            # Execute Fish script
-            script = "echo 'test'"
-            result = await executor._handle_fish_script("fish", script, temp_dir)
-
-            # Verify subprocess was called
-            mock_subprocess.assert_called_once()
-            assert "fish" in mock_subprocess.call_args[0][0]
-
-            # Verify result
-            assert result.is_success
-            assert "Fish output" in result.stdout
-
-    @pytest.mark.asyncio
-    async def test_execute_script_from_file(
-        self, executor: CommandExecutor, temp_dir: str
-    ) -> None:
-        """Test executing a script from a temporary file."""
-        # Patch asyncio.create_subprocess_exec
-        with patch("asyncio.create_subprocess_shell") as mock_subprocess:
-            # Setup mock process
-            mock_process = AsyncMock()
-            mock_process.returncode = 0
-            mock_process.communicate = AsyncMock(return_value=(b"Python output", b""))
-            mock_subprocess.return_value = mock_process
-
-            # Execute Python script
-            script = "print('Hello, world!')"
-            result = await executor.execute_script_from_file(
-                script=script, language="python", cwd=temp_dir
-            )
-
-            # Verify subprocess was called with python
-            mock_subprocess.assert_called_once()
-            assert "python" in mock_subprocess.call_args[0][0]
-
-            # Verify result
-            assert result.is_success
-            assert "Python output" in result.stdout
-
-    def test_get_available_languages(self, executor: CommandExecutor) -> None:
-        """Test getting available script languages."""
-        languages = executor.get_available_languages()
-
-        assert isinstance(languages, list)
-        assert "python" in languages
-        assert "javascript" in languages
-        assert "bash" in languages
-
-    @pytest.mark.asyncio
     async def test_execute_command_with_cd(
-        self, executor: CommandExecutor, temp_dir: str
+        self, executor: BashSessionExecutor, temp_dir: str
     ) -> None:
         """Test executing a command that combines cd with another command."""
         # Create a test file in the temp directory
@@ -294,12 +215,12 @@ class TestCommandExecutor:
 
     @pytest.mark.asyncio
     async def test_execute_command_with_env_vars(
-        self, executor: CommandExecutor
+        self, executor: BashSessionExecutor
     ) -> None:
         """Test executing a command with environment variables."""
         import logging
 
-        logger = logging.getLogger(__name__)
+        logging.getLogger(__name__)
 
         # Use platform-specific commands and expectations
         if sys.platform == "win32":

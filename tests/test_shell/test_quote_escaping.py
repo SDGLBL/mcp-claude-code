@@ -4,7 +4,7 @@ import os
 import sys
 import pytest
 
-from mcp_claude_code.tools.shell.command_executor import CommandResult
+from mcp_claude_code.tools.shell.base import CommandResult
 
 
 @pytest.mark.asyncio
@@ -22,10 +22,8 @@ async def test_execute_command_with_single_quotes(command_executor, temp_dir) ->
     # Command with single quotes in the pattern (which previously would fail)
     command = f"grep -A1 'file_path=\"' {test_file}"
 
-    # Execute the command
-    result: CommandResult = await command_executor.execute_command(
-        command, cwd=temp_dir
-    )
+    # Execute the command (cwd parameter removed as it's handled by persistent sessions)
+    result: CommandResult = await command_executor.execute_command(command)
 
     # Verify result
     assert result.is_success, f"Command failed with stderr: {result.stderr}"
@@ -56,10 +54,8 @@ async def test_execute_command_with_complex_quotes(command_executor, temp_dir) -
     ]
 
     for cmd in commands:
-        # Execute the command
-        result: CommandResult = await command_executor.execute_command(
-            cmd, cwd=temp_dir
-        )
+        # Execute the command (cwd parameter removed as it's handled by persistent sessions)
+        result: CommandResult = await command_executor.execute_command(cmd)
 
         # Verify result
         assert result.is_success, f"Command failed: {cmd}\nStderr: {result.stderr}"
