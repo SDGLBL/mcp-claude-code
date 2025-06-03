@@ -591,8 +591,11 @@ class TestSessionIdValidationAndPersistence:
             blocking=False,
         )
 
-        # Should output 'xxxx'
-        assert result2.strip() == "xxxx", f"Expected 'xxxx', got {repr(result2)}"
+        # Should output 'xxxx' with session ID
+        assert "xxxx" in result2, f"Expected 'xxxx' in output, got {repr(result2)}"
+        assert f"[Session ID: {session_id}]" in result2, (
+            f"Expected session ID in output, got {repr(result2)}"
+        )
 
     @pytest.mark.asyncio
     async def test_multiple_variables_in_same_session(
@@ -634,7 +637,9 @@ class TestSessionIdValidationAndPersistence:
             time_out=30,
         )
 
-        assert result.strip() == "value1 value2 value3"
+        # Should output all variable values with session ID
+        assert "value1 value2 value3" in result
+        assert f"[Session ID: {session_id}]" in result
 
     @pytest.mark.asyncio
     async def test_session_isolation_between_different_ids(
@@ -679,5 +684,8 @@ class TestSessionIdValidationAndPersistence:
             time_out=30,
         )
 
-        assert result_a.strip() == "session_a_value"
-        assert result_b.strip() == "session_b_value"
+        # Should have session-specific values with session ID included
+        assert "session_a_value" in result_a
+        assert f"[Session ID: {session_a}]" in result_a
+        assert "session_b_value" in result_b
+        assert f"[Session ID: {session_b}]" in result_b

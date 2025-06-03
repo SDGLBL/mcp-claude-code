@@ -91,6 +91,7 @@ class SessionManager:
         username: str | None = None,
         no_change_timeout_seconds: int | None = None,
         max_memory_mb: int | None = None,
+        poll_interval: float | None = None,
     ) -> BashSession:
         """Get an existing session or create a new one.
 
@@ -100,6 +101,7 @@ class SessionManager:
             username: Username to run commands as
             no_change_timeout_seconds: Timeout for commands with no output changes
             max_memory_mb: Memory limit for the session
+            poll_interval: Polling interval in seconds (default 0.5, use 0.1 for tests)
 
         Returns:
             BashSession instance
@@ -120,12 +122,14 @@ class SessionManager:
 
         # Create new session
         timeout = no_change_timeout_seconds or self.default_timeout_seconds
+        interval = poll_interval if poll_interval is not None else 0.5
         session = BashSession(
             id=session_id,
             work_dir=work_dir,
             username=username,
             no_change_timeout_seconds=timeout,
             max_memory_mb=max_memory_mb,
+            poll_interval=interval,
         )
 
         # Store the session

@@ -14,9 +14,7 @@ import bashlex  # type: ignore
 import libtmux
 
 from mcp_claude_code.tools.shell.base import (
-    CMD_OUTPUT_PS1_END,
     BashCommandStatus,
-    CmdOutputMetadata,
     CommandResult,
 )
 
@@ -162,7 +160,6 @@ class BashSession:
     shared history, environment variables, and working directory state.
     """
 
-    POLL_INTERVAL = 0.5
     HISTORY_LIMIT = 10_000
     # Use simple PS1 for now to avoid shell compatibility issues
     PS1 = "$ "  # Simple PS1 for better compatibility
@@ -174,6 +171,7 @@ class BashSession:
         username: str | None = None,
         no_change_timeout_seconds: int = 30,
         max_memory_mb: int | None = None,
+        poll_interval: float = 0.5,
     ):
         """Initialize a bash session.
 
@@ -182,7 +180,9 @@ class BashSession:
             username: Username to run commands as
             no_change_timeout_seconds: Timeout for commands with no output changes
             max_memory_mb: Memory limit (not implemented yet)
+            poll_interval: Interval between polls in seconds (default 0.5, use 0.1 for tests)
         """
+        self.POLL_INTERVAL = poll_interval
         self.NO_CHANGE_TIMEOUT_SECONDS = no_change_timeout_seconds
         self.id = id
         self.work_dir = work_dir
@@ -246,23 +246,16 @@ class BashSession:
         # Configure bash to use simple PS1 and disable PS2
         # Use a simpler PS1 that works reliably across different shells
         self.pane.send_keys('export PS1="$ "')
-        time.sleep(0.1)
-
         # Set PS2 to empty
         self.pane.send_keys('export PS2=""')
-        time.sleep(0.1)
-
         # For zsh, also set PROMPT and disable themes
         self.pane.send_keys('export PROMPT="$ "')
-        time.sleep(0.1)
         self.pane.send_keys("unset ZSH_THEME")
-        time.sleep(0.1)
 
         self._clear_screen()
 
         # Test the simple prompt is working
         self.pane.send_keys("echo 'PROMPT_TEST'")
-        time.sleep(0.5)  # Wait for the command to complete
         self._clear_screen()
 
         self._initialized = True
@@ -376,10 +369,6 @@ class BashSession:
 
         # Get initial state before sending command
         initial_pane_output = self._get_pane_content()
-        initial_ps1_matches = CmdOutputMetadata.matches_ps1_metadata(
-            initial_pane_output
-        )
-        len(initial_ps1_matches)
 
         start_time = time.time()
         last_change_time = start_time
@@ -394,13 +383,10 @@ class BashSession:
                 BashCommandStatus.HARD_TIMEOUT,
                 BashCommandStatus.NO_CHANGE_TIMEOUT,
             }
-            and not last_pane_output.rstrip().endswith(CMD_OUTPUT_PS1_END.rstrip())
             and not is_input
             and command != ""
         ):
-            return self._handle_command_conflict(
-                command, last_pane_output, initial_ps1_matches
-            )
+            return self._handle_command_conflict(command, last_pane_output)
 
         # Send actual command/inputs to the pane
         if command != "":
@@ -416,8 +402,6 @@ class BashSession:
         while True:
             time.sleep(self.POLL_INTERVAL)
             cur_pane_output = self._get_pane_content()
-            ps1_matches = CmdOutputMetadata.matches_ps1_metadata(cur_pane_output)
-            len(ps1_matches)
 
             if cur_pane_output != last_pane_output:
                 last_pane_output = cur_pane_output
@@ -487,21 +471,21 @@ class BashSession:
                     session_id=self.id,
                 )
 
-    def _handle_command_conflict(
-        self, command: str, pane_output: str, initial_ps1_matches: list
-    ) -> CommandResult:
+    def _handle_command_conflict(self, command: str, pane_output: str) -> CommandResult:
         """Handle conflicts when trying to send a new command while previous is running."""
-        current_matches_for_output = (
-            CmdOutputMetadata.matches_ps1_metadata(pane_output)
-            if CmdOutputMetadata.matches_ps1_metadata(pane_output)
-            else initial_ps1_matches
-        )
-        raw_command_output = self._combine_outputs_between_matches(
-            pane_output, current_matches_for_output
+        # Extract current output directly
+        lines = pane_output.strip().split("\n")
+        raw_command_output = "\n".join(lines)
+        raw_command_output = _remove_command_prefix(raw_command_output, command)
+
+        command_output = self._get_command_output(
+            command,
+            raw_command_output,
+            continue_prefix="[Below is the output of the previous command.]\n",
         )
 
-        metadata = CmdOutputMetadata()
-        metadata.suffix = (
+        # Add suffix message about command conflict
+        command_output += (
             f'\n[Your command "{command}" is NOT executed. '
             f"The previous command is still running - You CANNOT send new commands until the previous command is completed. "
             "By setting `is_input` to `true`, you can interact with the current process: "
@@ -510,131 +494,75 @@ class BashSession:
             'or send keys ("C-c", "C-z", "C-d") to interrupt/kill the previous command before sending your new command.]'
         )
 
-        command_output = self._get_command_output(
-            command,
-            raw_command_output,
-            metadata,
-            continue_prefix="[Below is the output of the previous command.]\n",
-        )
-
         return CommandResult(
             return_code=1,
             stdout=command_output,
-            metadata=metadata,
             command=command,
             status=BashCommandStatus.CONTINUE,
             session_id=self.id,
         )
 
-    def _handle_completed_command(
-        self, command: str, pane_content: str, ps1_matches: list
-    ) -> CommandResult:
-        """Handle a completed command with PS1 metadata."""
-        is_special_key = self._is_special_key(command)
-
-        if not ps1_matches:
-            # Fallback to simple completion detection
-            return self._fallback_completion_detection(command, pane_content)
-
-        metadata = CmdOutputMetadata.from_ps1_match(ps1_matches[-1])
-
-        # Update the current working directory if it has changed
-        if metadata.working_dir != self._cwd and metadata.working_dir:
-            self._cwd = metadata.working_dir
-
-        # Extract the command output between PS1 prompts
-        raw_command_output = self._combine_outputs_between_matches(
-            pane_content,
-            ps1_matches,
-            get_content_before_last_match=(len(ps1_matches) == 1),
-        )
-
-        if len(ps1_matches) == 1:
-            # Count the number of lines in the truncated output
-            num_lines = len(raw_command_output.splitlines())
-            metadata.prefix = f"[Previous command outputs are truncated. Showing the last {num_lines} lines of the output below.]\n"
-
-        metadata.suffix = (
-            f"\n[The command completed with exit code {metadata.exit_code}.]"
-            if not is_special_key
-            else f"\n[The command completed with exit code {metadata.exit_code}. CTRL+{command[-1].upper()} was sent.]"
-        )
-
-        command_output = self._get_command_output(command, raw_command_output, metadata)
-        self.prev_status = BashCommandStatus.COMPLETED
-        self.prev_output = ""  # Reset previous command output
-        self._ready_for_next_command()
-
-        return CommandResult(
-            return_code=metadata.exit_code,
-            stdout=command_output,
-            metadata=metadata,
-            command=command,
-            status=BashCommandStatus.COMPLETED,
-            session_id=self.id,
-        )
-
     def _handle_nochange_timeout_command(
-        self, command: str, pane_content: str, ps1_matches: list
+        self, command: str, pane_content: str
     ) -> CommandResult:
         """Handle a command that timed out due to no output changes."""
         self.prev_status = BashCommandStatus.NO_CHANGE_TIMEOUT
-        raw_command_output = self._combine_outputs_between_matches(
-            pane_content, ps1_matches
+
+        # Extract current output directly
+        lines = pane_content.strip().split("\n")
+        raw_command_output = "\n".join(lines)
+        raw_command_output = _remove_command_prefix(raw_command_output, command)
+
+        command_output = self._get_command_output(
+            command,
+            raw_command_output,
+            continue_prefix="[Below is the output of the previous command.]\n",
         )
 
-        metadata = CmdOutputMetadata()
-        metadata.suffix = (
+        # Add timeout message
+        command_output += (
             f"\n[The command has no new output after {self.NO_CHANGE_TIMEOUT_SECONDS} seconds. "
             "You may wait longer to see additional output by sending empty command '', "
             "send other commands to interact with the current process, "
             "or send keys to interrupt/kill the command.]"
         )
 
-        command_output = self._get_command_output(
-            command,
-            raw_command_output,
-            metadata,
-            continue_prefix="[Below is the output of the previous command.]\n",
-        )
-
         return CommandResult(
             return_code=-1,
             stdout=command_output,
-            metadata=metadata,
             command=command,
             status=BashCommandStatus.NO_CHANGE_TIMEOUT,
             session_id=self.id,
         )
 
     def _handle_hard_timeout_command(
-        self, command: str, pane_content: str, ps1_matches: list, timeout: float
+        self, command: str, pane_content: str, timeout: float
     ) -> CommandResult:
         """Handle a command that hit the hard timeout."""
         self.prev_status = BashCommandStatus.HARD_TIMEOUT
-        raw_command_output = self._combine_outputs_between_matches(
-            pane_content, ps1_matches
+
+        # Extract current output directly
+        lines = pane_content.strip().split("\n")
+        raw_command_output = "\n".join(lines)
+        raw_command_output = _remove_command_prefix(raw_command_output, command)
+
+        command_output = self._get_command_output(
+            command,
+            raw_command_output,
+            continue_prefix="[Below is the output of the previous command.]\n",
         )
 
-        metadata = CmdOutputMetadata()
-        metadata.suffix = (
+        # Add timeout message
+        command_output += (
             f"\n[The command timed out after {timeout} seconds. "
             "You may wait longer to see additional output by sending empty command '', "
             "send other commands to interact with the current process, "
             "or send keys to interrupt/kill the command.]"
         )
 
-        command_output = self._get_command_output(
-            command,
-            raw_command_output,
-            metadata,
-            continue_prefix="[Below is the output of the previous command.]\n",
-        )
-
         return CommandResult(
             return_code=-1,
             stdout=command_output,
-            metadata=metadata,
             command=command,
             status=BashCommandStatus.HARD_TIMEOUT,
             session_id=self.id,
@@ -677,14 +605,15 @@ class BashSession:
         self,
         command: str,
         raw_command_output: str,
-        metadata: CmdOutputMetadata,
         continue_prefix: str = "",
     ) -> str:
         """Get the command output with the previous command output removed."""
         # Remove the previous command output from the new output if any
         if self.prev_output:
             command_output = raw_command_output.removeprefix(self.prev_output)
-            metadata.prefix = continue_prefix
+            # Add continue prefix if we're continuing from previous output
+            if continue_prefix:
+                command_output = continue_prefix + command_output
         else:
             command_output = raw_command_output
 
@@ -695,32 +624,6 @@ class BashSession:
     def _ready_for_next_command(self) -> None:
         """Reset the content buffer for a new command."""
         self._clear_screen()
-
-    def _combine_outputs_between_matches(
-        self,
-        pane_content: str,
-        ps1_matches: list,
-        get_content_before_last_match: bool = False,
-    ) -> str:
-        """Combine all outputs between PS1 matches."""
-        if len(ps1_matches) == 1:
-            if get_content_before_last_match:
-                return pane_content[: ps1_matches[0].start()]
-            else:
-                return pane_content[ps1_matches[0].end() + 1 :]
-        elif len(ps1_matches) == 0:
-            return pane_content
-
-        combined_output = ""
-        for i in range(len(ps1_matches) - 1):
-            output_segment = pane_content[
-                ps1_matches[i].end() + 1 : ps1_matches[i + 1].start()
-            ]
-            combined_output += output_segment + "\n"
-
-        # Add the content after the last PS1 prompt
-        combined_output += pane_content[ps1_matches[-1].end() + 1 :]
-        return combined_output
 
     def _extract_clean_output(self, pane_content: str, command: str) -> str:
         """Extract clean command output from pane content, handling complex shells like oh-my-zsh."""
@@ -748,19 +651,41 @@ class BashSession:
         # Take the output after the last command line
         last_command_index = command_line_indices[-1]
         output_lines = []
+        decorative_line_count = 0
+        max_decorative_lines = 2  # Allow a few decorative lines before stopping
 
+        # Look for output lines immediately after the command
         for i in range(last_command_index + 1, len(lines)):
-            line = lines[i].strip()
+            line = lines[i]
+            stripped_line = line.strip()
 
-            # Stop if we hit a new prompt or decorative line
-            if self._is_prompt_line(line) or self._is_decorative_line(line):
+            # Stop if we hit a new prompt line
+            if self._is_prompt_line(stripped_line):
                 break
 
-            # Skip empty lines at the beginning
-            if not output_lines and not line:
+            # Handle decorative lines more intelligently
+            if self._is_decorative_line(stripped_line):
+                decorative_line_count += 1
+                # If we haven't found any output yet, or we've seen too many decorative lines, stop
+                if not output_lines or decorative_line_count > max_decorative_lines:
+                    if output_lines:  # We have some output, stop here
+                        break
+                    else:  # No output yet, but too many decorative lines, give up
+                        continue
+                else:
+                    # We have some output and this is an occasional decorative line, include it
+                    output_lines.append(line.rstrip())
+                    continue
+            else:
+                # Reset decorative line count when we see non-decorative content
+                decorative_line_count = 0
+
+            # Skip empty lines at the beginning only
+            if not output_lines and not stripped_line:
                 continue
 
-            output_lines.append(lines[i].rstrip())
+            # Add the line to output (preserve original formatting)
+            output_lines.append(line.rstrip())
 
         return "\n".join(output_lines).rstrip()
 

@@ -77,7 +77,7 @@ class TestBashSessionExecutor:
     @pytest.fixture
     def executor(self, permission_manager: "PermissionManager") -> BashSessionExecutor:
         """Create a BashSessionExecutor instance for testing."""
-        return BashSessionExecutor(permission_manager)
+        return BashSessionExecutor(permission_manager, fast_test_mode=True)
 
     def test_initialization(self, permission_manager: "PermissionManager") -> None:
         """Test initializing BashSessionExecutor."""
@@ -123,7 +123,7 @@ class TestBashSessionExecutor:
         if sys.platform == "win32":
             command = f'type "{test_file}"'
         else:
-            command = f"cat {test_file}"
+            command = f"\\cat {test_file}"  # Use backslash to bypass aliases
 
         # Execute a command (note: cwd parameter removed as it's handled by persistent sessions)
         result: CommandResult = await executor.execute_command(command)
@@ -191,7 +191,7 @@ class TestBashSessionExecutor:
             combined_command = f'cd /d "{temp_dir}" && type test_exec.txt'
         else:
             # Unix command
-            combined_command = f"cd {temp_dir} && cat test_exec.txt"
+            combined_command = f"cd {temp_dir} && \\cat test_exec.txt"  # Use backslash to bypass aliases
 
         # Execute the command
         result: CommandResult = await executor.execute_command(combined_command)

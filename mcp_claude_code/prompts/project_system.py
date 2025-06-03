@@ -3,7 +3,7 @@ PROJECT_SYSTEM_PROMPT = """Your are assisting me with a project.
 Here is useful information about the environment you are running in:
 
 <env>
-Working directory: {working_directory}
+Working directory: {working_directory} (You need cd to this directory by yourself)
 Is directory a git repo: {is_git_repo}
 Platform: {platform}
 OS Version: {os_version}

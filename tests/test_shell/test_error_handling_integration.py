@@ -16,7 +16,6 @@ from unittest.mock import MagicMock, patch, AsyncMock
 
 from mcp_claude_code.tools.shell.base import (
     BashCommandStatus,
-    CmdOutputMetadata,
     CommandResult,
 )
 from mcp_claude_code.tools.shell.bash_session import BashSession
@@ -37,7 +36,9 @@ class TestErrorHandlingAndRecovery:
     @pytest.fixture
     def executor(self, permission_manager):
         """Create a BashSessionExecutor for testing."""
-        return BashSessionExecutor(permission_manager, verbose=False)
+        return BashSessionExecutor(
+            permission_manager, verbose=False, fast_test_mode=True
+        )
 
     @pytest.fixture
     def temp_work_dir(self):
@@ -218,25 +219,6 @@ class TestErrorHandlingAndRecovery:
         assert "Error: Session execution failed" in result
         assert "Executor failed" in result
 
-    def test_metadata_parsing_edge_cases(self):
-        """Test CmdOutputMetadata parsing with edge cases."""
-        # Test with malformed JSON in PS1 match
-        malformed_json = '{"pid": "123", "exit_code": }'
-        mock_match = MagicMock()
-        mock_match.group.return_value = malformed_json
-
-        with pytest.raises(Exception):  # Should raise JSON parsing error
-            CmdOutputMetadata.from_ps1_match(mock_match)
-
-        # Test with unexpected data types
-        weird_json = '{"pid": {"nested": "object"}, "exit_code": [1, 2, 3]}'
-        mock_match.group.return_value = weird_json
-
-        metadata = CmdOutputMetadata.from_ps1_match(mock_match)
-        # Should handle gracefully and set defaults
-        assert metadata.pid == -1
-        assert metadata.exit_code == -1
-
 
 class TestIntegrationScenarios:
     """Test end-to-end integration scenarios."""
@@ -249,7 +231,9 @@ class TestIntegrationScenarios:
     @pytest.fixture
     def executor(self, permission_manager):
         """Create a BashSessionExecutor for testing."""
-        return BashSessionExecutor(permission_manager, verbose=False)
+        return BashSessionExecutor(
+            permission_manager, verbose=False, fast_test_mode=True
+        )
 
     @pytest.fixture
     def tool(self, permission_manager, executor):
@@ -412,42 +396,6 @@ class TestIntegrationScenarios:
         assert result2.error_message and "not allowed" in result2.error_message
         assert not (result3.error_message and "not allowed" in result3.error_message)
 
-    def test_metadata_integration_with_command_result(self):
-        """Test integration of metadata system with CommandResult."""
-        # Create rich metadata
-        metadata = CmdOutputMetadata(
-            exit_code=0,
-            pid=12345,
-            username="testuser",
-            hostname="testhost",
-            working_dir="/test/dir",
-            py_interpreter_path="/usr/bin/python3",
-            prefix="[INFO] ",
-            suffix=" [DONE]",
-        )
-
-        # Create CommandResult with metadata
-        result = CommandResult(
-            return_code=0,
-            stdout="command output",
-            status=BashCommandStatus.COMPLETED,
-            metadata=metadata,
-            command="test command",
-        )
-
-        # Test formatted output
-        formatted = result.format_output()
-        assert "Working directory: /test/dir" in formatted
-        assert "Python interpreter: /usr/bin/python3" in formatted
-        assert "[INFO] command output [DONE]" in formatted
-
-        # Test agent observation
-        observation = result.to_agent_observation()
-        assert "[INFO] command output [DONE]" in observation
-        assert "[Current working directory: /test/dir]" in observation
-        assert "[Python interpreter: /usr/bin/python3]" in observation
-        assert "[Command finished with exit code 0]" in observation
-
     @pytest.mark.asyncio
     async def test_full_stack_with_file_operations(self, tool, mock_context):
         """Test full stack integration with file operations."""
@@ -504,7 +452,9 @@ class TestPerformanceAndReliability:
     @pytest.fixture
     def executor(self, permission_manager):
         """Create a BashSessionExecutor for testing."""
-        return BashSessionExecutor(permission_manager, verbose=False)
+        return BashSessionExecutor(
+            permission_manager, verbose=False, fast_test_mode=True
+        )
 
     @pytest.mark.asyncio
     async def test_rapid_command_execution(self, executor):
@@ -560,13 +510,10 @@ class TestPerformanceAndReliability:
 
     def test_command_result_serialization(self):
         """Test that CommandResult can be properly serialized/deserialized."""
-        metadata = CmdOutputMetadata(exit_code=0, working_dir="/test/dir")
-
         result = CommandResult(
             return_code=0,
             stdout="test output",
             status=BashCommandStatus.COMPLETED,
-            metadata=metadata,
             command="test command",
         )
 
@@ -574,8 +521,6 @@ class TestPerformanceAndReliability:
         assert result.return_code == 0
         assert result.stdout == "test output"
         assert result.status == BashCommandStatus.COMPLETED
-        assert result.metadata.exit_code == 0
-        assert result.metadata.working_dir == "/test/dir"
         assert result.command == "test command"
 
     @pytest.mark.asyncio

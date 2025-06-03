@@ -2,8 +2,7 @@
 
 This module tests all the advanced shell functionality including:
 - BashCommandStatus enum and state management
-- CmdOutputMetadata class and PS1 metadata system
-- Enhanced CommandResult class with rich metadata
+- Enhanced CommandResult class
 - Interactive process handling
 - Command conflict prevention
 - Advanced error handling
@@ -15,11 +14,7 @@ from unittest.mock import MagicMock, patch
 
 from mcp_claude_code.tools.shell.base import (
     BashCommandStatus,
-    CmdOutputMetadata,
     CommandResult,
-    CMD_OUTPUT_PS1_BEGIN,
-    CMD_OUTPUT_PS1_END,
-    CMD_OUTPUT_METADATA_PS1_REGEX,
 )
 from mcp_claude_code.tools.shell.bash_session_executor import BashSessionExecutor
 from mcp_claude_code.tools.shell.run_command import (
@@ -59,167 +54,6 @@ class TestBashCommandStatus:
         assert status.value == "completed"
 
 
-class TestCmdOutputMetadata:
-    """Test the CmdOutputMetadata class and PS1 metadata system."""
-
-    def test_cmd_output_metadata_initialization(self):
-        """Test CmdOutputMetadata initialization with defaults."""
-        metadata = CmdOutputMetadata()
-
-        assert metadata.exit_code == -1
-        assert metadata.pid == -1
-        assert metadata.username is None
-        assert metadata.hostname is None
-        assert metadata.working_dir is None
-        assert metadata.py_interpreter_path is None
-        assert metadata.prefix == ""
-        assert metadata.suffix == ""
-
-    def test_cmd_output_metadata_initialization_with_values(self):
-        """Test CmdOutputMetadata initialization with specific values."""
-        metadata = CmdOutputMetadata(
-            exit_code=0,
-            pid=12345,
-            username="testuser",
-            hostname="testhost",
-            working_dir="/home/testuser",
-            py_interpreter_path="/usr/bin/python3",
-            prefix="[PREFIX] ",
-            suffix=" [SUFFIX]",
-        )
-
-        assert metadata.exit_code == 0
-        assert metadata.pid == 12345
-        assert metadata.username == "testuser"
-        assert metadata.hostname == "testhost"
-        assert metadata.working_dir == "/home/testuser"
-        assert metadata.py_interpreter_path == "/usr/bin/python3"
-        assert metadata.prefix == "[PREFIX] "
-        assert metadata.suffix == " [SUFFIX]"
-
-    def test_ps1_prompt_generation(self):
-        """Test PS1 prompt generation with metadata."""
-        ps1_prompt = CmdOutputMetadata.to_ps1_prompt()
-
-        # Check structure
-        assert CMD_OUTPUT_PS1_BEGIN in ps1_prompt
-        assert CMD_OUTPUT_PS1_END in ps1_prompt
-
-        # Check that it contains expected shell variables (with escaped quotes)
-        assert '\\"pid\\": \\"$!\\"' in ps1_prompt
-        assert '\\"exit_code\\": \\"$?\\"' in ps1_prompt
-        assert '\\"username\\": \\"\\\\u\\"' in ps1_prompt
-        assert '\\"hostname\\": \\"\\\\h\\"' in ps1_prompt
-        assert '\\"working_dir\\": \\"$(pwd)\\"' in ps1_prompt
-        assert '\\"py_interpreter_path\\"' in ps1_prompt
-
-    def test_ps1_metadata_regex_matching(self):
-        """Test PS1 metadata regex pattern matching."""
-        # Create a valid PS1 metadata block
-        test_metadata = {
-            "pid": "12345",
-            "exit_code": "0",
-            "username": "testuser",
-            "hostname": "testhost",
-            "working_dir": "/home/testuser",
-            "py_interpreter_path": "/usr/bin/python3",
-        }
-
-        test_content = (
-            f"{CMD_OUTPUT_PS1_BEGIN}"
-            f"{json.dumps(test_metadata, indent=2)}"
-            f"{CMD_OUTPUT_PS1_END}"
-        )
-
-        matches = CMD_OUTPUT_METADATA_PS1_REGEX.findall(test_content)
-        assert len(matches) == 1
-
-        parsed_metadata = json.loads(matches[0])
-        assert parsed_metadata["exit_code"] == "0"
-        assert parsed_metadata["username"] == "testuser"
-
-    def test_matches_ps1_metadata_valid(self):
-        """Test matches_ps1_metadata with valid metadata."""
-        test_content = f"""Some output
-{CMD_OUTPUT_PS1_BEGIN}
-{{
-  "pid": "12345",
-  "exit_code": "0",
-  "username": "testuser",
-  "hostname": "testhost",
-  "working_dir": "/home/testuser",
-  "py_interpreter_path": "/usr/bin/python3"
-}}
-{CMD_OUTPUT_PS1_END}
-More output"""
-
-        matches = CmdOutputMetadata.matches_ps1_metadata(test_content)
-        assert len(matches) == 1
-        assert matches[0].group(1).strip().startswith("{")
-
-    def test_matches_ps1_metadata_invalid_json(self):
-        """Test matches_ps1_metadata with invalid JSON."""
-        test_content = f"""Some output
-{CMD_OUTPUT_PS1_BEGIN}
-invalid json content
-{CMD_OUTPUT_PS1_END}
-More output"""
-
-        matches = CmdOutputMetadata.matches_ps1_metadata(test_content)
-        assert len(matches) == 0
-
-    def test_matches_ps1_metadata_no_matches(self):
-        """Test matches_ps1_metadata with no metadata blocks."""
-        test_content = "Just some regular shell output with no metadata"
-
-        matches = CmdOutputMetadata.matches_ps1_metadata(test_content)
-        assert len(matches) == 0
-
-    def test_from_ps1_match_valid(self):
-        """Test from_ps1_match with valid metadata."""
-        test_metadata_json = """
-{
-  "pid": "12345",
-  "exit_code": "0",
-  "username": "testuser",
-  "hostname": "testhost",
-  "working_dir": "/home/testuser",
-  "py_interpreter_path": "/usr/bin/python3"
-}"""
-
-        # Create a mock match object
-        match = MagicMock()
-        match.group.return_value = test_metadata_json
-
-        metadata = CmdOutputMetadata.from_ps1_match(match)
-
-        assert metadata.exit_code == 0
-        assert metadata.pid == 12345
-        assert metadata.username == "testuser"
-        assert metadata.hostname == "testhost"
-        assert metadata.working_dir == "/home/testuser"
-        assert metadata.py_interpreter_path == "/usr/bin/python3"
-
-    def test_from_ps1_match_invalid_numbers(self):
-        """Test from_ps1_match with invalid numeric values."""
-        test_metadata_json = """
-{
-  "pid": "not_a_number",
-  "exit_code": "also_not_a_number",
-  "username": "testuser"
-}"""
-
-        match = MagicMock()
-        match.group.return_value = test_metadata_json
-
-        metadata = CmdOutputMetadata.from_ps1_match(match)
-
-        # Should fallback to -1 for invalid numbers
-        assert metadata.exit_code == -1
-        assert metadata.pid == -1
-        assert metadata.username == "testuser"
-
-
 class TestEnhancedCommandResult:
     """Test the enhanced CommandResult class."""
 
@@ -237,26 +71,6 @@ class TestEnhancedCommandResult:
         assert result.stderr == "test error"
         assert result.command == "echo test"
         assert result.status == BashCommandStatus.COMPLETED
-        assert result.metadata is not None
-        assert isinstance(result.metadata, CmdOutputMetadata)
-
-    def test_command_result_with_metadata(self):
-        """Test CommandResult with rich metadata."""
-        metadata = CmdOutputMetadata(
-            exit_code=0, working_dir="/test/dir", py_interpreter_path="/usr/bin/python3"
-        )
-
-        result = CommandResult(
-            return_code=0,
-            stdout="output",
-            command="test command",
-            metadata=metadata,
-            status=BashCommandStatus.COMPLETED,
-        )
-
-        assert result.metadata.exit_code == 0
-        assert result.metadata.working_dir == "/test/dir"
-        assert result.metadata.py_interpreter_path == "/usr/bin/python3"
 
     def test_is_success_property(self):
         """Test is_success property with various conditions."""
@@ -346,22 +160,6 @@ class TestEnhancedCommandResult:
         assert "STDOUT:\ntest output" in output
         assert "STDERR:\ntest error" in output
 
-    def test_format_output_with_metadata(self):
-        """Test format_output with rich metadata."""
-        metadata = CmdOutputMetadata(
-            working_dir="/test/dir",
-            py_interpreter_path="/usr/bin/python3",
-            prefix="[PREFIX] ",
-            suffix=" [SUFFIX]",
-        )
-
-        result = CommandResult(return_code=0, stdout="output", metadata=metadata)
-
-        output = result.format_output()
-        assert "Working directory: /test/dir" in output
-        assert "Python interpreter: /usr/bin/python3" in output
-        assert "[PREFIX] output [SUFFIX]" in output
-
     def test_format_output_with_status(self):
         """Test format_output with non-completed status."""
         result = CommandResult(
@@ -372,29 +170,6 @@ class TestEnhancedCommandResult:
 
         output = result.format_output()
         assert "Status: no_change_timeout" in output
-
-    def test_to_agent_observation(self):
-        """Test to_agent_observation method."""
-        metadata = CmdOutputMetadata(
-            exit_code=0, working_dir="/test/dir", py_interpreter_path="/usr/bin/python3"
-        )
-
-        result = CommandResult(stdout="command output", metadata=metadata)
-
-        observation = result.to_agent_observation()
-        assert "command output" in observation
-        assert "[Current working directory: /test/dir]" in observation
-        assert "[Python interpreter: /usr/bin/python3]" in observation
-        assert "[Command finished with exit code 0]" in observation
-
-    def test_to_agent_observation_with_prefix_suffix(self):
-        """Test to_agent_observation with prefix and suffix."""
-        metadata = CmdOutputMetadata(prefix="[INFO] ", suffix=" [DONE]")
-
-        result = CommandResult(stdout="output", metadata=metadata)
-
-        observation = result.to_agent_observation()
-        assert observation.startswith("[INFO] output [DONE]")
 
 
 class TestEnhancedBashSessionExecutor:
@@ -408,7 +183,9 @@ class TestEnhancedBashSessionExecutor:
     @pytest.fixture
     def executor(self, permission_manager):
         """Create a BashSessionExecutor for testing."""
-        return BashSessionExecutor(permission_manager, verbose=False)
+        return BashSessionExecutor(
+            permission_manager, verbose=False, fast_test_mode=True
+        )
 
     @pytest.mark.asyncio
     async def test_execute_command_with_new_parameters(self, executor):
@@ -516,7 +293,9 @@ class TestEnhancedRunCommandTool:
     @pytest.fixture
     def executor(self, permission_manager):
         """Create a BashSessionExecutor for testing."""
-        return BashSessionExecutor(permission_manager, verbose=False)
+        return BashSessionExecutor(
+            permission_manager, verbose=False, fast_test_mode=True
+        )
 
     @pytest.fixture
     def tool(self, permission_manager, executor):
@@ -642,7 +421,7 @@ class TestEnhancedRunCommandTool:
             return_code=0,
             stdout="test output",
             status=BashCommandStatus.COMPLETED,
-            metadata=CmdOutputMetadata(working_dir="/test/dir"),
+            session_id="format_test",  # Add session_id to match what the real executor would set
         )
 
         with patch.object(
@@ -659,7 +438,8 @@ class TestEnhancedRunCommandTool:
 
             # Should use to_agent_observation formatting
             assert "test output" in result
-            assert "[Current working directory: /test/dir]" in result
+            # Session ID should be included in to_agent_observation
+            assert "[Session ID: format_test]" in result
 
     @pytest.mark.asyncio
     async def test_call_failed_command_formatting(self, tool, mock_context):

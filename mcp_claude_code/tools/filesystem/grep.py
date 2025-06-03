@@ -386,7 +386,7 @@ When you are doing an open ended search that may require multiple rounds of glob
         pattern = params.get("pattern")
         path: str = params.get("path", ".")
         # Support both 'include' and legacy 'file_pattern' parameter for backward compatibility
-        include: str = params.get("include")
+        include: str = params.get("include") or params.get("file_pattern")
 
         # Validate required parameters for direct calls (not through MCP framework)
         if pattern is None:

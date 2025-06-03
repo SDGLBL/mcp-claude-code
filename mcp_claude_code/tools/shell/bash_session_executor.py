@@ -26,6 +26,7 @@ class BashSessionExecutor:
         permission_manager: PermissionManager,
         verbose: bool = False,
         session_manager: SessionManager | None = None,
+        fast_test_mode: bool = False,
     ) -> None:
         """Initialize bash session executor.
 
@@ -34,9 +35,12 @@ class BashSessionExecutor:
             verbose: Enable verbose logging
             session_manager: Optional session manager for dependency injection.
                            If None, creates a new SessionManager instance.
+            fast_test_mode: Enable fast test mode with reduced timeouts and polling intervals
         """
         self.permission_manager: PermissionManager = permission_manager
         self.verbose: bool = verbose
+        self.fast_test_mode: bool = fast_test_mode
+
         # If no session manager is provided, create a non-singleton instance to avoid shared state
         self.session_manager: SessionManager = session_manager or SessionManager(
             use_singleton=False
@@ -168,10 +172,21 @@ class BashSessionExecutor:
             # Get existing session or create new one
             session = self.session_manager.get_session(effective_session_id)
             if session is None:
+                # Use faster timeouts and polling for tests
+                if self.fast_test_mode:
+                    timeout_seconds = (
+                        10  # Faster timeout for tests but not too aggressive
+                    )
+                    poll_interval = 0.2  # Faster polling for tests but still reasonable
+                else:
+                    timeout_seconds = 30  # Default timeout
+                    poll_interval = 0.5  # Default polling
+
                 session = self.session_manager.get_or_create_session(
                     session_id=effective_session_id,
                     work_dir=default_work_dir,
-                    no_change_timeout_seconds=30,  # Default timeout
+                    no_change_timeout_seconds=timeout_seconds,
+                    poll_interval=poll_interval,
                 )
 
             # Set environment variables if provided (only for new commands, not input)

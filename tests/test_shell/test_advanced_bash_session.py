@@ -16,7 +16,6 @@ from unittest.mock import MagicMock, patch
 
 from mcp_claude_code.tools.shell.base import (
     BashCommandStatus,
-    CmdOutputMetadata,
     CommandResult,
 )
 from mcp_claude_code.tools.shell.bash_session import (
@@ -360,23 +359,14 @@ class TestBashSessionCommandConflictPrevention:
         with patch.object(session, "_get_pane_content") as mock_get_content:
             mock_get_content.return_value = "some output without prompt"
 
-            # Mock PS1 metadata matching
-            with patch(
-                "mcp_claude_code.tools.shell.base.CmdOutputMetadata.matches_ps1_metadata"
-            ) as mock_matches:
-                mock_matches.return_value = []
+            # This should detect a conflict (command when previous is still running)
+            # The actual conflict detection happens in the execute method
 
-                # This should detect a conflict (command when previous is still running)
-                # The actual conflict detection happens in the execute method
+            # Test the condition that would be checked
+            pane_output = "some output without prompt"
 
-                # Test the condition that would be checked
-                pane_output = "some output without prompt"
-                ps1_end_pattern = "\n###PS1END###"
-                ends_with_ps1 = pane_output.rstrip().endswith(ps1_end_pattern.rstrip())
-
-                assert (
-                    not ends_with_ps1
-                )  # Should not end with PS1, indicating command still running
+            # Basic conflict detection without PS1 checking
+            assert session.prev_status == BashCommandStatus.NO_CHANGE_TIMEOUT
 
 
 class TestBashSessionOutputProcessing:
@@ -389,7 +379,7 @@ class TestBashSessionOutputProcessing:
             yield temp_dir
 
     def test_fallback_completion_detection(self, temp_work_dir):
-        """Test fallback completion detection when PS1 metadata is not available."""
+        """Test fallback completion detection when prompt patterns are used."""
         session = BashSession(id="fallback_test", work_dir=temp_work_dir)
 
         # Mock the pane and other necessary components
@@ -420,46 +410,20 @@ class TestBashSessionOutputProcessing:
         """Test _get_command_output method with previous output tracking."""
         session = BashSession(id="output_test", work_dir=temp_work_dir)
 
-        metadata = CmdOutputMetadata()
-
         # Test with no previous output
         session.prev_output = ""
-        result1 = session._get_command_output("echo test", "test output", metadata)
+        result1 = session._get_command_output("echo test", "test output")
         assert "test output" in result1
         assert session.prev_output == "test output"
 
         # Test with previous output (should be removed)
         session.prev_output = "previous content"
         result2 = session._get_command_output(
-            "echo test2", "previous content\nnew output", metadata, "prefix"
+            "echo test2", "previous content\nnew output", "prefix"
         )
         assert "new output" in result2
-        assert metadata.prefix == "prefix"
-
-    def test_combine_outputs_between_matches(self, temp_work_dir):
-        """Test _combine_outputs_between_matches method."""
-        session = BashSession(id="combine_test", work_dir=temp_work_dir)
-
-        # Test with no matches
-        result1 = session._combine_outputs_between_matches("just some output", [])
-        assert result1 == "just some output"
-
-        # Test with one match - get content before
-        mock_match = MagicMock()
-        mock_match.start.return_value = 10
-        mock_match.end.return_value = 20
-
-        content = "0123456789MATCH_CONTENT0123456789"
-        result2 = session._combine_outputs_between_matches(
-            content, [mock_match], get_content_before_last_match=True
-        )
-        assert result2 == "0123456789"
-
-        # Test with one match - get content after
-        session._combine_outputs_between_matches(
-            content, [mock_match], get_content_before_last_match=False
-        )
-        # Note: The actual implementation may differ based on the exact positions
+        # Should include prefix when continuing from previous output
+        assert "prefix" in result2
 
     def test_ready_for_next_command(self, temp_work_dir):
         """Test _ready_for_next_command method."""
