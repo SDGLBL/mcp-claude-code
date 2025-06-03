@@ -7,7 +7,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 if TYPE_CHECKING:
-    from mcp_claude_code.tools.common.context import DocumentContext
     from mcp_claude_code.tools.common.permissions import PermissionManager
 
 from mcp_claude_code.tools.filesystem import (
@@ -24,49 +23,43 @@ class TestRefactoredFileTools:
     @pytest.fixture
     def fs_tools(
         self,
-        document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
         """Create filesystem tool instances for testing."""
-        return get_filesystem_tools(document_context, permission_manager)
+        return get_filesystem_tools(permission_manager)
 
     @pytest.fixture
     def read_files_tool(
         self,
-        document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
         """Create a ReadTool instance for testing."""
-        return ReadTool(document_context, permission_manager)
+        return ReadTool(permission_manager)
 
     @pytest.fixture
     def write_tool(
         self,
-        document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
         """Create a Write instance for testing."""
-        return Write(document_context, permission_manager)
+        return Write(permission_manager)
 
     @pytest.fixture
     def edit_file_tool(
         self,
-        document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
         """Create an Edit instance for testing."""
-        return Edit(document_context, permission_manager)
+        return Edit(permission_manager)
 
     @pytest.fixture
     def setup_allowed_path(
         self,
         permission_manager: "PermissionManager",
-        document_context: "DocumentContext",
         temp_dir: str,
     ):
         """Set up an allowed path for testing."""
         permission_manager.add_allowed_path(temp_dir)
-        document_context.add_allowed_path(temp_dir)
         return temp_dir
 
     @pytest.mark.asyncio

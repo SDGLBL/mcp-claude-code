@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from mcp_claude_code.tools.common.context import DocumentContext, ToolContext
+from mcp_claude_code.tools.common.context import ToolContext
 from mcp_claude_code.tools.common.permissions import PermissionManager
 from mcp_claude_code.tools.shell.bash_session_executor import BashSessionExecutor
 
@@ -62,12 +62,6 @@ def permission_manager():
     """Create a permission manager with a test path allowed."""
     manager = PermissionManager()
     return manager
-
-
-@pytest.fixture
-def document_context():
-    """Create a document context for testing."""
-    return DocumentContext()
 
 
 @pytest.fixture

@@ -164,9 +164,6 @@ Usage:
                 with open(file_path_obj, "w", encoding="utf-8") as f:
                     f.write(new_string)
 
-                # Add to document context
-                self.document_context.add_document(file_path, new_string)
-
                 await tool_ctx.info(f"Successfully created file: {file_path}")
                 return (
                     f"Successfully created file: {file_path} ({len(new_string)} bytes)"
@@ -238,9 +235,6 @@ Usage:
                 if diff_text:
                     with open(file_path_obj, "w", encoding="utf-8") as f:
                         f.write(modified_content)
-
-                    # Update document context
-                    self.document_context.update_document(file_path, modified_content)
 
                     await tool_ctx.info(
                         f"Successfully edited file: {file_path} ({expected_replacements} replacements applied)"

@@ -316,11 +316,10 @@ If you want to create a new file, use:
                 with open(file_path_obj, "w", encoding="utf-8") as f:
                     f.write(current_content)
 
-                # Update document context
                 if creation_mode:
-                    self.document_context.add_document(file_path, current_content)
+                    pass
                 else:
-                    self.document_context.update_document(file_path, current_content)
+                    pass
 
                 if creation_mode:
                     await tool_ctx.info(f"Successfully created file: {file_path}")

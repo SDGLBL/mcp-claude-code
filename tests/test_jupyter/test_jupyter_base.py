@@ -8,7 +8,6 @@ from unittest.mock import MagicMock
 import pytest
 
 if TYPE_CHECKING:
-    from mcp_claude_code.tools.common.context import DocumentContext
     from mcp_claude_code.tools.common.permissions import PermissionManager
 
 from mcp_claude_code.tools.jupyter import (
@@ -31,22 +30,20 @@ class TestJupyterPackage:
 
     def test_get_read_only_jupyter_tools(
         self,
-        document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
         """Test getting read-only Jupyter tools."""
-        tools = get_read_only_jupyter_tools(document_context, permission_manager)
+        tools = get_read_only_jupyter_tools(permission_manager)
 
         assert len(tools) == 1
         assert isinstance(tools[0], NotebookReadTool)
 
     def test_get_jupyter_tools(
         self,
-        document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
         """Test getting all Jupyter tools."""
-        tools = get_jupyter_tools(document_context, permission_manager)
+        tools = get_jupyter_tools(permission_manager)
 
         assert len(tools) == 2
         tool_types = [type(tool) for tool in tools]
@@ -55,16 +52,13 @@ class TestJupyterPackage:
 
     def test_register_jupyter_tools(
         self,
-        document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
         """Test registering Jupyter tools with MCP server."""
         # Mock MCP server
         mock_server = MagicMock()
 
-        tools = register_jupyter_tools(
-            mock_server, document_context, permission_manager
-        )
+        tools = register_jupyter_tools(mock_server, permission_manager)
 
         assert len(tools) == 2
         tool_types = [type(tool) for tool in tools]
@@ -254,12 +248,11 @@ class TestJupyterBaseFunctionality:
     async def test_parse_notebook(
         self,
         test_notebook_for_parsing: str,
-        document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
         """Test parsing a notebook file."""
         # Create a tool instance to test the base functionality
-        tool = NotebookReadTool(document_context, permission_manager)
+        tool = NotebookReadTool(permission_manager)
 
         from pathlib import Path
 
@@ -317,12 +310,11 @@ class TestJupyterBaseFunctionality:
 
     def test_format_notebook_cells(
         self,
-        document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
         """Test formatting notebook cells for display."""
         # Create a tool instance to test the base functionality
-        tool = NotebookReadTool(document_context, permission_manager)
+        tool = NotebookReadTool(permission_manager)
 
         # Create test cells
         cells = [
@@ -359,12 +351,11 @@ class TestJupyterBaseFunctionality:
 
     def test_format_notebook_cells_with_image(
         self,
-        document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
         """Test formatting notebook cells with image outputs."""
         # Create a tool instance to test the base functionality
-        tool = NotebookReadTool(document_context, permission_manager)
+        tool = NotebookReadTool(permission_manager)
 
         # Create test cell with image output
         image = NotebookOutputImage("base64data", "image/png")
@@ -389,12 +380,11 @@ class TestJupyterBaseFunctionality:
 
     def test_format_notebook_cells_non_python(
         self,
-        document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
         """Test formatting notebook cells for non-Python language."""
         # Create a tool instance to test the base functionality
-        tool = NotebookReadTool(document_context, permission_manager)
+        tool = NotebookReadTool(permission_manager)
 
         # Create test cell with R language
         cells = [

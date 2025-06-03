@@ -10,7 +10,6 @@ import pytest
 from mcp_claude_code.tools.jupyter.base import JupyterBaseTool
 
 if TYPE_CHECKING:
-    from mcp_claude_code.tools.common.context import DocumentContext
     from mcp_claude_code.tools.common.permissions import PermissionManager
 
 from mcp_claude_code.tools.jupyter.notebook_edit import NoteBookEditTool
@@ -23,22 +22,19 @@ class TestNotebookReadTool:
     @pytest.fixture
     def notebook_read_tool(
         self,
-        document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
         """Create a NotebookReadTool instance for testing."""
-        return NotebookReadTool(document_context, permission_manager)
+        return NotebookReadTool(permission_manager)
 
     @pytest.fixture
     def setup_allowed_path(
         self,
         permission_manager: "PermissionManager",
-        document_context: "DocumentContext",
         temp_dir: str,
     ):
         """Set up an allowed path for testing."""
         permission_manager.add_allowed_path(temp_dir)
-        document_context.add_allowed_path(temp_dir)
         return temp_dir
 
     @pytest.fixture
@@ -313,22 +309,19 @@ class TestNoteBookEditTool:
     @pytest.fixture
     def notebook_edit_tool(
         self,
-        document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
         """Create a NoteBookEditTool instance for testing."""
-        return NoteBookEditTool(document_context, permission_manager)
+        return NoteBookEditTool(permission_manager)
 
     @pytest.fixture
     def setup_allowed_path(
         self,
         permission_manager: "PermissionManager",
-        document_context: "DocumentContext",
         temp_dir: str,
     ):
         """Set up an allowed path for testing."""
         permission_manager.add_allowed_path(temp_dir)
-        document_context.add_allowed_path(temp_dir)
         return temp_dir
 
     @pytest.fixture

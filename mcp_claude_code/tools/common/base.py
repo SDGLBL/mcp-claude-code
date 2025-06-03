@@ -13,7 +13,7 @@ from typing import Any, Callable, final
 from fastmcp import FastMCP
 from fastmcp import Context as MCPContext
 
-from mcp_claude_code.tools.common.context import DocumentContext
+
 from mcp_claude_code.tools.common.permissions import PermissionManager
 from mcp_claude_code.tools.common.validation import (
     ValidationResult,
@@ -122,16 +122,12 @@ class FileSystemTool(BaseTool, ABC):
     including permission checking and path validation.
     """
 
-    def __init__(
-        self, document_context: DocumentContext, permission_manager: PermissionManager
-    ) -> None:
+    def __init__(self, permission_manager: PermissionManager) -> None:
         """Initialize filesystem tool.
 
         Args:
-            document_context: Document context for tracking file contents
             permission_manager: Permission manager for access control
         """
-        self.document_context: DocumentContext = document_context
         self.permission_manager: PermissionManager = permission_manager
 
     def validate_path(self, path: str, param_name: str = "path") -> ValidationResult:

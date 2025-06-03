@@ -113,11 +113,6 @@ class NotebookReadTool(JupyterBaseTool):
                 # This will read the file, so we don't need to read it separately
                 _, processed_cells = await self.parse_notebook(file_path)
 
-                # Add to document context
-                with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-                self.document_context.add_document(notebook_path, content)
-
                 # Format the notebook content as a readable string
                 result = self.format_notebook_cells(processed_cells)
 

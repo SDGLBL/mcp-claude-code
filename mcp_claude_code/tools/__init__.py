@@ -14,7 +14,7 @@ from fastmcp import FastMCP
 from mcp_claude_code.tools.agent import register_agent_tools
 from mcp_claude_code.tools.common import register_batch_tool, register_thinking_tool
 from mcp_claude_code.tools.common.base import BaseTool
-from mcp_claude_code.tools.common.context import DocumentContext
+
 from mcp_claude_code.tools.common.permissions import PermissionManager
 from mcp_claude_code.tools.filesystem import register_filesystem_tools
 from mcp_claude_code.tools.jupyter import register_jupyter_tools
@@ -24,7 +24,6 @@ from mcp_claude_code.tools.todo import register_todo_tools
 
 def register_all_tools(
     mcp_server: FastMCP,
-    document_context: DocumentContext,
     permission_manager: PermissionManager,
     agent_model: str | None = None,
     agent_max_tokens: int | None = None,
@@ -38,7 +37,6 @@ def register_all_tools(
 
     Args:
         mcp_server: The FastMCP server instance
-        document_context: Document context for tracking file contents
         permission_manager: Permission manager for access control
         agent_model: Optional model name for agent tool in LiteLLM format
         agent_max_tokens: Optional maximum tokens for agent responses
@@ -52,16 +50,12 @@ def register_all_tools(
     all_tools: dict[str, BaseTool] = {}
 
     # Register all filesystem tools
-    filesystem_tools = register_filesystem_tools(
-        mcp_server, document_context, permission_manager
-    )
+    filesystem_tools = register_filesystem_tools(mcp_server, permission_manager)
     for tool in filesystem_tools:
         all_tools[tool.name] = tool
 
     # Register all jupyter tools
-    jupyter_tools = register_jupyter_tools(
-        mcp_server, document_context, permission_manager
-    )
+    jupyter_tools = register_jupyter_tools(mcp_server, permission_manager)
     for tool in jupyter_tools:
         all_tools[tool.name] = tool
 
@@ -74,7 +68,6 @@ def register_all_tools(
     if enable_agent_tool:
         agent_tools = register_agent_tools(
             mcp_server,
-            document_context,
             permission_manager,
             agent_model=agent_model,
             agent_max_tokens=agent_max_tokens,

@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import AsyncMock
 
-from mcp_claude_code.tools.common.context import DocumentContext
+
 from mcp_claude_code.tools.common.permissions import PermissionManager
 from mcp_claude_code.tools.filesystem.multi_edit import MultiEdit
 
@@ -12,19 +12,14 @@ class TestMultiEdit:
     """Test cases for the MultiEdit tool."""
 
     @pytest.fixture
-    def document_context(self):
-        """Create a document context for testing."""
-        return DocumentContext()
-
-    @pytest.fixture
     def permission_manager(self):
         """Create a permission manager for testing."""
         return PermissionManager()
 
     @pytest.fixture
-    def multi_edit_tool(self, document_context, permission_manager):
+    def multi_edit_tool(self, permission_manager):
         """Create a MultiEdit tool instance for testing."""
-        return MultiEdit(document_context, permission_manager)
+        return MultiEdit(permission_manager)
 
     @pytest.fixture
     def mock_ctx(self):

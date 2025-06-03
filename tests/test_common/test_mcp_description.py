@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from mcp_claude_code.tools.common.context import DocumentContext
+
 from mcp_claude_code.tools.common.permissions import PermissionManager
 from mcp_claude_code.tools.common.thinking_tool import ThinkingTool
 from mcp_claude_code.tools.filesystem.read import ReadTool
@@ -17,11 +17,6 @@ from mcp_claude_code.tools.filesystem.read import ReadTool
 
 class TestMCPDescription:
     """Test cases for the BaseTool.mcp_description method (OBSOLETE)."""
-
-    @pytest.fixture
-    def document_context(self):
-        """Create a test document context."""
-        return MagicMock(spec=DocumentContext)
 
     @pytest.fixture
     def permission_manager(self):
@@ -34,9 +29,9 @@ class TestMCPDescription:
         return ThinkingTool()
 
     @pytest.fixture
-    def read_files_tool(self, document_context, permission_manager):
+    def read_files_tool(self, permission_manager):
         """Create a read files tool."""
-        return ReadTool(document_context, permission_manager)
+        return ReadTool(permission_manager)
 
     def test_tools_have_basic_properties(self, thinking_tool, read_files_tool):
         """Test that tools still have basic properties after refactor."""

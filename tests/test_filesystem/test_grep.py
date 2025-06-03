@@ -11,7 +11,6 @@ from mcp_claude_code.tools.filesystem.base import FilesystemBaseTool
 from mcp_claude_code.tools.filesystem.grep import Grep
 
 if TYPE_CHECKING:
-    from mcp_claude_code.tools.common.context import DocumentContext
     from mcp_claude_code.tools.common.permissions import PermissionManager
 
 
@@ -21,22 +20,19 @@ class TestGrep:
     @pytest.fixture
     def grep_tool(
         self,
-        document_context: "DocumentContext",
         permission_manager: "PermissionManager",
     ):
         """Create a Grep instance for testing."""
-        return Grep(document_context, permission_manager)
+        return Grep(permission_manager)
 
     @pytest.fixture
     def setup_allowed_path(
         self,
         permission_manager: "PermissionManager",
-        document_context: "DocumentContext",
         temp_dir: str,
     ):
         """Set up an allowed path for testing."""
         permission_manager.add_allowed_path(temp_dir)
-        document_context.add_allowed_path(temp_dir)
         return temp_dir
 
     def test_tool_properties(self, grep_tool: Grep):

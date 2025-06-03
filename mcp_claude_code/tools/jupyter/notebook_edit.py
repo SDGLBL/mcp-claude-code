@@ -277,10 +277,6 @@ class NoteBookEditTool(JupyterBaseTool):
             with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(notebook, f, indent=1)
 
-            # Update document context
-            updated_content = json.dumps(notebook, indent=1)
-            self.document_context.update_document(notebook_path, updated_content)
-
             await tool_ctx.info(
                 f"Successfully edited notebook: {notebook_path} - {change_description}"
             )

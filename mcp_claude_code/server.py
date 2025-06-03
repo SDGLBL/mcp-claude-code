@@ -6,7 +6,7 @@ from fastmcp import FastMCP
 
 from mcp_claude_code.prompts import register_all_prompts
 from mcp_claude_code.tools import register_all_tools
-from mcp_claude_code.tools.common.context import DocumentContext
+
 from mcp_claude_code.tools.common.permissions import PermissionManager
 
 
@@ -47,15 +47,13 @@ class ClaudeCodeServer:
         """
         self.mcp = mcp_instance if mcp_instance is not None else FastMCP(name)
 
-        # Initialize context, permissions, and command executor
-        self.document_context = DocumentContext()
+        # Initialize permissions and command executor
         self.permission_manager = PermissionManager()
 
         # Add allowed paths
         if allowed_paths:
             for path in allowed_paths:
                 self.permission_manager.add_allowed_path(path)
-                self.document_context.add_allowed_path(path)
 
         # Store project paths
         self.project_paths = project_paths
@@ -73,7 +71,6 @@ class ClaudeCodeServer:
         # Register all tools
         register_all_tools(
             mcp_server=self.mcp,
-            document_context=self.document_context,
             permission_manager=self.permission_manager,
             agent_model=self.agent_model,
             agent_max_tokens=self.agent_max_tokens,
@@ -97,7 +94,6 @@ class ClaudeCodeServer:
         allowed_paths_list = allowed_paths or []
         for path in allowed_paths_list:
             self.permission_manager.add_allowed_path(path)
-            self.document_context.add_allowed_path(path)
 
         # Run the server
         transport_type = cast(Literal["stdio", "sse"], transport)

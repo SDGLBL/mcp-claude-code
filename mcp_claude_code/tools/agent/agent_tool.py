@@ -29,7 +29,6 @@ from mcp_claude_code.tools.agent.tool_adapter import (
 from mcp_claude_code.tools.common.base import BaseTool
 from mcp_claude_code.tools.common.batch_tool import BatchTool
 from mcp_claude_code.tools.common.context import (
-    DocumentContext,
     ToolContext,
     create_tool_context,
 )
@@ -104,7 +103,6 @@ Usage notes:
 
     def __init__(
         self,
-        document_context: DocumentContext,
         permission_manager: PermissionManager,
         model: str | None = None,
         api_key: str | None = None,
@@ -116,7 +114,7 @@ Usage notes:
         """Initialize the agent tool.
 
         Args:
-            document_context: Document context for tracking file contents
+
             permission_manager: Permission manager for access control
             model: Optional model name override in LiteLLM format (e.g., "openai/gpt-4o")
             api_key: Optional API key for the model provider
@@ -125,7 +123,7 @@ Usage notes:
             max_iterations: Maximum number of iterations for agent (default: 10)
             max_tool_uses: Maximum number of total tool uses for agent (default: 30)
         """
-        self.document_context = document_context
+
         self.permission_manager = permission_manager
         self.model_override = model
         self.api_key_override = api_key
@@ -135,12 +133,10 @@ Usage notes:
         self.max_tool_uses = max_tool_uses
         self.available_tools: list[BaseTool] = []
         self.available_tools.extend(
-            get_read_only_filesystem_tools(
-                self.document_context, self.permission_manager
-            )
+            get_read_only_filesystem_tools(self.permission_manager)
         )
         self.available_tools.extend(
-            get_read_only_jupyter_tools(self.document_context, self.permission_manager)
+            get_read_only_jupyter_tools(self.permission_manager)
         )
         self.available_tools.append(
             BatchTool({t.name: t for t in self.available_tools})

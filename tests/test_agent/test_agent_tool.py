@@ -8,17 +8,12 @@ import pytest
 
 from mcp_claude_code.tools.agent.agent_tool import AgentTool
 from mcp_claude_code.tools.common.base import BaseTool
-from mcp_claude_code.tools.common.context import DocumentContext
+
 from mcp_claude_code.tools.common.permissions import PermissionManager
 
 
 class TestAgentTool:
     """Test cases for the AgentTool."""
-
-    @pytest.fixture
-    def document_context(self):
-        """Create a test document context."""
-        return MagicMock(spec=DocumentContext)
 
     @pytest.fixture
     def permission_manager(self):
@@ -31,19 +26,18 @@ class TestAgentTool:
         return MagicMock()
 
     @pytest.fixture
-    def agent_tool(self, document_context, permission_manager):
+    def agent_tool(self, permission_manager):
         """Create a test agent tool."""
         with patch("mcp_claude_code.tools.agent.agent_tool.litellm"):
             # Set environment variable for test
             os.environ["OPENAI_API_KEY"] = "test_key"
-            return AgentTool(document_context, permission_manager)
+            return AgentTool(permission_manager)
 
     @pytest.fixture
-    def agent_tool_with_params(self, document_context, permission_manager):
+    def agent_tool_with_params(self, permission_manager):
         """Create a test agent tool with custom parameters."""
         with patch("mcp_claude_code.tools.agent.agent_tool.litellm"):
             return AgentTool(
-                document_context=document_context,
                 permission_manager=permission_manager,
                 model="anthropic/claude-3-sonnet",
                 api_key="test_anthropic_key",
@@ -84,11 +78,10 @@ class TestAgentTool:
         assert agent_tool_with_params.max_iterations == 40
         assert agent_tool_with_params.max_tool_uses == 150
 
-    def test_model_and_api_key_override(self, document_context, permission_manager):
+    def test_model_and_api_key_override(self, permission_manager):
         """Test API key and model override functionality."""
         # Test with antropic model and API key
         agent_tool = AgentTool(
-            document_context=document_context,
             permission_manager=permission_manager,
             model="anthropic/claude-3-sonnet",
             api_key="test_anthropic_key",
@@ -99,7 +92,6 @@ class TestAgentTool:
 
         # Test with openai model and API key
         agent_tool = AgentTool(
-            document_context=document_context,
             permission_manager=permission_manager,
             model="openai/gpt-4o",
             api_key="test_openai_key",
@@ -110,7 +102,6 @@ class TestAgentTool:
 
         # Test with no model or API key
         agent_tool = AgentTool(
-            document_context=document_context,
             permission_manager=permission_manager,
         )
 

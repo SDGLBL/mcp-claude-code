@@ -126,9 +126,6 @@ Usage:
             with open(path_obj, "w", encoding="utf-8") as f:
                 f.write(content)
 
-            # Add to document context
-            self.document_context.add_document(file_path, content)
-
             await tool_ctx.info(
                 f"Successfully wrote file: {file_path} ({len(content)} bytes)"
             )

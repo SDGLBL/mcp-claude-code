@@ -174,11 +174,6 @@ Usage:
                             # Add line with line number (1-based)
                             lines.append(f"{i + 1:6d}  {line.rstrip()}")
 
-                    # Add to document context (store the full content for future reference)
-                    with open(file_path_obj, "r", encoding="utf-8") as f:
-                        full_content = f.read()
-                    self.document_context.add_document(file_path, full_content)
-
                 except UnicodeDecodeError:
                     # Try with latin-1 encoding
                     try:
@@ -208,11 +203,6 @@ Usage:
 
                                 # Add line with line number (1-based)
                                 lines.append(f"{i + 1:6d}  {line.rstrip()}")
-
-                        # Add to document context (store the full content for future reference)
-                        with open(file_path_obj, "r", encoding="latin-1") as f:
-                            full_content = f.read()
-                        self.document_context.add_document(file_path, full_content)
 
                         await tool_ctx.warning(
                             f"File read with latin-1 encoding: {file_path}"

@@ -30,7 +30,6 @@ class TestClaudeCodeServer:
 
         # Verify components were initialized
         assert server_instance.mcp is mock_mcp
-        assert server_instance.document_context is not None
         assert server_instance.permission_manager is not None
 
     def test_initialization_with_allowed_paths(self) -> None:
@@ -45,27 +44,25 @@ class TestClaudeCodeServer:
             mock_mcp = MagicMock()
             mock_fastmcp.return_value = mock_mcp
 
-            # Direct mock of the permission manager and document context
+            # Direct mock of the permission manager
             perm_manager = MagicMock()
-            doc_context = MagicMock()
 
             # Create the server
             server = ClaudeCodeServer(name="test-server", mcp_instance=mock_mcp)
 
-            # Inject our mocks
+            # Inject our mock
             server.permission_manager = perm_manager
-            server.document_context = doc_context
 
             # Manually call register_all_tools
             from mcp_claude_code.tools import register_all_tools
 
             register_all_tools(
                 mcp_server=mock_mcp,
-                document_context=doc_context,
                 permission_manager=perm_manager,
                 agent_model=None,
                 agent_max_tokens=None,
                 agent_api_key=None,
+                agent_base_url=None,
                 agent_max_iterations=10,
                 agent_max_tool_uses=30,
                 enable_agent_tool=False,
@@ -74,16 +71,13 @@ class TestClaudeCodeServer:
             # Now call the code that would add the paths
             for path in allowed_paths:
                 server.permission_manager.add_allowed_path(path)
-                server.document_context.add_allowed_path(path)
 
             # Verify paths were added
             assert perm_manager.add_allowed_path.call_count == len(allowed_paths)
-            assert doc_context.add_allowed_path.call_count == len(allowed_paths)
 
             # Verify each path was passed
             for path in allowed_paths:
                 perm_manager.add_allowed_path.assert_any_call(path)
-                doc_context.add_allowed_path.assert_any_call(path)
 
             # Verify tools were registered
             mock_register.assert_called_once()
@@ -116,9 +110,8 @@ class TestClaudeCodeServer:
         """Test running the server with additional allowed paths."""
         server_instance, mock_mcp = server
 
-        # Replace permission_manager and document_context with mocks
+        # Replace permission_manager with mock
         server_instance.permission_manager = MagicMock()
-        server_instance.document_context = MagicMock()
 
         # Run the server with allowed paths
         additional_paths = ["/additional/path1", "/additional/path2"]
@@ -128,14 +121,10 @@ class TestClaudeCodeServer:
         assert server_instance.permission_manager.add_allowed_path.call_count == len(
             additional_paths
         )
-        assert server_instance.document_context.add_allowed_path.call_count == len(
-            additional_paths
-        )
 
         # Verify each path was passed to the add methods
         for path in additional_paths:
             server_instance.permission_manager.add_allowed_path.assert_any_call(path)
-            server_instance.document_context.add_allowed_path.assert_any_call(path)
 
         # Verify the MCP server was run
         mock_mcp.run.assert_called_once()
