@@ -4,12 +4,14 @@ This module provides a BashSessionExecutor class that replaces the old CommandEx
 implementation with the new BashSession-based approach for better persistent execution.
 """
 
+import asyncio
 import os
 import shlex
+import subprocess
 from typing import final
 
 from mcp_claude_code.tools.common.permissions import PermissionManager
-from mcp_claude_code.tools.shell.base import CommandResult
+from mcp_claude_code.tools.shell.base import BashCommandStatus, CommandResult
 from mcp_claude_code.tools.shell.session_manager import SessionManager
 
 
@@ -124,7 +126,7 @@ class BashSessionExecutor:
         command: str,
         env: dict[str, str] | None = None,
         timeout: float | None = 60.0,
-        session_id: str = "",
+        session_id: str | None = "",
         is_input: bool = False,
         blocking: bool = False,
     ) -> CommandResult:
@@ -153,6 +155,10 @@ class BashSessionExecutor:
                 session_id=session_id,
                 command=command,
             )
+
+        # Handle subprocess mode when session_id is explicitly None
+        if session_id is None:
+            return await self._execute_subprocess_mode(command, env, timeout)
 
         # Default working directory for new sessions only
         # Existing sessions maintain their current working directory
@@ -211,4 +217,79 @@ class BashSessionExecutor:
                 error_message=f"Error executing command in session: {str(e)}",
                 session_id=effective_session_id,
                 command=command,
+            )
+
+    async def _execute_subprocess_mode(
+        self,
+        command: str,
+        env: dict[str, str] | None = None,
+        timeout: float | None = 60.0,
+    ) -> CommandResult:
+        """Execute command in true subprocess mode with no persistence.
+        
+        Args:
+            command: The command to execute
+            env: Optional environment variables
+            timeout: Optional timeout in seconds
+            
+        Returns:
+            CommandResult containing execution results
+        """
+        self._log(f"Executing command in subprocess mode: {command}")
+        
+        # Prepare environment - start with current env and add any custom vars
+        subprocess_env = os.environ.copy()
+        if env:
+            subprocess_env.update(env)
+        
+        try:
+            # Use asyncio.create_subprocess_shell for async execution
+            process = await asyncio.create_subprocess_shell(
+                command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env=subprocess_env,
+                cwd=os.path.expanduser("~"),  # Start in home directory
+            )
+            
+            # Wait for completion with timeout
+            try:
+                stdout, stderr = await asyncio.wait_for(
+                    process.communicate(), timeout=timeout
+                )
+            except asyncio.TimeoutError:
+                # Kill the process if it times out
+                process.kill()
+                await process.wait()
+                return CommandResult(
+                    return_code=-1,
+                    stdout="",
+                    stderr="",
+                    error_message=f"Command timed out after {timeout} seconds",
+                    session_id=None,
+                    command=command,
+                    status=BashCommandStatus.HARD_TIMEOUT,
+                )
+            
+            # Decode output
+            stdout_str = stdout.decode('utf-8', errors='replace') if stdout else ""
+            stderr_str = stderr.decode('utf-8', errors='replace') if stderr else ""
+            
+            return CommandResult(
+                return_code=process.returncode or 0,
+                stdout=stdout_str,
+                stderr=stderr_str,
+                session_id=None,
+                command=command,
+                status=BashCommandStatus.COMPLETED,
+            )
+            
+        except Exception as e:
+            self._log(f"Subprocess execution error: {str(e)}")
+            return CommandResult(
+                return_code=1,
+                error_message=f"Error executing command in subprocess: {str(e)}",
+                session_id=None,
+                command=command,
+                status=BashCommandStatus.COMPLETED,
             )
