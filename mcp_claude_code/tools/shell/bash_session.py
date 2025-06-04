@@ -592,6 +592,9 @@ class BashSession:
         self.prev_status = BashCommandStatus.COMPLETED  # Set prev_status
         self.prev_output = ""  # Reset previous command output
 
+        # Clear screen and history to prevent output accumulation
+        self._ready_for_next_command()
+
         return CommandResult(
             return_code=exit_code,
             stdout=output.strip(),

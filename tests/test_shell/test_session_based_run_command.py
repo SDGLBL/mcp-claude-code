@@ -689,3 +689,95 @@ class TestSessionIdValidationAndPersistence:
         assert f"[Session ID: {session_a}]" in result_a
         assert "session_b_value" in result_b
         assert f"[Session ID: {session_b}]" in result_b
+
+
+class TestSequentialCommandOutputIsolation:
+    """Test that sequential commands don't accumulate previous outputs."""
+
+    @pytest.fixture
+    def run_command_tool(
+        self,
+        permission_manager: "PermissionManager",
+        command_executor: BashSessionExecutor,
+    ):
+        """Create a RunCommandTool instance for testing."""
+        return RunCommandTool(permission_manager, command_executor)
+
+    @pytest.fixture
+    def mcp_context(self):
+        """Mock MCP context for testing."""
+        mock_context = MagicMock()
+        mock_context.info = AsyncMock()
+        mock_context.error = AsyncMock()
+        mock_context.warning = AsyncMock()
+        mock_context.debug = AsyncMock()
+        mock_context.report_progress = AsyncMock()
+        mock_context.request_id = "test-request-id"
+        mock_context.client_id = "test-client-id"
+        return mock_context
+
+    def setup_method(self):
+        """Clear sessions before each test."""
+        SessionStorage.clear_all_sessions()
+
+    def teardown_method(self):
+        """Clear sessions after each test."""
+        SessionStorage.clear_all_sessions()
+
+    @pytest.mark.asyncio
+    async def test_sequential_commands_no_output_accumulation(
+        self, run_command_tool, mcp_context
+    ):
+        """Test that sequential commands don't include previous command outputs."""
+        if not shutil.which("tmux"):
+            pytest.skip("tmux is not available for session testing")
+
+        session_id = "test_output_isolation"
+
+        # First command: echo a unique string
+        result1 = await run_command_tool.call(
+            mcp_context,
+            command="echo 'FIRST_COMMAND_OUTPUT'",
+            session_id=session_id,
+            time_out=30,
+        )
+
+        # Should contain the first command output
+        assert "FIRST_COMMAND_OUTPUT" in result1
+        assert f"[Session ID: {session_id}]" in result1
+
+        # Second command: echo a different unique string
+        result2 = await run_command_tool.call(
+            mcp_context,
+            command="echo 'SECOND_COMMAND_OUTPUT'",
+            session_id=session_id,
+            time_out=30,
+        )
+
+        # Should contain ONLY the second command output, not the first
+        assert "SECOND_COMMAND_OUTPUT" in result2
+        assert "FIRST_COMMAND_OUTPUT" not in result2, (
+            f"Second command output should not contain first command output. "
+            f"Got: {repr(result2)}"
+        )
+        assert f"[Session ID: {session_id}]" in result2
+
+        # Third command: echo yet another unique string
+        result3 = await run_command_tool.call(
+            mcp_context,
+            command="echo 'THIRD_COMMAND_OUTPUT'",
+            session_id=session_id,
+            time_out=30,
+        )
+
+        # Should contain ONLY the third command output, not previous ones
+        assert "THIRD_COMMAND_OUTPUT" in result3
+        assert "FIRST_COMMAND_OUTPUT" not in result3, (
+            f"Third command output should not contain first command output. "
+            f"Got: {repr(result3)}"
+        )
+        assert "SECOND_COMMAND_OUTPUT" not in result3, (
+            f"Third command output should not contain second command output. "
+            f"Got: {repr(result3)}"
+        )
+        assert f"[Session ID: {session_id}]" in result3
