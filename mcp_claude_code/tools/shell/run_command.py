@@ -28,6 +28,7 @@ SessionID = Annotated[
     str,
     Field(
         description="Session ID for persistent shell sessions (generate using timestamp command).",
+        default="",
     ),
 ]
 
@@ -289,7 +290,7 @@ Important:
         tool_ctx = await self.prepare_tool_context(ctx)
 
         # Extract parameters
-        command: Command = params["command"]
+        command = params["command"]
         session_id = params.get("session_id")
         time_out = params.get("time_out", 30)
         is_input = params.get("is_input", False)
@@ -340,7 +341,6 @@ Important:
         @mcp_server.tool(name=self.name, description=self.description)
         @handle_connection_errors
         async def run_command(
-            ctx: MCPContext,
             command: Command,
             session_id: SessionID,
             time_out: TimeOut,

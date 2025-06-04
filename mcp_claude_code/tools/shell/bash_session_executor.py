@@ -124,7 +124,7 @@ class BashSessionExecutor:
         command: str,
         env: dict[str, str] | None = None,
         timeout: float | None = 60.0,
-        session_id: str | None = None,
+        session_id: str = "",
         is_input: bool = False,
         blocking: bool = False,
     ) -> CommandResult:
@@ -161,7 +161,7 @@ class BashSessionExecutor:
 
         # Generate default session ID if none provided
         effective_session_id = session_id
-        if effective_session_id is None:
+        if effective_session_id == "":
             import uuid
 
             effective_session_id = f"default_{uuid.uuid4().hex[:8]}"

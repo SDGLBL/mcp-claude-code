@@ -251,11 +251,6 @@ class BashSession:
         # For zsh, also set PROMPT and disable themes
         self.pane.send_keys('export PROMPT="$ "')
         self.pane.send_keys("unset ZSH_THEME")
-
-        self._clear_screen()
-
-        # Test the simple prompt is working
-        self.pane.send_keys("echo 'PROMPT_TEST'")
         self._clear_screen()
 
         self._initialized = True
