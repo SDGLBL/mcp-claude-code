@@ -21,12 +21,12 @@ class SessionStorageInstance:
     and TTL-based cleanup to prevent memory leaks.
     """
 
-    def __init__(self, max_sessions: int = 50, default_ttl_seconds: int = 1800):
+    def __init__(self, max_sessions: int = 20, default_ttl_seconds: int = 300):
         """Initialize instance storage.
 
         Args:
             max_sessions: Maximum number of sessions to keep (LRU eviction after this)
-            default_ttl_seconds: Default TTL for sessions in seconds (30 minutes)
+            default_ttl_seconds: Default TTL for sessions in seconds (5 minutes)
         """
         self._sessions: dict[str, "BashSession"] = {}
         self._last_access: dict[str, float] = {}
@@ -48,7 +48,9 @@ class SessionStorageInstance:
 
     def _evict_lru_if_needed(self) -> None:
         """Evict least recently used sessions if over capacity."""
-        while len(self._sessions) >= self.max_sessions and self._access_order:
+        # More aggressive eviction: start evicting when we reach 80% capacity
+        eviction_threshold = max(1, int(self.max_sessions * 0.8))
+        while len(self._sessions) >= eviction_threshold and self._access_order:
             # Get least recently used session (first in list)
             lru_session_id = self._access_order[0]
             self.remove_session(lru_session_id)
@@ -283,11 +285,11 @@ class SessionStorage:
         return list(cls._sessions.keys())
 
     @classmethod
-    def cleanup_expired_sessions(cls, max_age_seconds: int = 1800) -> int:
+    def cleanup_expired_sessions(cls, max_age_seconds: int = 300) -> int:
         """Clean up sessions that haven't been accessed recently.
 
         Args:
-            max_age_seconds: Maximum age in seconds before cleanup (default: 30 minutes)
+            max_age_seconds: Maximum age in seconds before cleanup (default: 5 minutes)
 
         Returns:
             Number of sessions cleaned up

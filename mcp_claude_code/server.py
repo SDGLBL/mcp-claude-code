@@ -1,5 +1,9 @@
 """MCP server implementing Claude Code capabilities."""
 
+import atexit
+import signal
+import threading
+import time
 from typing import Literal, cast, final
 
 from fastmcp import FastMCP
@@ -8,6 +12,7 @@ from mcp_claude_code.prompts import register_all_prompts
 from mcp_claude_code.tools import register_all_tools
 
 from mcp_claude_code.tools.common.permissions import PermissionManager
+from mcp_claude_code.tools.shell.session_storage import SessionStorage
 
 
 @final
@@ -68,6 +73,11 @@ class ClaudeCodeServer:
         self.enable_agent_tool = enable_agent_tool
         self.command_timeout = command_timeout
 
+        # Initialize cleanup tracking
+        self._cleanup_thread: threading.Thread | None = None
+        self._shutdown_event = threading.Event()
+        self._cleanup_registered = False
+
         # Register all tools
         register_all_tools(
             mcp_server=self.mcp,
@@ -83,6 +93,54 @@ class ClaudeCodeServer:
 
         register_all_prompts(mcp_server=self.mcp, projects=self.project_paths)
 
+    def _setup_cleanup_handlers(self) -> None:
+        """Set up signal handlers and background cleanup thread."""
+        if self._cleanup_registered:
+            return
+
+        # Register cleanup on normal exit
+        atexit.register(self._cleanup_sessions)
+
+        # Register signal handlers for graceful shutdown
+        def signal_handler(signum, frame):
+            self._cleanup_sessions()
+            self._shutdown_event.set()
+
+        signal.signal(signal.SIGTERM, signal_handler)
+        signal.signal(signal.SIGINT, signal_handler)
+
+        # Start background cleanup thread for periodic cleanup
+        self._cleanup_thread = threading.Thread(
+            target=self._background_cleanup, daemon=True
+        )
+        self._cleanup_thread.start()
+
+        self._cleanup_registered = True
+
+    def _background_cleanup(self) -> None:
+        """Background thread for periodic session cleanup."""
+        while not self._shutdown_event.is_set():
+            try:
+                # Clean up expired sessions every 2 minutes
+                # Using shorter TTL of 5 minutes (300 seconds)
+                SessionStorage.cleanup_expired_sessions(max_age_seconds=300)
+
+                # Wait for 2 minutes or until shutdown
+                self._shutdown_event.wait(timeout=120)
+            except Exception:
+                # Ignore cleanup errors and continue
+                pass
+
+    def _cleanup_sessions(self) -> None:
+        """Clean up all active sessions."""
+        try:
+            cleared_count = SessionStorage.clear_all_sessions()
+            if cleared_count > 0:
+                print(f"Cleaned up {cleared_count} tmux sessions on shutdown")
+        except Exception:
+            # Ignore cleanup errors during shutdown
+            pass
+
     def run(self, transport: str = "stdio", allowed_paths: list[str] | None = None):
         """Run the MCP server.
 
@@ -94,6 +152,9 @@ class ClaudeCodeServer:
         allowed_paths_list = allowed_paths or []
         for path in allowed_paths_list:
             self.permission_manager.add_allowed_path(path)
+
+        # Set up cleanup handlers before running
+        self._setup_cleanup_handlers()
 
         # Run the server
         transport_type = cast(Literal["stdio", "sse"], transport)
