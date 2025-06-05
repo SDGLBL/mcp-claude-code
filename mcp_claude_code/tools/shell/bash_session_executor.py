@@ -226,22 +226,22 @@ class BashSessionExecutor:
         timeout: float | None = 60.0,
     ) -> CommandResult:
         """Execute command in true subprocess mode with no persistence.
-        
+
         Args:
             command: The command to execute
             env: Optional environment variables
             timeout: Optional timeout in seconds
-            
+
         Returns:
             CommandResult containing execution results
         """
         self._log(f"Executing command in subprocess mode: {command}")
-        
+
         # Prepare environment - start with current env and add any custom vars
         subprocess_env = os.environ.copy()
         if env:
             subprocess_env.update(env)
-        
+
         try:
             # Use asyncio.create_subprocess_shell for async execution
             process = await asyncio.create_subprocess_shell(
@@ -251,7 +251,7 @@ class BashSessionExecutor:
                 env=subprocess_env,
                 cwd=os.path.expanduser("~"),  # Start in home directory
             )
-            
+
             # Wait for completion with timeout
             try:
                 stdout, stderr = await asyncio.wait_for(
@@ -270,11 +270,11 @@ class BashSessionExecutor:
                     command=command,
                     status=BashCommandStatus.HARD_TIMEOUT,
                 )
-            
+
             # Decode output
-            stdout_str = stdout.decode('utf-8', errors='replace') if stdout else ""
-            stderr_str = stderr.decode('utf-8', errors='replace') if stderr else ""
-            
+            stdout_str = stdout.decode("utf-8", errors="replace") if stdout else ""
+            stderr_str = stderr.decode("utf-8", errors="replace") if stderr else ""
+
             return CommandResult(
                 return_code=process.returncode or 0,
                 stdout=stdout_str,
@@ -283,7 +283,7 @@ class BashSessionExecutor:
                 command=command,
                 status=BashCommandStatus.COMPLETED,
             )
-            
+
         except Exception as e:
             self._log(f"Subprocess execution error: {str(e)}")
             return CommandResult(
