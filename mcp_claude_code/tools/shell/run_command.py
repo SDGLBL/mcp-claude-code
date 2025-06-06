@@ -28,7 +28,6 @@ SessionID = Annotated[
     str,
     Field(
         description="Session ID for persistent shell sessions (generate using timestamp command).",
-        default="",
     ),
 ]
 

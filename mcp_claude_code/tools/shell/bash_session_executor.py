@@ -126,7 +126,7 @@ class BashSessionExecutor:
         command: str,
         env: dict[str, str] | None = None,
         timeout: float | None = 60.0,
-        session_id: str | None = "",
+        session_id: str = "",
         is_input: bool = False,
         blocking: bool = False,
     ) -> CommandResult:
@@ -157,7 +157,7 @@ class BashSessionExecutor:
             )
 
         # Handle subprocess mode when session_id is explicitly None
-        if session_id is None:
+        if not session_id:
             return await self._execute_subprocess_mode(command, env, timeout)
 
         # Default working directory for new sessions only
