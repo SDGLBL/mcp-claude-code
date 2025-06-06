@@ -5,6 +5,81 @@ All notable changes to the MCP Claude Code project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-01-07
+
+### Added
+- **Persistent Shell Session Support** (32769b5)
+  - New BashSession class for managing persistent shell environments with tmux
+  - SessionManager and SessionStorage for comprehensive session lifecycle management
+  - Session-based execution mode with environment persistence and working directory tracking
+  - Support for interactive commands with `is_input` and `blocking` parameters
+  - Command history tracking and session isolation
+- **Resource Management and Cleanup** (4c4a59d)
+  - Background cleanup thread for periodic session expiration checks every 2 minutes
+  - Signal handlers for graceful shutdown (SIGTERM, SIGINT)
+  - Atexit handler for cleanup during normal termination
+  - Reduced default session TTL from 30 to 5 minutes for aggressive cleanup
+  - Session storage metrics and logging for cleanup operations
+- **Enhanced Cross-Platform Support** (184c2f7)
+  - New CommandExecutor class for Windows-compatible shell command execution
+  - Automatic platform detection with tmux availability checking
+  - Support for multiple shell types (cmd, powershell, wsl) on Windows
+  - Platform-specific command formatting and execution logic
+- **Project System Prompt Enhancements** (363f06f)
+  - Factory function `create_project_system_prompt` for generating project-specific prompts
+  - Manual project system prompt registration for on-demand access
+  - Improved code organization and flexibility in prompt generation
+
+### Changed
+- **BREAKING CHANGE: Shell Execution Architecture** (bf3233a)
+  - Replaced CommandExecutor with BashSessionExecutor for all shell operations
+  - All shell tools now use persistent sessions by default
+  - Updated run_command tool interface with new session parameters
+  - CommandResult now includes additional execution metadata
+- **BREAKING CHANGE: Tool Parameter Handling** (bc52019)
+  - Migrated all tool parameters to TypedDict and Unpack for improved type safety
+  - Consolidated parameter type definitions at module level
+  - Enhanced IDE support and runtime type checking
+  - Removed redundant parameter validation in favor of Pydantic handling
+- **Session ID Handling Improvements** (4263df1, 154a817)
+  - Changed default session_id from None to empty string for consistency
+  - Simplified session_id validation logic
+  - Removed PROMPT_TEST echo command from session initialization
+  - More predictable session handling behavior
+
+### Removed
+- **Metadata System Simplification** (2cae74e)
+  - Removed complex PS1 metadata system for command tracking
+  - Eliminated CmdOutputMetadata class and PS1 prompt generation/parsing
+  - Simplified CommandResult class to focus on core output
+  - Improved reliability across different shell environments
+- **DocumentContext Removal** (db23971)
+  - Removed DocumentContext class and all related functionality
+  - Simplified codebase by removing redundant path tracking
+  - Permission management now handled solely by PermissionManager
+- **Legacy Command Executor** (bf3233a)
+  - Removed old CommandExecutor in favor of unified BashSessionExecutor
+  - Consolidated shell execution logic into session-based approach
+
+### Enhanced
+- **Command Output Isolation** (46c6c42)
+  - Prevented command output accumulation in persistent sessions
+  - Added automatic screen clearing and history management
+  - Ensured clean execution context for sequential commands
+- **Platform-Specific Tool Registration** (184c2f7)
+  - Automatic selection of appropriate run_command implementation
+  - Seamless fallback between tmux-based and Windows-compatible execution
+  - Maintained consistent tool interface across platforms
+
+### Refactoring
+- **Improved Shell Execution Mode** (f862a6f)
+  - Added subprocess execution mode to BashSessionExecutor
+  - Enhanced flexibility in execution strategy selection
+- **Code Quality and Type Safety** (bc52019)
+  - Comprehensive migration to modern Python type annotations
+  - Improved developer experience with better IDE support
+  - Reduced boilerplate validation code
+
 ## [0.3.4] - 2025-05-29
 
 ### Added
