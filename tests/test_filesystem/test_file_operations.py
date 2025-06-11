@@ -631,16 +631,15 @@ class TestDirectoryTreeTool:
             "At least one file from a filtered directory should be visible"
         )
 
-        # Test direct access to filtered directory
+        # Test direct access to filtered directory - should be denied
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
             with patch.object(
                 FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
             ):
                 result3 = await directory_tree_tool.call(mcp_context, path=git_dir)
 
-        # When directly accessing a filtered directory, it should be traversed
-        assert "HEAD" in result3
-        assert "[skipped - filtered-directory]" not in result3
+        # Direct access to filtered directories should be denied by permission system
+        assert "Access denied" in result3 or "not allowed" in result3
 
     @pytest.mark.asyncio
     async def test_directory_tree_not_allowed(

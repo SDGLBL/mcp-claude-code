@@ -8,7 +8,6 @@ This module tests all the advanced shell functionality including:
 - Advanced error handling
 """
 
-import json
 import pytest
 from unittest.mock import MagicMock, patch
 

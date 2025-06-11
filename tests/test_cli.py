@@ -36,6 +36,7 @@ class TestCLI:
             mock_args.agent_max_tool_uses = 30
             mock_args.enable_agent_tool = False
             mock_args.command_timeout = 120.0
+            mock_args.allowed_patterns = None
             mock_parse_args.return_value = mock_args
 
             # Mock server instance
@@ -60,6 +61,7 @@ class TestCLI:
                 agent_max_tool_uses=30,
                 enable_agent_tool=False,
                 command_timeout=120.0,
+                allowed_patterns=[],
             )
             mock_server.run.assert_called_once_with(transport="stdio")
 
@@ -107,6 +109,7 @@ class TestCLI:
             mock_args.agent_max_tool_uses = 30
             mock_args.enable_agent_tool = False
             mock_args.command_timeout = 120.0
+            mock_args.allowed_patterns = None
             mock_parse_args.return_value = mock_args
 
             # Mock server instance
@@ -129,6 +132,7 @@ class TestCLI:
                 agent_max_tool_uses=30,
                 enable_agent_tool=False,
                 command_timeout=120.0,
+                allowed_patterns=[],
             )
             mock_server.run.assert_called_once_with(transport="stdio")
 

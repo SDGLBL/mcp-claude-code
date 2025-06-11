@@ -40,6 +40,7 @@ class PermissionManager:
         """Add default exclusions for sensitive files and directories."""
         # Sensitive directories
         sensitive_dirs: list[str] = [
+            ".git",
             ".ssh",
             ".gnupg",
             "node_modules",
@@ -49,6 +50,14 @@ class PermissionManager:
             "env",
             ".idea",
             ".DS_Store",
+            ".pytest_cache",
+            ".vs",
+            ".vscode",
+            "dist",
+            "build",
+            "target",
+            ".ruff_cache",
+            ".llm-context",
         ]
         self.excluded_patterns.extend(sensitive_dirs)
 
@@ -102,6 +111,15 @@ class PermissionManager:
             pattern: The pattern to exclude
         """
         self.excluded_patterns.append(pattern)
+
+    def remove_exclusion_pattern(self, pattern: str) -> None:
+        """Remove an exclusion pattern.
+
+        Args:
+            pattern: The pattern to remove from exclusions
+        """
+        if pattern in self.excluded_patterns:
+            self.excluded_patterns.remove(pattern)
 
     def is_path_allowed(self, path: str) -> bool:
         """Check if a path is allowed.

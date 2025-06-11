@@ -44,6 +44,13 @@ def main() -> None:
     )
 
     _ = parser.add_argument(
+        "--allow-pattern",
+        action="append",
+        dest="allowed_patterns",
+        help="Allow access to files/directories matching this pattern (overrides default exclusions, can be specified multiple times)",
+    )
+
+    _ = parser.add_argument(
         "--agent-model",
         dest="agent_model",
         help="Specify the model name in LiteLLM format (e.g., 'openai/gpt-4o', 'anthropic/claude-3-sonnet')",
@@ -120,6 +127,9 @@ def main() -> None:
     agent_max_tool_uses: int = cast(int, args.agent_max_tool_uses)
     enable_agent_tool: bool = cast(bool, args.enable_agent_tool)
     command_timeout: float = cast(float, args.command_timeout)
+    allowed_patterns: list[str] = (
+        cast(list[str], args.allowed_patterns) if args.allowed_patterns else []
+    )
     allowed_paths: list[str] = (
         cast(list[str], args.allowed_paths) if args.allowed_paths else []
     )
@@ -148,6 +158,7 @@ def main() -> None:
         agent_max_tool_uses=agent_max_tool_uses,
         enable_agent_tool=enable_agent_tool,
         command_timeout=command_timeout,
+        allowed_patterns=allowed_patterns,
     )
     # Transport will be automatically cast to Literal['stdio', 'sse'] by the server
     server.run(transport=transport)
