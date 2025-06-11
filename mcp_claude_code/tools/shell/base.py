@@ -6,7 +6,7 @@ including command execution, script running, and process management.
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Self, final
+from typing import Any, final
 
 from fastmcp import Context as MCPContext
 

@@ -134,23 +134,8 @@ requested. Only works within allowed directories."""
             if not is_dir:
                 return error_msg
 
-            # Define filtered directories
-            FILTERED_DIRECTORIES = {
-                ".git",
-                "node_modules",
-                ".venv",
-                "venv",
-                "__pycache__",
-                ".pytest_cache",
-                ".idea",
-                ".vs",
-                ".vscode",
-                "dist",
-                "build",
-                "target",
-                ".ruff_cache",
-                ".llm-context",
-            }
+            # Get filtered directories from permission manager
+            filtered_patterns = set(self.permission_manager.excluded_patterns)
 
             # Log filtering settings
             await tool_ctx.info(
@@ -165,9 +150,7 @@ requested. Only works within allowed directories."""
                     return False
 
                 # Filter based on directory name if filtering is enabled
-                return (
-                    current_path.name in FILTERED_DIRECTORIES and not include_filtered
-                )
+                return current_path.name in filtered_patterns and not include_filtered
 
             # Track stats for summary
             stats = {
@@ -183,9 +166,25 @@ requested. Only works within allowed directories."""
             ) -> list[dict[str, Any]]:
                 result: list[dict[str, Any]] = []
 
-                # Skip processing if path isn't allowed
-                if not self.is_path_allowed(str(current_path)):
+                # Skip processing if path isn't allowed, unless we're including filtered dirs
+                # and this path is only excluded due to filtering patterns
+                if not include_filtered and not self.is_path_allowed(str(current_path)):
                     return result
+                elif include_filtered:
+                    # When including filtered directories, we need to check if the path
+                    # would be allowed if we ignore pattern-based exclusions
+                    # For now, we'll be more permissive and only check the basic allowed paths
+                    path_in_allowed = False
+                    resolved_path = Path(str(current_path)).resolve()
+                    for allowed_path in self.permission_manager.allowed_paths:
+                        try:
+                            resolved_path.relative_to(allowed_path)
+                            path_in_allowed = True
+                            break
+                        except ValueError:
+                            continue
+                    if not path_in_allowed:
+                        return result
 
                 try:
                     # Sort entries: directories first, then files alphabetically
@@ -194,10 +193,6 @@ requested. Only works within allowed directories."""
                     )
 
                     for entry in entries:
-                        # Skip entries that aren't allowed
-                        if not self.is_path_allowed(str(entry)):
-                            continue
-
                         if entry.is_dir():
                             stats["directories"] += 1
                             entry_data: dict[str, Any] = {
@@ -225,6 +220,23 @@ requested. Only works within allowed directories."""
                             )
                             result.append(entry_data)
                         else:
+                            # Skip files that aren't allowed (with same logic as directories)
+                            if not include_filtered and not self.is_path_allowed(str(entry)):
+                                continue
+                            elif include_filtered:
+                                # When including filtered directories, check basic path allowance
+                                path_in_allowed = False
+                                resolved_path = Path(str(entry)).resolve()
+                                for allowed_path in self.permission_manager.allowed_paths:
+                                    try:
+                                        resolved_path.relative_to(allowed_path)
+                                        path_in_allowed = True
+                                        break
+                                    except ValueError:
+                                        continue
+                                if not path_in_allowed:
+                                    continue
+                                
                             # Files should be at the same level check as directories
                             if depth <= 0 or current_depth < depth:
                                 stats["files"] += 1

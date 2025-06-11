@@ -4,12 +4,8 @@ This module provides an enhanced Context class that wraps the MCP Context
 and adds additional functionality specific to Claude Code tools.
 """
 
-import json
-import os
-import time
 from collections.abc import Iterable
-from pathlib import Path
-from typing import Any, ClassVar, final
+from typing import ClassVar, final
 
 from fastmcp import Context as MCPContext
 from mcp.server.lowlevel.helper_types import ReadResourceContents

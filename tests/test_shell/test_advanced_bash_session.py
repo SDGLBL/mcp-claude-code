@@ -363,7 +363,6 @@ class TestBashSessionCommandConflictPrevention:
             # The actual conflict detection happens in the execute method
 
             # Test the condition that would be checked
-            pane_output = "some output without prompt"
 
             # Basic conflict detection without PS1 checking
             assert session.prev_status == BashCommandStatus.NO_CHANGE_TIMEOUT

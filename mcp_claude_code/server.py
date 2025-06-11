@@ -3,7 +3,6 @@
 import atexit
 import signal
 import threading
-import time
 from typing import Literal, cast, final
 
 from fastmcp import FastMCP
@@ -33,6 +32,7 @@ class ClaudeCodeServer:
         agent_max_tool_uses: int = 30,
         enable_agent_tool: bool = False,
         command_timeout: float = 120.0,
+        allowed_patterns: list[str] | None = None,
     ):
         """Initialize the Claude Code server.
 
@@ -49,6 +49,7 @@ class ClaudeCodeServer:
             agent_max_tool_uses: Maximum number of total tool uses for agent (default: 30)
             enable_agent_tool: Whether to enable the agent tool (default: False)
             command_timeout: Default timeout for command execution in seconds (default: 120.0)
+            allowed_patterns: List of patterns to allow (overrides default exclusions)
         """
         self.mcp = mcp_instance if mcp_instance is not None else FastMCP(name)
 
@@ -59,6 +60,11 @@ class ClaudeCodeServer:
         if allowed_paths:
             for path in allowed_paths:
                 self.permission_manager.add_allowed_path(path)
+
+        # Handle allowed patterns (override default exclusions)
+        if allowed_patterns:
+            for pattern in allowed_patterns:
+                self.permission_manager.remove_exclusion_pattern(pattern)
 
         # Store project paths
         self.project_paths = project_paths

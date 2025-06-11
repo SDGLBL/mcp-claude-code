@@ -7,7 +7,6 @@ implementation with the new BashSession-based approach for better persistent exe
 import asyncio
 import os
 import shlex
-import subprocess
 from typing import final
 
 from mcp_claude_code.tools.common.permissions import PermissionManager
