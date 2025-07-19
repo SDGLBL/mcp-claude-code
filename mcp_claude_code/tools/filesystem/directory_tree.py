@@ -221,13 +221,17 @@ requested. Only works within allowed directories."""
                             result.append(entry_data)
                         else:
                             # Skip files that aren't allowed (with same logic as directories)
-                            if not include_filtered and not self.is_path_allowed(str(entry)):
+                            if not include_filtered and not self.is_path_allowed(
+                                str(entry)
+                            ):
                                 continue
                             elif include_filtered:
                                 # When including filtered directories, check basic path allowance
                                 path_in_allowed = False
                                 resolved_path = Path(str(entry)).resolve()
-                                for allowed_path in self.permission_manager.allowed_paths:
+                                for (
+                                    allowed_path
+                                ) in self.permission_manager.allowed_paths:
                                     try:
                                         resolved_path.relative_to(allowed_path)
                                         path_in_allowed = True
@@ -236,7 +240,7 @@ requested. Only works within allowed directories."""
                                         continue
                                 if not path_in_allowed:
                                     continue
-                                
+
                             # Files should be at the same level check as directories
                             if depth <= 0 or current_depth < depth:
                                 stats["files"] += 1

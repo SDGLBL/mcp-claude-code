@@ -588,8 +588,8 @@ class TestDirectoryTreeTool:
             "At least one filtered directory should be marked as skipped"
         )
 
-        # HEAD file should not be visible because .git is filtered
-        assert "HEAD" not in result
+        # HEAD file should be visible because .git is no longer filtered by default
+        assert "HEAD" in result
         assert "package.json" not in result
         assert "pyvenv.cfg" not in result
 
@@ -631,12 +631,12 @@ class TestDirectoryTreeTool:
             "At least one file from a filtered directory should be visible"
         )
 
-        # Test direct access to filtered directory - should be denied
+        # Test direct access to filtered directory - should be denied (use node_modules since .git is now allowed)
         with patch.object(FilesystemBaseTool, "set_tool_context_info", AsyncMock()):
             with patch.object(
                 FilesystemBaseTool, "create_tool_context", return_value=tool_ctx
             ):
-                result3 = await directory_tree_tool.call(mcp_context, path=git_dir)
+                result3 = await directory_tree_tool.call(mcp_context, path=node_modules)
 
         # Direct access to filtered directories should be denied by permission system
         assert "Access denied" in result3 or "not allowed" in result3
