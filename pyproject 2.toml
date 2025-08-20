@@ -1,0 +1,76 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mcp-claude-code"
+version = "0.4.0"
+description = "MCP implementation of Claude Code capabilities"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "SDGLBL", email = "sdglbl.me@gmail.com" }]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+dependencies = [
+  "httpx>=0.27.0",
+  "uvicorn>=0.23.1",
+  "openai>=1.50.0",
+  "python-dotenv>=1.0.0",
+  "litellm<=1.67.1",
+  "grep-ast>=0.8.1",
+  "GitPython>=3.1.0",
+  "fastmcp>=2.5.1",
+  "libtmux>=0.15.0",
+  "bashlex>=0.16",
+  "pytest-asyncio>=0.26.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0.0", "pytest-cov>=4.1.0", "ruff>=0.1.0", "black>=23.3.0"]
+test = [
+  "pytest>=7.0.0",
+  "pytest-cov>=4.1.0",
+  "pytest-mock>=3.10.0",
+  "pytest-asyncio>=0.25.3",
+  "twisted",
+]
+performance = ["ujson>=5.7.0", "orjson>=3.9.0"]
+
+[project.scripts]
+claudecode = "mcp_claude_code.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["mcp_claude_code*"]
+
+
+[tool.basedpyright]
+include = ["mcp_claude_code"]
+
+exclude = [
+  "**/node_modules",
+  "**/__pycache__",
+  "src/experimental",
+  "src/typestubs",
+]
+
+pythonVersion = "3.13"
+reportUnknownVariableType = false
+reportUnknownMemberType = false
+reportUnknownParameterType = false
+reportUnusedCallResult = false
+reportIgnoreCommentWithoutRule = false
+reportUnusedParameter = false
+reportAny = false
+reportRedeclaration = false
+reportMissingTypeArgument = false
+reportExplicitAny = false
+reportUnusedFunction = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
