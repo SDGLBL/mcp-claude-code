@@ -5,6 +5,31 @@ All notable changes to the MCP Claude Code project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-08-29
+
+### Added
+- **Generic Allow Pattern Override** (72ecafe)
+  - New `--allow-pattern` CLI option to override default file/directory exclusions
+  - Can be specified multiple times to allow access to typically excluded directories like node_modules, .git, etc.
+  - Enhanced PermissionManager with `remove_exclusion_pattern()` method
+  - Consolidated all default exclusions in PermissionManager for better organization
+  - Updated DirectoryTreeTool to use PermissionManager exclusions consistently
+  - Enhanced include_filtered functionality to properly traverse filtered directories
+
+### Changed
+- **Permission System Updates** (fadf3e9)
+  - Removed .git directory from default sensitive exclusions in PermissionManager
+  - Tools now have visibility of .git contents by default unless explicitly restricted
+  - Enhanced version control metadata access while maintaining other sensitive directory protections
+  - Updated DirectoryTreeTool to reflect new .git access behavior
+
+### Fixed
+- **Test Suite Updates** (4a02159)
+  - Updated hidden files test to reflect .git/.vscode exclusions correctly
+  - Fixed CI test failures in test_various_hidden_files
+  - Moved .git/config and .vscode/settings.json to excluded_paths in tests
+  - Updated test expectations to match correct exclusion behavior
+
 ## [0.4.0] - 2025-01-07
 
 ### Added
