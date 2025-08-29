@@ -50,14 +50,15 @@ class TestHiddenFilePermissions:
             os.path.join(temp_dir, ".env-sample"),
             os.path.join(temp_dir, ".gitconfig-user"),
             os.path.join(temp_dir, ".github-actions-example.json"),
+            os.path.join(temp_dir, ".git", "config"),  # .git is now allowed
         ]
 
         # Files that should be excluded (matching default exclusions)
         excluded_paths = [
-            os.path.join(temp_dir, ".git", "config"),  # .git is excluded
             os.path.join(temp_dir, ".vscode", "settings.json"),  # .vscode is excluded
             os.path.join(temp_dir, ".env"),
             os.path.join(temp_dir, "logs", "app.log"),
+            os.path.join(temp_dir, "node_modules", "package.json"),  # node_modules is excluded
         ]
 
         # Test allowed paths
@@ -149,15 +150,16 @@ class TestHiddenFilePermissions:
             f"{base_dir}/.pre-commit-config.yaml",
             f"{base_dir}/.env.sample",
             f"{base_dir}/.devcontainer/config.json",
+            f"{base_dir}/.git/HEAD",  # .git is now allowed
         ]
 
         # These should still be excluded (matching system exclusions)
         excluded_project_paths = [
-            f"{base_dir}/.git/HEAD",  # .git is excluded
             f"{base_dir}/.vscode/settings.json",  # .vscode is excluded
             f"{base_dir}/.env",
             f"{base_dir}/logs/debug.log",
             f"{base_dir}/__pycache__/module.pyc",
+            f"{base_dir}/node_modules/package.json",  # node_modules is excluded
         ]
 
         # Mock the permissions check to avoid actual filesystem access

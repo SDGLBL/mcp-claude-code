@@ -5,6 +5,15 @@ All notable changes to the MCP Claude Code project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2025-08-29
+
+### Fixed
+- **Test Suite Compatibility** 
+  - Updated hidden files tests to reflect new .git directory access behavior
+  - Fixed test expectations in test_various_hidden_files and test_real_world_project_paths
+  - Tests now correctly expect .git paths to be allowed instead of excluded
+  - Replaced .git exclusion test cases with node_modules exclusion test cases
+
 ## [0.5.0] - 2025-08-29
 
 ### Added
